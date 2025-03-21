@@ -1,5 +1,6 @@
 from abc import abstractmethod
-from typing import List, Dict, Sequence, Any, Union
+from typing import Any
+from collections.abc import Sequence
 
 from datasets import Dataset
 from trl.trainer.grpo_trainer import RewardFunc
@@ -12,8 +13,8 @@ class MultiStepEnv(Environment):
     def __init__(
         self,
         system_prompt: str = "",
-        few_shot: List[Dict[str, str]] = [],
-        sampling_args: Dict[str, Any] = {},
+        few_shot: list[dict[str, str]] = [],
+        sampling_args: dict[str, Any] = {},
         mask_env_response: bool = True,
         **kwargs
     ):
@@ -35,22 +36,22 @@ class MultiStepEnv(Environment):
         pass
 
     @abstractmethod
-    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+    def get_rubric(self, **kwargs: Any) -> list[RewardFunc]:
         pass
 
     @abstractmethod
-    def is_completed(self, messages: List[Dict[str, str]], **kwargs: Any) -> bool:
+    def is_completed(self, messages: list[dict[str, str]], **kwargs: Any) -> bool:
         pass
 
     @abstractmethod
     def env_response(
-        self, messages: List[Dict[str, str]], **kwargs: Any
-    ) -> Dict[str, str]:
+        self, messages: list[dict[str, str]], **kwargs: Any
+    ) -> dict[str, str]:
         pass
 
     def step(
-        self, states: List[Dict[str, Any]], llm: LLM, sampling_params: SamplingParams
-    ) -> List[Dict[str, Any]]:
+        self, states: list[dict[str, Any]], llm: LLM, sampling_params: SamplingParams
+    ) -> list[dict[str, Any]]:
 
         live_indices = [i for i, s in enumerate(states) if not s["completed"]]
         messages_to_step = [states[i]["messages"] for i in live_indices]
@@ -100,11 +101,11 @@ class MultiStepEnv(Environment):
 
     def generate(
         self,
-        prompts: List[List[Dict[str, Any]]],
+        prompts: list[list[dict[str, Any]]],
         llm: LLM,
         sampling_params: SamplingParams,
         **kwargs: Any
-    ) -> Dict[str, List[Sequence[int]] | List[str] | List[List[Dict[str, Any]]]]:
+    ) -> dict[str, list[Sequence[int]] | list[str] | list[list[dict[str, Any]]]]:
         custom_sp = sampling_params.clone()
         for k, v in self.sampling_args.items():
             setattr(custom_sp, k, v)
@@ -138,7 +139,7 @@ class MultiStepEnv(Environment):
         }
         return output
 
-    def eval(self, model: Union[str, LLM], batch_size: int = 10, **kwargs: Any):
+    def eval(self, model: str | LLM, batch_size: int = 10, **kwargs: Any):
         if self.eval_dataset is None:
             self.eval_dataset = self.get_eval_dataset()
 

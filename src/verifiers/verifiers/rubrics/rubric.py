@@ -1,11 +1,10 @@
 from abc import ABC
-from typing import List, Dict
 import logging
 
 from trl.trainer.grpo_trainer import RewardFunc
 
 
-def equals_reward_func(completions, answer, **kwargs) -> List[float]:
+def equals_reward_func(completions, answer, **kwargs) -> list[float]:
     responses = [c[0]["content"] for c in completions]
     return [1.0 if r == a else 0.0 for r, a in zip(responses, answer)]
 
@@ -20,12 +19,12 @@ class Rubric(ABC):
         self.reward_weights = None
 
     def get_assistant_messages(
-        self, trajectory: List[Dict[str, str]]
-    ) -> List[Dict[str, str]]:
+        self, trajectory: list[dict[str, str]]
+    ) -> list[dict[str, str]]:
         """Helper function to extract assistant messages from a trajectory."""
         return [msg for msg in trajectory if msg["role"] == "assistant"]
 
-    def get_last_answer(self, trajectory: List[Dict[str, str]]) -> str | None:
+    def get_last_answer(self, trajectory: list[dict[str, str]]) -> str | None:
         """Extract the last answer from a trajectory."""
         for msg in reversed(trajectory):
             if msg["role"] == "assistant":
@@ -36,18 +35,18 @@ class Rubric(ABC):
                     return parsed.answer
         return None
 
-    def exact_answer_reward_func(self, completions, answer, **kwargs) -> List[float]:
+    def exact_answer_reward_func(self, completions, answer, **kwargs) -> list[float]:
         """Reward function that checks if the final answer matches the expected answer."""
         responses = [self.get_last_answer(c) for c in completions]
         return [1.0 if str(r) == str(a) else 0.0 for r, a in zip(responses, answer)]
 
-    def int_answer_reward_func(self, completions, answer, **kwargs) -> List[float]:
+    def int_answer_reward_func(self, completions, answer, **kwargs) -> list[float]:
         """Reward function that checks if the final answer is an integer."""
         responses = [self.get_last_answer(c) for c in completions]
         return [1.0 if str(r).isdigit() else 0.0 for r in responses]
 
-    def get_reward_funcs(self) -> List[RewardFunc]:
+    def get_reward_funcs(self) -> list[RewardFunc]:
         return self.reward_funcs
 
-    def get_reward_weights(self) -> List[float] | None:
+    def get_reward_weights(self) -> list[float] | None:
         return self.reward_weights

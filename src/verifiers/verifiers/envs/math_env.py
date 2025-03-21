@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple
+from typing import Any
 from datasets import Dataset
 from trl.trainer.grpo_trainer import RewardFunc
 
@@ -14,8 +14,8 @@ class MathEnv(SimpleEnv):
         self,
         dataset: str = "gsm8k",
         system_prompt: str = SIMPLE_PROMPT,
-        few_shot: List[Dict[str, str]] = MATH_FEW_SHOT[0],
-        fields: List[str | Tuple[str, ...]] = ["reasoning", "answer"],
+        few_shot: list[dict[str, str]] = MATH_FEW_SHOT[0],
+        fields: list[str | tuple[str, ...]] = ["reasoning", "answer"],
         **kwargs
     ):
         super().__init__(system_prompt=system_prompt, few_shot=few_shot, **kwargs)
@@ -45,5 +45,5 @@ class MathEnv(SimpleEnv):
             return self.eval_dataset.shuffle().select(range(n))  # type: ignore
         return self.eval_dataset
 
-    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+    def get_rubric(self, **kwargs: Any) -> list[RewardFunc]:
         return self.rubric.get_reward_funcs()

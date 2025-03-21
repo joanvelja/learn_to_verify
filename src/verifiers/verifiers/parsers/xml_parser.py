@@ -1,10 +1,10 @@
 import re
-from typing import List, Dict, Any, Union, Tuple, Optional, Callable
+from typing import Any, Callable
 from types import SimpleNamespace
 
 
 class XMLParser:
-    def __init__(self, fields: List[Union[str, Tuple[str, ...]]]):
+    def __init__(self, fields: list[str | tuple[str, ...]]):
         """
         Initialize the parser with field definitions.
 
@@ -16,9 +16,7 @@ class XMLParser:
 
         The schema is assumed to have no duplicate names.
         """
-        self._fields: List[Tuple[str, List[str]]] = (
-            []
-        )  # List of (canonical, [alternatives])
+        self._fields: list[tuple[str, list[str]]] = []
         seen = set()
         for field in fields:
             if isinstance(field, str):
@@ -38,7 +36,7 @@ class XMLParser:
             seen.add(canonical)
             self._fields.append((canonical, alternatives))
 
-    def get_xml_reward_func(self) -> Callable:
+    def get_xml_reward_func(self) -> Callable[[list[dict[str, str]]], list[float]]:
         """
         Return a reward function that checks for proper XML tag usage.
 
@@ -46,7 +44,7 @@ class XMLParser:
         the expected XML tags defined in this parser's fields configuration.
         """
 
-        def xml_reward_func(completions, **kwargs) -> List[float]:
+        def xml_reward_func(completions, **kwargs) -> list[float]:
             """Reward function that checks for proper XML tag usage in completions."""
 
             def count_xml(trajectory) -> float:
@@ -110,7 +108,7 @@ class XMLParser:
         - Fields have proper content and spacing
         """
 
-        def format_reward_func(completions, **kwargs) -> List[float]:
+        def format_reward_func(completions, **kwargs) -> list[float]:
             """Reward function that checks if each step follows the expected format."""
 
             def check_format(trajectory):
@@ -226,7 +224,7 @@ class XMLParser:
 
         return format_reward_func
 
-    def get_fields(self) -> List[str]:
+    def get_fields(self) -> list[str]:
         """Return a list of the canonical field names (in order)."""
         return [canonical for canonical, _ in self._fields]
 
@@ -276,7 +274,7 @@ class XMLParser:
             `result.code` and `result.answer` are always accessible. If a tag is not
             found in the XML, its corresponding attribute is set to None.
         """
-        results: Dict[str, Optional[str]] = {}
+        results: dict[str, str | None] = {}
         for canonical, alternatives in self._fields:
             # For each allowed alternative tag, search independently.
             for alt in alternatives:

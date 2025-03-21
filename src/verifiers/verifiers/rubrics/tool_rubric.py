@@ -1,5 +1,3 @@
-from typing import List, Dict
-
 from verifiers.parsers import XMLParser
 from verifiers.rubrics import Rubric
 
@@ -20,8 +18,8 @@ class ToolRubric(Rubric):
         ]
 
     def tool_execution_reward_func(
-        self, completions: List[List[Dict[str, str]]], **kwargs
-    ) -> List[float]:
+        self, completions: list[list[dict[str, str]]], **kwargs
+    ) -> list[float]:
         """
         Reward function that checks tool execution success.
 

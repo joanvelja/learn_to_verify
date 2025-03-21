@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Optional
+from typing import Any
 
 from rich.console import Console
 from rich.table import Table
@@ -10,8 +10,8 @@ from rich.panel import Panel
 
 def setup_logging(
     level: str = "INFO",
-    log_format: Optional[str] = None,
-    date_format: Optional[str] = None,
+    log_format: str | None = None,
+    date_format: str | None = None,
 ) -> None:
     """
     Setup basic logging configuration for the verifiers package.
@@ -41,7 +41,7 @@ def setup_logging(
 
 def print_prompt_completions_sample(
     prompts: list[str],
-    completions: list[dict],
+    completions: list[dict[str, Any]],
     rewards: list[float],
     step: int,
     advantages: list[float] | list[None] | None = None,

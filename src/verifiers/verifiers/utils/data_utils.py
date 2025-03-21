@@ -1,5 +1,4 @@
 import random
-from typing import List, Dict
 
 from datasets import Dataset, load_dataset  # type: ignore
 
@@ -40,9 +39,9 @@ def format_prompt(
     prompt: str,
     solution: str | None = None,
     system_prompt: str | None = None,
-    few_shot: List[Dict[str, str]] | None = None,
+    few_shot: list[dict[str, str]] | None = None,
     fewshot_prob: float = 1.0,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
@@ -67,7 +66,7 @@ def preprocess_dataset(
     dataset_name: str = "gsm8k",
     split: str = "train",
     system_prompt: str | None = None,
-    few_shot: List[Dict[str, str]] | None = None,
+    few_shot: list[dict[str, str]] | None = None,
     fewshot_prob: float = 1.0,
 ) -> Dataset:
     if dataset_name == "gsm8k":

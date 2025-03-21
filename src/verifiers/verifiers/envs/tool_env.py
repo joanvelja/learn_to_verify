@@ -1,6 +1,6 @@
 import inspect
 import json
-from typing import List, Dict, Any, Callable
+from typing import Any, Callable
 
 from datasets import Dataset
 from trl.trainer.grpo_trainer import RewardFunc
@@ -12,7 +12,7 @@ from verifiers.rubrics import ToolRubric
 from verifiers.utils import preprocess_dataset
 
 
-def infer_schema_from_function(func: Callable) -> Dict[str, Any]:
+def infer_schema_from_function(func: Callable) -> dict[str, Any]:
     """Infers a tool schema from a function's signature and docstring."""
     sig = inspect.signature(func)
     doc = inspect.getdoc(func) or ""
@@ -61,7 +61,7 @@ def infer_schema_from_function(func: Callable) -> Dict[str, Any]:
     }
 
 
-def format_tool_descriptions(schemas: List[Dict[str, Any]]) -> str:
+def format_tool_descriptions(schemas: list[dict[str, Any]]) -> str:
     """Formats tool schemas into a user-friendly description string."""
     descriptions = []
     for schema in schemas:
@@ -88,9 +88,9 @@ class ToolEnv(MultiStepEnv):
     def __init__(
         self,
         dataset: str = "gsm8k",
-        tools: List[Callable] = [],
+        tools: list[Callable] = [],
         system_prompt: str = DEFAULT_TOOL_PROMPT_TEMPLATE,
-        few_shot: List[Dict[str, str]] = [],
+        few_shot: list[dict[str, str]] = [],
         sampling_args={
             "stop": ["</tool>", "</answer>"],
             "include_stop_str_in_output": True,
@@ -142,10 +142,10 @@ class ToolEnv(MultiStepEnv):
             return self.eval_dataset.shuffle().select(range(n))  # type: ignore
         return self.eval_dataset
 
-    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+    def get_rubric(self, **kwargs: Any) -> list[RewardFunc]:
         return self.rubric.get_reward_funcs()
 
-    def _get_step_count(self, messages: List[Dict[str, str]]) -> int:
+    def _get_step_count(self, messages: list[dict[str, str]]) -> int:
         """Count the number of tool uses in the message history, excluding few-shot examples."""
         step_count = 0
 
@@ -168,7 +168,7 @@ class ToolEnv(MultiStepEnv):
                     pass
         return step_count
 
-    def is_completed(self, messages: List[Dict[str, str]], **kwargs: Any) -> bool:
+    def is_completed(self, messages: list[dict[str, str]], **kwargs: Any) -> bool:
         try:
             # Check if we've hit max steps by counting tool uses in the message history
             step_count = self._get_step_count(messages)
@@ -207,8 +207,8 @@ class ToolEnv(MultiStepEnv):
             return f"Error: {str(e)}"
 
     def env_response(
-        self, messages: List[Dict[str, str]], **kwargs: Any
-    ) -> Dict[str, str]:
+        self, messages: list[dict[str, str]], **kwargs: Any
+    ) -> dict[str, str]:
         try:
             parsed = self.llm_parser.parse(messages[-1]["content"])
             # Check if we got a valid tool field (not just None from failed parsing)

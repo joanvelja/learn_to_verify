@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Any
 
 from datasets import Dataset
 from trl.trainer.grpo_trainer import RewardFunc
@@ -14,7 +14,7 @@ class DoubleCheckEnv(MultiStepEnv):
         self,
         dataset: str = "gsm8k",
         system_prompt: str = SIMPLE_PROMPT,
-        few_shot: List[Dict[str, str]] = DOUBLECHECK_FEW_SHOT[0],
+        few_shot: list[dict[str, str]] = DOUBLECHECK_FEW_SHOT[0],
         **kwargs
     ):
 
@@ -38,16 +38,16 @@ class DoubleCheckEnv(MultiStepEnv):
         )
         self.rubric = MathRubric()
 
-    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+    def get_rubric(self, **kwargs: Any) -> list[RewardFunc]:
         return self.rubric.get_reward_funcs()
 
     def get_dataset(self, **kwargs: Any) -> Dataset:
         return self.dataset
 
-    def is_completed(self, messages: List[Dict[str, str]], **kwargs: Any) -> bool:
+    def is_completed(self, messages: list[dict[str, str]], **kwargs: Any) -> bool:
         return len(messages) > 1 and messages[-2]["content"] == "Are you sure?"
 
     def env_response(
-        self, messages: List[Dict[str, str]], **kwargs: Any
-    ) -> Dict[str, str]:
+        self, messages: list[dict[str, str]], **kwargs: Any
+    ) -> dict[str, str]:
         return {"role": "user", "content": "Are you sure?"}

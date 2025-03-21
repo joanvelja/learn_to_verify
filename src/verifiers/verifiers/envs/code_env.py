@@ -1,5 +1,5 @@
 import subprocess
-from typing import List, Dict, Any
+from typing import Any
 
 from datasets import Dataset
 from trl.trainer.grpo_trainer import RewardFunc
@@ -16,8 +16,8 @@ class CodeEnv(MultiStepEnv):
         self,
         dataset: str = "gsm8k",
         system_prompt: str = CODE_PROMPT,
-        few_shot: List[Dict[str, str]] = CODE_FEW_SHOT[0],
-        sampling_args: Dict[str, Any] = {
+        few_shot: list[dict[str, str]] = CODE_FEW_SHOT[0],
+        sampling_args: dict[str, Any] = {
             "stop": ["</code>", "</answer>"],
             "include_stop_str_in_output": True,
         },
@@ -58,10 +58,10 @@ class CodeEnv(MultiStepEnv):
             )
         return self.eval_dataset
 
-    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+    def get_rubric(self, **kwargs: Any) -> list[RewardFunc]:
         return self.rubric.get_reward_funcs()
 
-    def is_completed(self, messages: List[Dict[str, str]], **kwargs: Any) -> bool:
+    def is_completed(self, messages: list[dict[str, str]], **kwargs: Any) -> bool:
         try:
             parsed = self.llm_parser.parse(messages[-1]["content"])
             # Check if we got a valid answer field (not just None from failed parsing)
@@ -86,8 +86,8 @@ class CodeEnv(MultiStepEnv):
             return "Error: Code execution timed out after 10 seconds"
 
     def env_response(
-        self, messages: List[Dict[str, str]], **kwargs: Any
-    ) -> Dict[str, str]:
+        self, messages: list[dict[str, str]], **kwargs: Any
+    ) -> dict[str, str]:
         try:
             parsed = self.llm_parser.parse(messages[-1]["content"])
             # Check if we got a valid code field (not just None from failed parsing)

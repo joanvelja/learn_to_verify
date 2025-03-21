@@ -1,5 +1,5 @@
 from importlib.util import find_spec
-from typing import Dict, Any, Union, Tuple
+from typing import Any
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -9,7 +9,7 @@ def is_liger_available() -> bool:
     return find_spec("liger_kernel") is not None
 
 
-def get_model(model_name: str, model_kwargs: Union[Dict[str, Any], None] = None) -> Any:
+def get_model(model_name: str, model_kwargs: dict[str, Any] | None = None) -> Any:
     if model_kwargs is None:
         model_kwargs = dict(
             torch_dtype=torch.bfloat16,
@@ -47,8 +47,8 @@ def get_tokenizer(model_name: str) -> Any:
 
 
 def get_model_and_tokenizer(
-    model_name: str, model_kwargs: Union[Dict[str, Any], None] = None
-) -> Tuple[Any, Any]:
+    model_name: str, model_kwargs: dict[str, Any] | None = None
+) -> tuple[Any, Any]:
     model = get_model(model_name, model_kwargs)
     tokenizer = get_tokenizer(model_name)
     return model, tokenizer

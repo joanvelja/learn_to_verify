@@ -1,4 +1,3 @@
-from typing import Optional
 import json
 
 # Simple knowledge base for demonstration
@@ -39,7 +38,7 @@ def get_related(concept: str) -> str:
     )
 
 
-def compare(concept1: str, concept2: str, attribute: Optional[str] = None) -> str:
+def compare(concept1: str, concept2: str, attribute: str | None = None) -> str:
     """Compare two concepts, optionally on a specific attribute."""
     concept1, concept2 = concept1.lower().strip(), concept2.lower().strip()
 

@@ -1,5 +1,6 @@
 import random
-from typing import List, Dict, Sequence, Any
+from typing import Any
+from collections.abc import Sequence
 
 from datasets import Dataset
 
@@ -11,8 +12,8 @@ class SimpleEnv(Environment):
     def __init__(
         self,
         system_prompt: str = "",
-        few_shot: List[Dict[str, str]] = [],
-        sampling_args: Dict[str, Any] = {},
+        few_shot: list[dict[str, str]] = [],
+        sampling_args: dict[str, Any] = {},
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -33,7 +34,7 @@ class SimpleEnv(Environment):
 
     def format_prompt(
         self, prompt: str, fewshot_prob: float = 1.0
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         messages = []
         if self.system_prompt:
             messages.append({"role": "system", "content": self.system_prompt})
@@ -44,11 +45,11 @@ class SimpleEnv(Environment):
 
     def generate(
         self,
-        prompts: List[List[Dict[str, Any]]],
+        prompts: list[list[dict[str, Any]]],
         llm: LLM,
         sampling_params: SamplingParams,
         **kwargs: Any
-    ) -> Dict[str, List[Sequence[int]] | List[str] | List[List[Dict[str, Any]]]]:
+    ) -> dict[str, list[Sequence[int]] | list[str] | list[list[dict[str, Any]]]]:
 
         custom_sp = sampling_params.clone()
         for k, v in self.sampling_args.items():

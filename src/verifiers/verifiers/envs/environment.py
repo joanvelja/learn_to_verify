@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Sequence
+from typing import Any
+from collections.abc import Sequence
 import logging
 
 from datasets import Dataset
@@ -24,15 +25,15 @@ class Environment(ABC):
         pass
 
     @abstractmethod
-    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+    def get_rubric(self, **kwargs: Any) -> list[RewardFunc]:
         pass
 
     @abstractmethod
     def generate(
         self,
-        prompts: List[List[Dict[str, Any]]],
+        prompts: list[list[dict[str, Any]]],
         llm: LLM,
         sampling_params: SamplingParams,
         **kwargs: Any,
-    ) -> Dict[str, List[Sequence[int]] | List[str] | List[List[Dict[str, Any]]]]:
+    ) -> dict[str, list[Sequence[int]] | list[str] | list[list[dict[str, Any]]]]:
         pass

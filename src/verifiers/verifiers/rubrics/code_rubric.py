@@ -1,5 +1,3 @@
-from typing import List, Dict
-
 from verifiers.parsers import XMLParser
 from verifiers.rubrics import Rubric
 
@@ -21,11 +19,11 @@ class CodeRubric(Rubric):
         ]
 
     def code_execution_reward_func(
-        self, completions: List[List[Dict[str, str]]], **kwargs
-    ) -> List[float]:
+        self, completions: list[list[dict[str, str]]], **kwargs
+    ) -> list[float]:
         """Reward function that checks code execution success at each step."""
 
-        def check_execution(trajectory: List[Dict[str, str]]) -> float:
+        def check_execution(trajectory: list[dict[str, str]]) -> float:
             total_code_steps = 0
             successful_executions = 0
 
