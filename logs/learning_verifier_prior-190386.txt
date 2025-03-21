@@ -1,0 +1,94 @@
+[2025-03-06 19:51:29,668] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+W0306 19:51:31.606000 3483553 torch/distributed/run.py:793] 
+W0306 19:51:31.606000 3483553 torch/distributed/run.py:793] *****************************************
+W0306 19:51:31.606000 3483553 torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0306 19:51:31.606000 3483553 torch/distributed/run.py:793] *****************************************
+[2025-03-06 19:51:38,359] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-06 19:51:38,362] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-06 19:51:38,362] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 2, in <module>
+    import verifiers as vf
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/__init__.py", line 8, in <module>
+    from .trainers.grpo_env_trainer import GRPOEnvTrainer
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/__init__.py", line 1, in <module>
+    from .grpo_env_trainer import GRPOEnvTrainer
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 77, in <module>
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 2, in <module>
+    class GRPOEnvTrainer(GRPOTrainer):
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 89, in GRPOEnvTrainer
+        import verifiers as vfpeft_config: None | PeftConfig = None,
+
+     File "/data/joan_velja/learn_to_verify/verifiers/verifiers/__init__.py", line 8, in <module>
+                     ^^^^^^^^^^
+NameError    : from .trainers.grpo_env_trainer import GRPOEnvTrainername 'PeftConfig' is not defined
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/__init__.py", line 1, in <module>
+
+    from .grpo_env_trainer import GRPOEnvTrainer
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 77, in <module>
+    class GRPOEnvTrainer(GRPOTrainer):
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 89, in GRPOEnvTrainer
+    peft_config: None | PeftConfig = None,
+                        ^^^^^^^^^^
+NameError: name 'PeftConfig' is not defined
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 2, in <module>
+    import verifiers as vf
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/__init__.py", line 8, in <module>
+    from .trainers.grpo_env_trainer import GRPOEnvTrainer
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/__init__.py", line 1, in <module>
+    from .grpo_env_trainer import GRPOEnvTrainer
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 77, in <module>
+    class GRPOEnvTrainer(GRPOTrainer):
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 89, in GRPOEnvTrainer
+    peft_config: None | PeftConfig = None,
+                        ^^^^^^^^^^
+NameError: name 'PeftConfig' is not defined
+E0306 19:51:42.429000 3483553 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 3483623) of binary: /data/joan_velja/learn_to_verify/verifiers/.venv/bin/python
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1182, in launch_command
+    deepspeed_launcher(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 861, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+train_verifier.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2025-03-06_19:51:42
+  host      : compute-permanent-node-506.local.vcn
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 3483624)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2025-03-06_19:51:42
+  host      : compute-permanent-node-506.local.vcn
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 3483625)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-03-06_19:51:42
+  host      : compute-permanent-node-506.local.vcn
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 3483623)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

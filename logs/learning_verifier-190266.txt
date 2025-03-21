@@ -1,0 +1,126 @@
+[2025-03-06 12:22:28,855] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+W0306 12:22:31.142000 3229012 torch/distributed/run.py:793] 
+W0306 12:22:31.142000 3229012 torch/distributed/run.py:793] *****************************************
+W0306 12:22:31.142000 3229012 torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0306 12:22:31.142000 3229012 torch/distributed/run.py:793] *****************************************
+[2025-03-06 12:22:38,552] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-06 12:22:38,555] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-06 12:22:38,555] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Using Liger kernelUsing Liger kernelUsing Liger kernel
+
+
+Applied Liger kernels to Qwen2Applied Liger kernels to Qwen2
+
+Applied Liger kernels to Qwen2
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+Generating train split:   0%|          | 0/9000 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 9000/9000 [00:00<00:00, 188139.75 examples/s]
+Generating test split:   0%|          | 0/1000 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 1000/1000 [00:00<00:00, 197091.49 examples/s]
+Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:  10%|▉         | 869/9000 [00:00<00:00, 8627.78 examples/s]Map:  14%|█▍        | 1255/9000 [00:00<00:00, 12483.43 examples/s]Map:  10%|█         | 944/9000 [00:00<00:00, 9361.13 examples/s]Map:  22%|██▏       | 2017/9000 [00:00<00:00, 10296.44 examples/s]Map:  29%|██▊       | 2586/9000 [00:00<00:00, 12963.49 examples/s]Map:  24%|██▍       | 2155/9000 [00:00<00:00, 10964.76 examples/s]Map:  37%|███▋      | 3325/9000 [00:00<00:00, 11563.67 examples/s]Map:  44%|████▎     | 3928/9000 [00:00<00:00, 13166.63 examples/s]Map:  39%|███▉      | 3493/9000 [00:00<00:00, 12059.80 examples/s]Map:  52%|█████▏    | 4699/9000 [00:00<00:00, 12197.81 examples/s]Map:  54%|█████▎    | 4826/9000 [00:00<00:00, 12556.56 examples/s]Map:  66%|██████▌   | 5911/9000 [00:00<00:00, 13189.19 examples/s]Map:  67%|██████▋   | 6000/9000 [00:00<00:00, 12261.37 examples/s]Map:  75%|███████▌  | 6784/9000 [00:00<00:00, 12778.75 examples/s]Map:  88%|████████▊ | 7899/9000 [00:00<00:00, 13212.84 examples/s]Map:  81%|████████  | 7297/9000 [00:00<00:00, 12496.20 examples/s]Map:  97%|█████████▋| 8757/9000 [00:00<00:00, 12922.83 examples/s]Map:  96%|█████████▌| 8614/9000 [00:00<00:00, 12712.13 examples/s]Map: 100%|██████████| 9000/9000 [00:00<00:00, 12016.36 examples/s]
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 25, in <module>
+    dataset = vf_env.get_dataset(curriculum=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/envs/verify_env.py", line 37, in get_dataset
+    return self.shuffle_within_level()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/envs/verify_env.py", line 56, in shuffle_within_level
+    df = pd.DataFrame(self.dataset['train'])
+                      ~~~~~~~~~~~~^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 2782, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 2766, in _getitem
+    pa_subtable = query_table(self._data, key, indices=self._indices)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/formatting/formatting.py", line 609, in query_table
+    _check_valid_column_key(key, table.column_names)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/formatting/formatting.py", line 546, in _check_valid_column_key
+    raise KeyError(f"Column {key} not in the dataset. Current columns in the dataset: {columns}")
+KeyError: "Column train not in the dataset. Current columns in the dataset: ['problem', 'answer', 'correctness', 'level', 'prompt']"
+Map: 100%|██████████| 9000/9000 [00:00<00:00, 11909.79 examples/s]
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 25, in <module>
+    dataset = vf_env.get_dataset(curriculum=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/envs/verify_env.py", line 37, in get_dataset
+    return self.shuffle_within_level()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/envs/verify_env.py", line 56, in shuffle_within_level
+    df = pd.DataFrame(self.dataset['train'])
+                      ~~~~~~~~~~~~^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 2782, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 2766, in _getitem
+    pa_subtable = query_table(self._data, key, indices=self._indices)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/formatting/formatting.py", line 609, in query_table
+    _check_valid_column_key(key, table.column_names)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/formatting/formatting.py", line 546, in _check_valid_column_key
+    raise KeyError(f"Column {key} not in the dataset. Current columns in the dataset: {columns}")
+KeyError: "Column train not in the dataset. Current columns in the dataset: ['problem', 'answer', 'correctness', 'level', 'prompt']"
+Map: 100%|██████████| 9000/9000 [00:00<00:00, 11559.41 examples/s]
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 25, in <module>
+    dataset = vf_env.get_dataset(curriculum=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/envs/verify_env.py", line 37, in get_dataset
+    return self.shuffle_within_level()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/envs/verify_env.py", line 56, in shuffle_within_level
+    df = pd.DataFrame(self.dataset['train'])
+                      ~~~~~~~~~~~~^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 2782, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 2766, in _getitem
+    pa_subtable = query_table(self._data, key, indices=self._indices)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/formatting/formatting.py", line 609, in query_table
+    _check_valid_column_key(key, table.column_names)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/datasets/formatting/formatting.py", line 546, in _check_valid_column_key
+    raise KeyError(f"Column {key} not in the dataset. Current columns in the dataset: {columns}")
+KeyError: "Column train not in the dataset. Current columns in the dataset: ['problem', 'answer', 'correctness', 'level', 'prompt']"
+W0306 12:22:48.066000 3229012 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3229083 closing signal SIGTERM
+E0306 12:22:48.101000 3229012 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 3229082) of binary: /data/joan_velja/learn_to_verify/verifiers/.venv/bin/python
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1182, in launch_command
+    deepspeed_launcher(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 861, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+train_verifier.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2025-03-06_12:22:48
+  host      : compute-permanent-node-506.local.vcn
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 3229084)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-03-06_12:22:48
+  host      : compute-permanent-node-506.local.vcn
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 3229082)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

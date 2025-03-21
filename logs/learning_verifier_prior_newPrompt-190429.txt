@@ -1,0 +1,15 @@
+[2025-03-07 00:13:48,151] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1182, in launch_command
+    deepspeed_launcher(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 826, in deepspeed_launcher
+    cmd, current_env = prepare_deepspeed_cmd_env(args)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/utils/launch.py", line 384, in prepare_deepspeed_cmd_env
+    raise ConnectionError(
+ConnectionError: Tried to launch distributed communication on port `29500`, but another process is utilizing it. Please specify a different port (such as using the `--main_process_port` flag or specifying a different `main_process_port` in your config file) and rerun your script. To automatically use the next open port (on a single node), you can set this to `0`.

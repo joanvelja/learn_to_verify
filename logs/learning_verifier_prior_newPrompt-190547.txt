@@ -1,0 +1,489 @@
+[2025-03-07 18:06:12,804] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+W0307 18:06:15.139000 36941 torch/distributed/run.py:793] 
+W0307 18:06:15.139000 36941 torch/distributed/run.py:793] *****************************************
+W0307 18:06:15.139000 36941 torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0307 18:06:15.139000 36941 torch/distributed/run.py:793] *****************************************
+[2025-03-07 18:06:22,508] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-07 18:06:22,508] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-07 18:06:22,509] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Using Liger kernel
+Using Liger kernel
+Using Liger kernel
+Applied Liger kernels to Qwen2Applied Liger kernels to Qwen2
+Applied Liger kernels to Qwen2
+
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:  13%|█▎        | 1183/9000 [00:00<00:00, 11765.27 examples/s]Map:  28%|██▊       | 2487/9000 [00:00<00:00, 12508.44 examples/s]Map:  42%|████▏     | 3773/9000 [00:00<00:00, 12668.00 examples/s]Map:  63%|██████▎   | 5705/9000 [00:00<00:00, 12765.17 examples/s]Map:  78%|███████▊  | 7000/9000 [00:00<00:00, 12648.30 examples/s]Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:  92%|█████████▏| 8308/9000 [00:00<00:00, 12780.11 examples/s]Map:  14%|█▎        | 1222/9000 [00:00<00:00, 12153.57 examples/s]Map: 100%|██████████| 9000/9000 [00:00<00:00, 11763.99 examples/s]
+Map:  28%|██▊       | 2558/9000 [00:00<00:00, 12858.19 examples/s]Map:  44%|████▎     | 3920/9000 [00:00<00:00, 13198.32 examples/s]Map:  66%|██████▌   | 5939/9000 [00:00<00:00, 13320.19 examples/s]Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:  13%|█▎        | 1187/9000 [00:00<00:00, 11806.42 examples/s]Map:  89%|████████▊ | 7966/9000 [00:00<00:00, 13393.54 examples/s]Map:  27%|██▋       | 2464/9000 [00:00<00:00, 12365.06 examples/s]Map: 100%|██████████| 9000/9000 [00:00<00:00, 12385.70 examples/s]
+Map:  41%|████▏     | 3722/9000 [00:00<00:00, 12457.16 examples/s]Map:  55%|█████▌    | 4990/9000 [00:00<00:00, 12541.51 examples/s]Map:  77%|███████▋  | 6886/9000 [00:00<00:00, 12583.57 examples/s]Map:  98%|█████████▊| 8798/9000 [00:00<00:00, 12643.59 examples/s]Map: 100%|██████████| 9000/9000 [00:00<00:00, 11700.79 examples/s]
+Map:   0%|          | 0/1000 [00:00<?, ? examples/s]Map: 100%|██████████| 1000/1000 [00:00<00:00, 10665.42 examples/s]
+[2025-03-07 18:06:33,389] [INFO] [comm.py:652:init_distributed] cdb=None
+[2025-03-07 18:06:33,389] [INFO] [comm.py:683:init_distributed] Initializing TorchBackend in DeepSpeed with backend nccl
+[2025-03-07 18:06:33,481] [INFO] [config.py:733:__init__] Config mesh_device None world_size = 3
+NCCL version 2.21.5+cuda12.4
+Map:   0%|          | 0/1000 [00:00<?, ? examples/s]Map: 100%|██████████| 1000/1000 [00:00<00:00, 10406.82 examples/s]
+[2025-03-07 18:06:34,295] [INFO] [comm.py:652:init_distributed] cdb=None
+[2025-03-07 18:06:34,511] [INFO] [config.py:733:__init__] Config mesh_device None world_size = 3
+Map:   0%|          | 0/1000 [00:00<?, ? examples/s]Map:  94%|█████████▍| 942/1000 [00:00<00:00, 9352.34 examples/s]Map: 100%|██████████| 1000/1000 [00:00<00:00, 7653.34 examples/s]
+[2025-03-07 18:06:34,752] [INFO] [comm.py:652:init_distributed] cdb=None
+[2025-03-07 18:06:34,931] [INFO] [config.py:733:__init__] Config mesh_device None world_size = 3
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+[2025-03-07 18:06:38,751] [INFO] [partition_parameters.py:348:__exit__] finished initializing model - num_params = 291, num_elems = 0.63B
+INFO 03-07 18:06:43 __init__.py:207] Automatically detected platform cuda.
+INFO 03-07 18:06:53 config.py:549] This model supports multiple tasks: {'classify', 'reward', 'embed', 'score', 'generate'}. Defaulting to 'generate'.
+INFO 03-07 18:06:53 llm_engine.py:234] Initializing a V0 LLM engine (v0.7.3) with config: model='/data/huggingface/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775', speculative_config=None, tokenizer='/data/huggingface/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, override_neuron_config=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=LoadFormat.AUTO, tensor_parallel_size=1, pipeline_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, kv_cache_dtype=auto,  device_config=cuda:3, decoding_config=DecodingConfig(guided_decoding_backend='xgrammar'), observability_config=ObservabilityConfig(otlp_traces_endpoint=None, collect_model_forward_time=False, collect_model_execute_time=False), seed=0, served_model_name=/data/huggingface/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775, num_scheduler_steps=1, multi_step_stream_outputs=True, enable_prefix_caching=True, chunked_prefill_enabled=False, use_async_output_proc=True, disable_mm_preprocessor_cache=False, mm_processor_kwargs=None, pooler_config=None, compilation_config={"splitting_ops":[],"compile_sizes":[],"cudagraph_capture_sizes":[256,248,240,232,224,216,208,200,192,184,176,168,160,152,144,136,128,120,112,104,96,88,80,72,64,56,48,40,32,24,16,8,4,2,1],"max_capture_size":256}, use_cached_outputs=False, 
+INFO 03-07 18:06:54 cuda.py:229] Using Flash Attention backend.
+INFO 03-07 18:06:55 model_runner.py:1110] Starting to load model /data/huggingface/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775...
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  5.73it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  5.72it/s]
+
+INFO 03-07 18:06:55 model_runner.py:1115] Loading model weights took 0.9277 GB
+INFO 03-07 18:06:56 worker.py:267] Memory profiling takes 0.78 seconds
+INFO 03-07 18:06:56 worker.py:267] the current vLLM instance can use total_gpu_memory (79.32GiB) x gpu_memory_utilization (0.70) = 55.52GiB
+INFO 03-07 18:06:56 worker.py:267] model weights take 0.93GiB; non_torch_memory takes 0.09GiB; PyTorch activation peak memory takes 1.44GiB; the rest of the memory reserved for KV Cache is 53.06GiB.
+INFO 03-07 18:06:57 executor_base.py:111] # cuda blocks: 289791, # CPU blocks: 21845
+INFO 03-07 18:06:57 executor_base.py:116] Maximum concurrency for 32768 tokens per request: 141.50x
+INFO 03-07 18:06:59 model_runner.py:1434] Capturing cudagraphs for decoding. This may lead to unexpected consequences if the model is not static. To run the model in eager mode, set 'enforce_eager=True' or use '--enforce-eager' in the CLI. If out-of-memory error occurs during cudagraph capture, consider decreasing `gpu_memory_utilization` or switching to eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:19,  1.74it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:01<00:17,  1.87it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:16,  1.92it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:02<00:16,  1.89it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:02<00:17,  1.75it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:03<00:17,  1.66it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:04<00:17,  1.61it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:04<00:16,  1.62it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:05<00:15,  1.68it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:05<00:14,  1.73it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:06<00:14,  1.66it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:07<00:14,  1.60it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:07<00:14,  1.57it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:08<00:12,  1.65it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:08<00:11,  1.75it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:09<00:10,  1.77it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:09<00:10,  1.78it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:10<00:09,  1.76it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:11<00:10,  1.58it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:12<00:10,  1.48it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:12<00:09,  1.46it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:13<00:09,  1.40it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:14<00:08,  1.38it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:14<00:07,  1.45it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:15<00:06,  1.53it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:16<00:05,  1.60it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:16<00:04,  1.63it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:17<00:04,  1.64it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:17<00:03,  1.64it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:18<00:03,  1.66it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:19<00:02,  1.67it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:19<00:01,  1.69it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:20<00:01,  1.69it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:20<00:00,  1.69it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:21<00:00,  1.65it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:21<00:00,  1.63it/s]
+INFO 03-07 18:07:20 model_runner.py:1562] Graph capturing finished in 21 secs, took 0.16 GiB
+INFO 03-07 18:07:20 llm_engine.py:436] init engine (profile, create kv cache, warmup model) took 24.94 seconds
+[2025-03-07 18:07:27,475] [INFO] [logging.py:128:log_dist] [Rank 0] DeepSpeed info: version=0.16.3, git-hash=unknown, git-branch=unknown
+[2025-03-07 18:07:27,475] [INFO] [config.py:733:__init__] Config mesh_device None world_size = 3
+[2025-03-07 18:07:27,475] [INFO] [config.py:733:__init__] Config mesh_device None world_size = 3
+[2025-03-07 18:07:27,475] [INFO] [config.py:733:__init__] Config mesh_device None world_size = 3
+[2025-03-07 18:07:27,486] [INFO] [logging.py:128:log_dist] [Rank 0] DeepSpeed Flops Profiler Enabled: False
+[2025-03-07 18:07:27,487] [INFO] [logging.py:128:log_dist] [Rank 0] Creating ZeRO Offload
+[2025-03-07 18:07:28,335] [INFO] [utils.py:781:see_memory_usage] DeepSpeedZeRoOffload initialize [begin]
+[2025-03-07 18:07:28,336] [INFO] [utils.py:782:see_memory_usage] MA 0.31 GB         Max_MA 1.07 GB         CA 0.79 GB         Max_CA 1 GB 
+[2025-03-07 18:07:28,336] [INFO] [utils.py:789:see_memory_usage] CPU Virtual Memory:  used = 240.03 GB, percent = 11.9%
+Parameter Offload: Total persistent parameters: 71552 in 121 params
+[2025-03-07 18:07:29,109] [INFO] [utils.py:781:see_memory_usage] DeepSpeedZeRoOffload initialize [end]
+[2025-03-07 18:07:29,109] [INFO] [utils.py:782:see_memory_usage] MA 0.31 GB         Max_MA 0.31 GB         CA 0.79 GB         Max_CA 1 GB 
+[2025-03-07 18:07:29,110] [INFO] [utils.py:789:see_memory_usage] CPU Virtual Memory:  used = 239.44 GB, percent = 11.9%
+[2025-03-07 18:07:29,110] [INFO] [config.py:999:print] DeepSpeedEngine configuration:
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   activation_checkpointing_config  {
+    "partition_activations": false, 
+    "contiguous_memory_optimization": false, 
+    "cpu_checkpointing": false, 
+    "number_checkpoints": null, 
+    "synchronize_checkpoint_boundary": false, 
+    "profile": false
+}
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   aio_config ................... {'block_size': 1048576, 'queue_depth': 8, 'thread_count': 1, 'single_submit': False, 'overlap_events': True, 'use_gds': False}
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   amp_enabled .................. False
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   amp_params ................... False
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   autotuning_config ............ {
+    "enabled": false, 
+    "start_step": null, 
+    "end_step": null, 
+    "metric_path": null, 
+    "arg_mappings": null, 
+    "metric": "throughput", 
+    "model_info": null, 
+    "results_dir": "autotuning_results", 
+    "exps_dir": "autotuning_exps", 
+    "overwrite": true, 
+    "fast": true, 
+    "start_profile_step": 3, 
+    "end_profile_step": 5, 
+    "tuner_type": "gridsearch", 
+    "tuner_early_stopping": 5, 
+    "tuner_num_trials": 50, 
+    "model_info_path": null, 
+    "mp_size": 1, 
+    "max_train_batch_size": null, 
+    "min_train_batch_size": 1, 
+    "max_train_micro_batch_size_per_gpu": 1.024000e+03, 
+    "min_train_micro_batch_size_per_gpu": 1, 
+    "num_tuning_micro_batch_sizes": 3
+}
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   bfloat16_enabled ............. True
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   bfloat16_immediate_grad_update  False
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   checkpoint_parallel_write_pipeline  False
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   checkpoint_tag_validation_enabled  True
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   checkpoint_tag_validation_fail  False
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   comms_config ................. <deepspeed.comm.config.DeepSpeedCommsConfig object at 0x7bcfa6d5e290>
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   communication_data_type ...... None
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   compression_config ........... {'weight_quantization': {'shared_parameters': {'enabled': False, 'quantizer_kernel': False, 'schedule_offset': 0, 'quantize_groups': 1, 'quantize_verbose': False, 'quantization_type': 'symmetric', 'quantize_weight_in_forward': False, 'rounding': 'nearest', 'fp16_mixed_quantize': False, 'quantize_change_ratio': 0.001}, 'different_groups': {}}, 'activation_quantization': {'shared_parameters': {'enabled': False, 'quantization_type': 'symmetric', 'range_calibration': 'dynamic', 'schedule_offset': 1000}, 'different_groups': {}}, 'sparse_pruning': {'shared_parameters': {'enabled': False, 'method': 'l1', 'schedule_offset': 1000}, 'different_groups': {}}, 'row_pruning': {'shared_parameters': {'enabled': False, 'method': 'l1', 'schedule_offset': 1000}, 'different_groups': {}}, 'head_pruning': {'shared_parameters': {'enabled': False, 'method': 'topk', 'schedule_offset': 1000}, 'different_groups': {}}, 'channel_pruning': {'shared_parameters': {'enabled': False, 'method': 'l1', 'schedule_offset': 1000}, 'different_groups': {}}, 'layer_reduction': {'enabled': False}}
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   curriculum_enabled_legacy .... False
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   curriculum_params_legacy ..... False
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   data_efficiency_config ....... {'enabled': False, 'seed': 1234, 'data_sampling': {'enabled': False, 'num_epochs': 1000, 'num_workers': 0, 'curriculum_learning': {'enabled': False}}, 'data_routing': {'enabled': False, 'random_ltd': {'enabled': False, 'layer_token_lr_schedule': {'enabled': False}}}}
+[2025-03-07 18:07:29,111] [INFO] [config.py:1003:print]   data_efficiency_enabled ...... False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   dataloader_drop_last ......... False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   disable_allgather ............ False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   dump_state ................... False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   dynamic_loss_scale_args ...... None
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_enabled ........... False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_gas_boundary_resolution  1
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_layer_name ........ bert.encoder.layer
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_layer_num ......... 0
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_max_iter .......... 100
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_stability ......... 1e-06
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_tol ............... 0.01
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   eigenvalue_verbose ........... False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   elasticity_enabled ........... False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   flops_profiler_config ........ {
+    "enabled": false, 
+    "recompute_fwd_factor": 0.0, 
+    "profile_step": 1, 
+    "module_depth": -1, 
+    "top_modules": 1, 
+    "detailed": true, 
+    "output_file": null
+}
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   fp16_auto_cast ............... None
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   fp16_enabled ................. False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   fp16_master_weights_and_gradients  False
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   global_rank .................. 0
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   grad_accum_dtype ............. None
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   gradient_accumulation_steps .. 4
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   gradient_clipping ............ 0.01
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   gradient_predivide_factor .... 1.0
+[2025-03-07 18:07:29,112] [INFO] [config.py:1003:print]   graph_harvesting ............. False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   hybrid_engine ................ enabled=False max_out_tokens=512 inference_tp_size=1 release_inference_cache=False pin_parameters=True tp_gather_partition_size=8
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   initial_dynamic_scale ........ 1
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   load_universal_checkpoint .... False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   loss_scale ................... 1.0
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   memory_breakdown ............. False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   mics_hierarchial_params_gather  False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   mics_shard_size .............. -1
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   monitor_config ............... tensorboard=TensorBoardConfig(enabled=False, output_path='', job_name='DeepSpeedJobName') comet=CometConfig(enabled=False, samples_log_interval=100, project=None, workspace=None, api_key=None, experiment_name=None, experiment_key=None, online=None, mode=None) wandb=WandbConfig(enabled=False, group=None, team=None, project='deepspeed') csv_monitor=CSVConfig(enabled=False, output_path='', job_name='DeepSpeedJobName')
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   nebula_config ................ {
+    "enabled": false, 
+    "persistent_storage_path": null, 
+    "persistent_time_interval": 100, 
+    "num_of_version_in_retention": 2, 
+    "enable_nebula_load": true, 
+    "load_path": null
+}
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   optimizer_legacy_fusion ...... False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   optimizer_name ............... None
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   optimizer_params ............. None
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   pipeline ..................... {'stages': 'auto', 'partition': 'best', 'seed_layers': False, 'activation_checkpoint_interval': 0, 'pipe_partitioned': True, 'grad_partitioned': True}
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   pld_enabled .................. False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   pld_params ................... False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   prescale_gradients ........... False
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   scheduler_name ............... None
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   scheduler_params ............. None
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   seq_parallel_communication_data_type  torch.float32
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   sparse_attention ............. None
+[2025-03-07 18:07:29,113] [INFO] [config.py:1003:print]   sparse_gradients_enabled ..... False
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   steps_per_print .............. inf
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   timers_config ................ enabled=True synchronized=True
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   train_batch_size ............. 192
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   train_micro_batch_size_per_gpu  16
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   use_data_before_expert_parallel_  False
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   use_node_local_storage ....... False
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   wall_clock_breakdown ......... False
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   weight_quantization_config ... None
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   world_size ................... 3
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   zero_allow_untested_optimizer  False
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   zero_config .................. stage=3 contiguous_gradients=True reduce_scatter=True reduce_bucket_size=500000000 use_multi_rank_bucket_allreduce=True allgather_partitions=True allgather_bucket_size=500000000 overlap_comm=True load_from_fp32_weights=True elastic_checkpoint=False offload_param=DeepSpeedZeroOffloadParamConfig(device='none', nvme_path=None, buffer_count=5, buffer_size=100000000, max_in_cpu=1000000000, pin_memory=False) offload_optimizer=DeepSpeedZeroOffloadOptimizerConfig(device='none', nvme_path=None, buffer_count=4, pin_memory=False, pipeline_read=False, pipeline_write=False, fast_init=False, ratio=1.0) sub_group_size=1000000000 cpu_offload_param=None cpu_offload_use_pin_memory=None cpu_offload=None prefetch_bucket_size=50000000 param_persistence_threshold=100000 model_persistence_threshold=9223372036854775807 max_live_parameters=1000000000 max_reuse_distance=1000000000 gather_16bit_weights_on_model_save=True module_granularity_threshold=0 use_all_reduce_for_fetch_params=False stage3_gather_fp16_weights_on_model_save=False ignore_unused_parameters=True legacy_stage1=False round_robin_gradients=False zero_hpz_partition_size=1 zero_quantized_weights=False zero_quantized_nontrainable_weights=False zero_quantized_gradients=False zeropp_loco_param=None mics_shard_size=-1 mics_hierarchical_params_gather=False memory_efficient_linear=True pipeline_loading_checkpoint=False override_module_apply=True
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   zero_enabled ................. True
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   zero_force_ds_cpu_optimizer .. True
+[2025-03-07 18:07:29,114] [INFO] [config.py:1003:print]   zero_optimization_stage ...... 3
+[2025-03-07 18:07:29,114] [INFO] [config.py:989:print_user_config]   json = {
+    "train_batch_size": 192, 
+    "train_micro_batch_size_per_gpu": 16, 
+    "gradient_accumulation_steps": 4, 
+    "zero_optimization": {
+        "stage": 3, 
+        "offload_optimizer": {
+            "device": "none", 
+            "nvme_path": null
+        }, 
+        "offload_param": {
+            "device": "none", 
+            "nvme_path": null
+        }, 
+        "stage3_gather_16bit_weights_on_model_save": true
+    }, 
+    "gradient_clipping": 0.01, 
+    "steps_per_print": inf, 
+    "bf16": {
+        "enabled": true
+    }, 
+    "fp16": {
+        "enabled": false
+    }, 
+    "zero_optimization.reduce_bucket_size": 8.028160e+05, 
+    "zero_optimization.stage3_param_persistence_threshold": 8.960000e+03, 
+    "zero_optimization.stage3_prefetch_bucket_size": 7.225344e+05
+}
+Parameter Offload: Total persistent parameters: 71552 in 121 params
+wandb: Using wandb-core as the SDK backend.  Please refer to https://wandb.me/wandb-core for more information.
+wandb: Currently logged in as: joanvelja22 (uva24) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.19.8
+wandb: Run data is saved locally in /data/joan_velja/learn_to_verify/verifiers/wandb/run-20250307_180741-pqxwx6q8
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run verification_qwen2.5-0.5b-instruct_newP
+wandb: ⭐️ View project at https://wandb.ai/uva24/huggingface
+wandb: 🚀 View run at https://wandb.ai/uva24/huggingface/runs/pqxwx6q8
+  0%|          | 0/1500 [00:00<?, ?it/s]INFO 03-07 18:07:42 chat_utils.py:332] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.
+╭─────────────────────────────────── Step 0 ───────────────────────────────────╮
+│ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━┓ │
+│ ┃ Prompt                   ┃ Completion               ┃ Reward ┃ Advantage ┃ │
+│ ┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━┩ │
+│ │ <problem>                │ assistant: Step 1:       │   0.04 │     -0.37 │ │
+│ │ What is the period of $y │ Identify the period of   │        │           │ │
+│ │ = \csc x - \cos 3x$?     │ $\csc x$.                │        │           │ │
+│ │ </problem><solution>     │ The graph of $\csc x$    │        │           │ │
+│ │ The graph of $\csc x$    │ has a period of $2\pi$   │        │           │ │
+│ │ has period $2 \pi,$ and  │ because it repeats every │        │           │ │
+│ │ the graph of $\cos 3x$   │ $2\pi$ units.            │        │           │ │
+│ │ has period $\frac{2      │                          │        │           │ │
+│ │ \pi}{3}.$  This means    │ Step 2: Find the period  │        │           │ │
+│ │ that the graph of $y =   │ of $\cos 3x$.            │        │           │ │
+│ │ \csc - \cos 3x$ repeats  │ The graph of $\cos 3x$   │        │           │ │
+│ │ after an interval of $2  │ has a period of          │        │           │ │
+│ │ \pi,$ but this does not  │ $\frac{2\pi}{3}$ because │        │           │ │
+│ │ necessarily show that    │ it repeats every         │        │           │ │
+│ │ the period is $2 \pi.$   │ $\frac{2\pi}{3}$ units.  │        │           │ │
+│ │                          │                          │        │           │ │
+│ │ Consider the graph of $y │ Step 3: Determine the    │        │           │ │
+│ │ = \csc x.$               │ periods of the combined  │        │           │ │
+│ │                          │ functions.               │        │           │ │
+│ │ [asy]import TrigMacros;  │ We need to find the      │        │           │ │
+│ │                          │ period of $y = \csc x -  │        │           │ │
+│ │ size(400);               │ \cos 3x$.                │        │           │ │
+│ │                          │ - The period of $\csc x$ │        │           │ │
+│ │ real g(real x)           │ is $2\pi$.               │        │           │ │
+│ │ {                        │ - The period of $\cos    │        │           │ │
+│ │         return csc(x);   │ 3x$ is $\frac{2\pi}{3}$. │        │           │ │
+│ │ }                        │ - The period of $y =     │        │           │ │
+│ │                          │ \csc x - \cos 3x$ is the │        │           │ │
+│ │ draw(graph(g,-3*pi +     │ least common multiple    │        │           │ │
+│ │ 0.01,-5/2*pi -           │ (LCM) of $2\pi$ and      │        │           │ │
+│ │ 0.01),red);              │ $\frac{2\pi}{3}$.        │        │           │ │
+│ │ draw(graph(g,-5/2*pi +   │                          │        │           │ │
+│ │ 0.01,-2*pi - 0.01),red); │ Step 4: Calculate the    │        │           │ │
+│ │ draw(graph(g,-2*pi +     │ LCM.                     │        │           │ │
+│ │ 0.01,-3/2*pi -           │ The LCM of $2\pi$ and    │        │           │ │
+│ │ 0.01),red);              │ $\frac{2\pi}{3}$ is      │        │           │ │
+│ │ draw(graph(g,-3/2*pi +   │ $\frac{6\pi}{3} = 2\pi$. │        │           │ │
+│ │ 0.01,-pi - 0.01),red);   │ Therefore, the period of │        │           │ │
+│ │ draw(graph(g,-pi +       │ $y = \csc x - \cos 3x$   │        │           │ │
+│ │ 0.01,-1/2*pi -           │ is $2\pi$.               │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,-1/2*pi +   │ Verification:            │        │           │ │
+│ │ 0.01,-0.01),red);        │ The solution provided by │        │           │ │
+│ │ draw(graph(g,0.01,pi/2 - │ the prover contains a    │        │           │ │
+│ │ 0.01),red);              │ mistake in identifying   │        │           │ │
+│ │ draw(graph(g,pi/2 +      │ the period of $\csc x$.  │        │           │ │
+│ │ 0.01,pi - 0.01),red);    │ It incorrectly states    │        │           │ │
+│ │ draw(graph(g,pi +        │ that the period of $\csc │        │           │ │
+│ │ 0.01,3/2*pi -            │ x$ is $2\pi$. This is    │        │           │ │
+│ │ 0.01),red);              │ incorrect because the    │        │           │ │
+│ │ draw(graph(g,3*pi/2 +    │ period of $\csc x$ is    │        │           │ │
+│ │ 0.01,2*pi - 0.01),red);  │ $2\pi$, not $2\pi$.      │        │           │ │
+│ │ draw(graph(g,2*pi +      │                          │        │           │ │
+│ │ 0.01,5/2*pi -            │ The answer is incorrect. │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,5*pi/2 +    │                          │        │           │ │
+│ │ 0.01,3*pi - 0.01),red);  │                          │        │           │ │
+│ │ limits((-3*pi,-5),(3*pi… │                          │        │           │ │
+│ │ trig_axes(-3*pi,3*pi,-5… │                          │        │           │ │
+│ │ layer();                 │                          │        │           │ │
+│ │ rm_trig_labels(-5, 5,    │                          │        │           │ │
+│ │ 2);                      │                          │        │           │ │
+│ │ [/asy]                   │                          │        │           │ │
+│ │                          │                          │        │           │ │
+│ │ This graph has vertical  │                          │        │           │ │
+│ │ asymptotes at every      │                          │        │           │ │
+│ │ multiple of $\pi.$       │                          │        │           │ │
+│ │ Furthermore, at even     │                          │        │           │ │
+│ │ multiples of $\pi,$ the  │                          │        │           │ │
+│ │ graph approaches         │                          │        │           │ │
+│ │ $-\infty$ from the left  │                          │        │           │ │
+│ │ and $\infty$ from the    │                          │        │           │ │
+│ │ right.  At odd multiples │                          │        │           │ │
+│ │ of $\pi,$ the graph      │                          │        │           │ │
+│ │ approaches $\infty$ from │                          │        │           │ │
+│ │ the left and $-\infty$   │                          │        │           │ │
+│ │ from the right.  Since   │                          │        │           │ │
+│ │ $\cos 3x$ is defined     │                          │        │           │ │
+│ │ everywhere, the graph of │                          │        │           │ │
+│ │ $y = \csc - \cos 3x$ has │                          │        │           │ │
+│ │ the same properties.     │                          │        │           │ │
+│ │ Therefore, the period of │                          │        │           │ │
+│ │ $y = \csc x - \cos 3x$   │                          │        │           │ │
+│ │ is $\boxed{2 \pi}.$      │                          │        │           │ │
+│ │                          │                          │        │           │ │
+│ │ The graph of $y = \csc x │                          │        │           │ │
+│ │ - \cos 3x$ is shown      │                          │        │           │ │
+│ │ below:                   │                          │        │           │ │
+│ │                          │                          │        │           │ │
+│ │ [asy]import TrigMacros;  │                          │        │           │ │
+│ │                          │                          │        │           │ │
+│ │ size(400);               │                          │        │           │ │
+│ │                          │                          │        │           │ │
+│ │ real g(real x)           │                          │        │           │ │
+│ │ {                        │                          │        │           │ │
+│ │         return csc(x) -  │                          │        │           │ │
+│ │ cos(3*x);                │                          │        │           │ │
+│ │ }                        │                          │        │           │ │
+│ │                          │                          │        │           │ │
+│ │ draw(graph(g,-3*pi +     │                          │        │           │ │
+│ │ 0.01,-5/2*pi -           │                          │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,-5/2*pi +   │                          │        │           │ │
+│ │ 0.01,-2*pi - 0.01),red); │                          │        │           │ │
+│ │ draw(graph(g,-2*pi +     │                          │        │           │ │
+│ │ 0.01,-3/2*pi -           │                          │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,-3/2*pi +   │                          │        │           │ │
+│ │ 0.01,-pi - 0.01),red);   │                          │        │           │ │
+│ │ draw(graph(g,-pi +       │                          │        │           │ │
+│ │ 0.01,-1/2*pi -           │                          │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,-1/2*pi +   │                          │        │           │ │
+│ │ 0.01,-0.01),red);        │                          │        │           │ │
+│ │ draw(graph(g,0.01,pi/2 - │                          │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,pi/2 +      │                          │        │           │ │
+│ │ 0.01,pi - 0.01),red);    │                          │        │           │ │
+│ │ draw(graph(g,pi +        │                          │        │           │ │
+│ │ 0.01,3/2*pi -            │                          │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,3*pi/2 +    │                          │        │           │ │
+│ │ 0.01,2*pi - 0.01),red);  │                          │        │           │ │
+│ │ draw(graph(g,2*pi +      │                          │        │           │ │
+│ │ 0.01,5/2*pi -            │                          │        │           │ │
+│ │ 0.01),red);              │                          │        │           │ │
+│ │ draw(graph(g,5*pi/2 +    │                          │        │           │ │
+│ │ 0.01,3*pi - 0.01),red);  │                          │        │           │ │
+│ │ limits((-3*pi,-5),(3*pi… │                          │        │           │ │
+│ │ trig_axes(-3*pi,3*pi,-5… │                          │        │           │ │
+│ │ layer();                 │                          │        │           │ │
+│ │ rm_trig_labels(-5, 5,    │                          │        │           │ │
+│ │ 2);                      │                          │        │           │ │
+│ │ [/asy]                   │                          │        │           │ │
+│ │ </solution>              │                          │        │           │ │
+│ └──────────────────────────┴──────────────────────────┴────────┴───────────┘ │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 95, in <module>
+    trainer.train()
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 2241, in train
+    return inner_training_loop(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 2458, in _inner_training_loop
+    self._evaluate(trial, ignore_keys_for_eval, skip_scheduler=True)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 3039, in _evaluate
+    metrics = self.evaluate(ignore_keys=ignore_keys_for_eval)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 4105, in evaluate
+    output = eval_loop(
+             ^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 4299, in evaluation_loop
+    losses, logits, labels = self.prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 965, in prediction_step
+    inputs = self._prepare_inputs(inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/trl/extras/profiling.py", line 87, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 692, in _prepare_inputs
+    inputs = self._generate_and_score_completions(inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 296, in _generate_and_score_completions
+    df = pd.DataFrame(table)
+         ^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/frame.py", line 778, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/internals/construction.py", line 503, in dict_to_mgr
+    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/internals/construction.py", line 114, in arrays_to_mgr
+    index = _extract_index(arrays)
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/internals/construction.py", line 677, in _extract_index
+    raise ValueError("All arrays must be of the same length")
+ValueError: All arrays must be of the same length
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 95, in <module>
+[rank0]:     trainer.train()
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 2241, in train
+[rank0]:     return inner_training_loop(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 2458, in _inner_training_loop
+[rank0]:     self._evaluate(trial, ignore_keys_for_eval, skip_scheduler=True)
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 3039, in _evaluate
+[rank0]:     metrics = self.evaluate(ignore_keys=ignore_keys_for_eval)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 4105, in evaluate
+[rank0]:     output = eval_loop(
+[rank0]:              ^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/transformers/trainer.py", line 4299, in evaluation_loop
+[rank0]:     losses, logits, labels = self.prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+[rank0]:                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 965, in prediction_step
+[rank0]:     inputs = self._prepare_inputs(inputs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/trl/extras/profiling.py", line 87, in wrapper
+[rank0]:     return func(self, *args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 692, in _prepare_inputs
+[rank0]:     inputs = self._generate_and_score_completions(inputs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 296, in _generate_and_score_completions
+[rank0]:     df = pd.DataFrame(table)
+[rank0]:          ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/frame.py", line 778, in __init__
+[rank0]:     mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+[rank0]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/internals/construction.py", line 503, in dict_to_mgr
+[rank0]:     return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/internals/construction.py", line 114, in arrays_to_mgr
+[rank0]:     index = _extract_index(arrays)
+[rank0]:             ^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/pandas/core/internals/construction.py", line 677, in _extract_index
+[rank0]:     raise ValueError("All arrays must be of the same length")
+[rank0]: ValueError: All arrays must be of the same length
+[1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33mverification_qwen2.5-0.5b-instruct_newP[0m at: [34mhttps://wandb.ai/uva24/huggingface/runs/pqxwx6q8[0m
+[1;34mwandb[0m: Find logs at: [1;35mwandb/run-20250307_180741-pqxwx6q8/logs[0m
+W0307 18:07:54.959000 36941 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 37009 closing signal SIGTERM
+W0307 18:07:54.962000 36941 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 37010 closing signal SIGTERM
+E0307 18:07:55.340000 36941 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 37008) of binary: /data/joan_velja/learn_to_verify/verifiers/.venv/bin/python
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1182, in launch_command
+    deepspeed_launcher(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 861, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+train_verifier.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-03-07_18:07:54
+  host      : compute-permanent-node-506.local.vcn
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 37008)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

@@ -1,0 +1,85 @@
+[2025-03-06 15:12:37,629] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+W0306 15:12:39.902000 3325214 torch/distributed/run.py:793] 
+W0306 15:12:39.902000 3325214 torch/distributed/run.py:793] *****************************************
+W0306 15:12:39.902000 3325214 torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0306 15:12:39.902000 3325214 torch/distributed/run.py:793] *****************************************
+[2025-03-06 15:12:47,037] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-06 15:12:47,037] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-03-06 15:12:47,039] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Using Liger kernelUsing Liger kernel
+
+Using Liger kernel
+Applied Liger kernels to Qwen2Applied Liger kernels to Qwen2
+
+Applied Liger kernels to Qwen2
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:   0%|          | 0/9000 [00:00<?, ? examples/s]Map:  13%|█▎        | 1165/9000 [00:00<00:00, 11577.94 examples/s]Map:  10%|▉         | 875/9000 [00:00<00:00, 8691.06 examples/s]Map:  14%|█▍        | 1257/9000 [00:00<00:00, 12500.48 examples/s]Map:  27%|██▋       | 2431/9000 [00:00<00:00, 12208.20 examples/s]Map:  29%|██▉       | 2630/9000 [00:00<00:00, 13215.18 examples/s]Map:  23%|██▎       | 2097/9000 [00:00<00:00, 8317.30 examples/s]Map:  41%|████▏     | 3724/9000 [00:00<00:00, 12531.44 examples/s]Map:  44%|████▍     | 4000/9000 [00:00<00:00, 13135.40 examples/s]Map:  33%|███▎      | 3003/9000 [00:00<00:00, 8603.07 examples/s]Map:  56%|█████▌    | 5000/9000 [00:00<00:00, 12420.79 examples/s]Map:  60%|█████▉    | 5398/9000 [00:00<00:00, 13458.19 examples/s]Map:  44%|████▍     | 4000/9000 [00:00<00:00, 8930.95 examples/s]Map:  70%|██████▉   | 6295/9000 [00:00<00:00, 12605.02 examples/s]Map:  75%|███████▌  | 6780/9000 [00:00<00:00, 13584.19 examples/s]Map:  55%|█████▍    | 4937/9000 [00:00<00:00, 9075.57 examples/s]Map:  84%|████████▍ | 7592/9000 [00:00<00:00, 12725.96 examples/s]Map:  66%|██████▌   | 5903/9000 [00:00<00:00, 9261.90 examples/s]Map:  99%|█████████▉| 8904/9000 [00:00<00:00, 12851.72 examples/s]Map:  98%|█████████▊| 8824/9000 [00:00<00:00, 13599.67 examples/s]Map: 100%|██████████| 9000/9000 [00:00<00:00, 11952.86 examples/s]
+Map: 100%|██████████| 9000/9000 [00:00<00:00, 12734.94 examples/s]
+Map:  80%|███████▉  | 7176/9000 [00:00<00:00, 8941.31 examples/s]Map:  95%|█████████▌| 8556/9000 [00:00<00:00, 9034.84 examples/s]Map: 100%|██████████| 9000/9000 [00:01<00:00, 8628.55 examples/s]
+Map:   0%|          | 0/1000 [00:00<?, ? examples/s]Map:   0%|          | 0/1000 [00:00<?, ? examples/s]Map: 100%|██████████| 1000/1000 [00:00<00:00, 10955.56 examples/s]
+[2025-03-06 15:12:55,614] [INFO] [comm.py:652:init_distributed] cdb=None
+Map: 100%|██████████| 1000/1000 [00:00<00:00, 11693.30 examples/s]
+[2025-03-06 15:12:55,627] [INFO] [comm.py:652:init_distributed] cdb=None
+[2025-03-06 15:12:55,627] [INFO] [comm.py:683:init_distributed] Initializing TorchBackend in DeepSpeed with backend nccl
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 84, in <module>
+[rank0]:     trainer = vf.GRPOEnvTrainer(
+[rank0]:               ^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 50, in __init__
+[rank0]:     super().__init__(
+[rank0]: TypeError: GRPOTrainer.__init__() got an unexpected keyword argument 'push_to_hub'
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 84, in <module>
+[rank1]:     trainer = vf.GRPOEnvTrainer(
+[rank1]:               ^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 50, in __init__
+[rank1]:     super().__init__(
+[rank1]: TypeError: GRPOTrainer.__init__() got an unexpected keyword argument 'push_to_hub'
+Map:   0%|          | 0/1000 [00:00<?, ? examples/s]Map: 100%|██████████| 1000/1000 [00:00<00:00, 11297.55 examples/s]
+[2025-03-06 15:12:56,042] [INFO] [comm.py:652:init_distributed] cdb=None
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/data/joan_velja/learn_to_verify/verifiers/train_verifier.py", line 84, in <module>
+[rank2]:     trainer = vf.GRPOEnvTrainer(
+[rank2]:               ^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/data/joan_velja/learn_to_verify/verifiers/verifiers/trainers/grpo_env_trainer.py", line 50, in __init__
+[rank2]:     super().__init__(
+[rank2]: TypeError: GRPOTrainer.__init__() got an unexpected keyword argument 'push_to_hub'
+[rank0]:[W306 15:12:56.751479364 ProcessGroupNCCL.cpp:1250] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+W0306 15:12:57.032000 3325214 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3325270 closing signal SIGTERM
+W0306 15:12:57.035000 3325214 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3325272 closing signal SIGTERM
+E0306 15:12:57.181000 3325214 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 3325271) of binary: /data/joan_velja/learn_to_verify/verifiers/.venv/bin/python
+Traceback (most recent call last):
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1182, in launch_command
+    deepspeed_launcher(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 861, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/joan_velja/learn_to_verify/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+train_verifier.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-03-06_15:12:57
+  host      : compute-permanent-node-506.local.vcn
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 3325271)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
