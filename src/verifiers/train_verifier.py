@@ -1,10 +1,6 @@
 # script.py
 import verifiers as vf
 from verifiers.prompts import VERIFY_PROMPT
-import os
-
-# wandb key
-os.environ["WANDB_API_KEY"] = "ff1e147079fa5e0c217c4bcce87c2fb30fd9ef25"
 
 
 # model_name = "/data/huggingface/models--Qwen--Qwen2.5-7B-Instruct/snapshots/bb46c15ee4bb56c5b63245ef50fd7637234d6f75"
