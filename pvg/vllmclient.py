@@ -214,7 +214,8 @@ class VLLMClient:
         pg = StatelessProcessGroup.create(
             host=self.host, port=self.group_port, rank=self.rank, world_size=world_size
         )
-        self.pynccl_comm = PyNcclCommunicator(pg, device="cuda:0")
+        client_device = f"cuda:{torch.cuda.current_device()}"
+        self.pynccl_comm = PyNcclCommunicator(pg, device=client_device)
 
     def update_named_param(self, name: str, weights: torch.Tensor):
         """

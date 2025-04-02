@@ -2,7 +2,7 @@ import logging
 import os
 import json
 from typing import Any
-
+import copy
 import torch
 from accelerate import Accelerator
 from accelerate.utils import DeepSpeedPlugin, ProjectConfiguration
@@ -11,7 +11,6 @@ from transformers import (
     AutoModelForCausalLM,  # Assuming Causal LM for now
     AutoTokenizer,
     get_scheduler,
-    DataCollatorForLanguageModeling,  # Example collator
     PreTrainedModel,
 )
 from torch.utils.data import DataLoader, Dataset  # Add Dataset import
@@ -21,26 +20,18 @@ from torch.utils.data import Sampler
 from contextlib import nullcontext
 import deepspeed
 from rep_sampler import RepeatRandomSampler
-from trl.utils import selective_log_softmax
-from utils import ScriptArguments, get_args
+from trl.trainer.utils import selective_log_softmax
+from dataset import AppsDataset
+from liger_kernel.transformers import _apply_liger_kernel_to_instance
+from logger_config import setup_logger
 
-# Missing:
-# Liger kernel (from liger_kernel.transformers import apply_liger_kernel_to_instance)
-
-
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = setup_logger(__name__)
 
 
 # --- The Trainer Class ---
 class DisjointSequentialTrainer:
-    def __init__(self, args: ScriptArguments):
-        self.args: ScriptArguments = args
+    def __init__(self, args):
+        self.args = args
         self.accelerators: dict[str, Accelerator] = {}
         self.models: dict[str, torch.nn.Module] = {}
         self.optimizers: dict[str, torch.optim.Optimizer] = {}
@@ -49,6 +40,10 @@ class DisjointSequentialTrainer:
         self.deepspeed_plugins: dict[str, DeepSpeedPlugin] = {}
         self.vllm_client_a = None  # Initialize to None
         self.vllm_client_b = None  # Initialize to None
+        self.vllm_client_c = None  # Initialize to None
+        self._signature_columns = None
+
+        # Check what this is for
         self._buffered_inputs = [None] * args.gradient_accumulation_steps
 
         # State variables
@@ -126,6 +121,9 @@ class DisjointSequentialTrainer:
         logger.info("--- End Training Process GPU Info ---")
         # --- End GPU Visibility Logging ---
 
+        # Wait for everyone
+        self.accelerator.wait_for_everyone()
+
         # --- Instantiate vLLM Clients (Main Process Only) ---
         if self.accelerator.is_main_process:
             logger.info("Main process initializing vLLM clients...")
@@ -152,9 +150,11 @@ class DisjointSequentialTrainer:
                 raise
 
             try:
+                group_port_b = 51216 + 1
                 self.vllm_client_b = VLLMClient(
                     host=self.args.vllm_host_b,
                     server_port=self.args.vllm_port_b,
+                    group_port=group_port_b,
                     connection_timeout=self.args.vllm_server_timeout,
                 )
                 logger.info(
@@ -174,9 +174,11 @@ class DisjointSequentialTrainer:
                 raise
 
             try:
+                group_port_c = 51216 + 2
                 self.vllm_client_c = VLLMClient(
                     host=self.args.vllm_host_c,
                     server_port=self.args.vllm_port_c,
+                    group_port=group_port_c,
                     connection_timeout=self.args.vllm_server_timeout,
                 )
                 logger.info(
@@ -199,18 +201,33 @@ class DisjointSequentialTrainer:
         logger.info("--- vLLM Clients State ---")
         logger.info(f"  vLLM Client A: {self.vllm_client_a}")
         logger.info(f"  vLLM Client B: {self.vllm_client_b}")
-        logger.info(f"  vLLM Client C: {self.vllm_client_c}")
+        (
+            logger.info(f"  vLLM Client C: {self.vllm_client_c}")
+            if self.vllm_client_c
+            else None
+        )
 
         # --- 3. Load Tokenizer, Models, Datasets, Optimizers ---
         self._load_tokenizer()
         self._load_models()
-        self.train_dataloader, self.eval_dataloader = self._load_dataloaders()
+        self.train_dataset, self.eval_dataset = self._load_datasets()
+        # TODO: Check dataloader logic for GRPO
         self._create_optimizers()
         # Calculate num_training_steps after dataloader is prepared
         self.num_training_steps = self._calculate_num_training_steps()
         # Now create schedulers with the correct number of steps
         self._create_schedulers(self.num_training_steps)
 
+        # Dummy: dataloaders (though we won't use them)
+        self.train_dataloader = DataLoader(
+            self.train_dataset, batch_size=self.args.per_device_train_batch_size
+        )
+        self.eval_dataloader = DataLoader(
+            self.eval_dataset, batch_size=self.args.per_device_eval_batch_size
+        )
+        # Copy for model_b
+        self.train_dataloader_b = copy.deepcopy(self.train_dataloader)
+        self.eval_dataloader_b = copy.deepcopy(self.eval_dataloader)
         # --- 4. Prepare Components ---
         self._prepare_components()  # This will use self.accelerators and update self.models etc.
 
@@ -220,7 +237,7 @@ class DisjointSequentialTrainer:
 
         # --- 6. Check if the per_device_train/eval_batch_size * num processes can be divided by the number of generations ---
         num_processes = self.accelerator.num_processes
-        global_batch_size = self.args.train_batch_size * num_processes
+        global_batch_size = self.args.per_device_train_batch_size * num_processes
         possible_values = [
             n_gen
             for n_gen in range(2, global_batch_size + 1)
@@ -228,7 +245,7 @@ class DisjointSequentialTrainer:
         ]
         if self.args.num_generations not in possible_values:
             raise ValueError(
-                f"The global train batch size ({num_processes} x {self.args.train_batch_size}) must be evenly "
+                f"The global train batch size ({num_processes} x {self.args.per_device_train_batch_size}) must be evenly "
                 f"divisible by the number of generations per prompt ({self.args.num_generations}). Given the current train "
                 f"batch size, the valid values for the number of generations are: {possible_values}."
             )
@@ -305,7 +322,7 @@ class DisjointSequentialTrainer:
             )
             raise
 
-    def _load_tokenizer(self) -> AutoTokenizer:
+    def _load_tokenizer(self) -> None:
         tokenizer_path = (
             self.args.tokenizer_name_or_path
             if self.args.tokenizer_name_or_path
@@ -326,6 +343,15 @@ class DisjointSequentialTrainer:
             if self.args.gradient_checkpointing
             else model_init_kwargs.get("use_cache")
         )  # TODO: Missing gradient checkpointing arg and logic dealing with it
+
+        # Fetch models from local paths (& update path to model if found)
+        self.args.honest_prover_name_or_path = self._fetch_local_models(
+            self.args.honest_prover_name_or_path
+        )
+        self.args.sneaky_prover_name_or_path = self._fetch_local_models(
+            self.args.sneaky_prover_name_or_path
+        )
+
         logger.info(
             f"Loading Honest Prover from {self.args.honest_prover_name_or_path}"
         )
@@ -338,16 +364,20 @@ class DisjointSequentialTrainer:
         model_b = AutoModelForCausalLM.from_pretrained(
             self.args.sneaky_prover_name_or_path, **model_init_kwargs
         )
-        logger.info(f"Loading Verifier from {self.args.verifier_name_or_path}")
-        # TODO: Load Verifier
-        verifier = AutoModelForCausalLM.from_pretrained(
-            self.args.verifier_name_or_path, **model_init_kwargs
-        )
+        # logger.info(f"Loading Verifier from {self.args.verifier_name_or_path}")
+        # # TODO: Load Verifier
+        # verifier = AutoModelForCausalLM.from_pretrained(
+        #     self.args.verifier_name_or_path, **model_init_kwargs
+        # )
+
+        if self.args.apply_liger_kernel:
+            _apply_liger_kernel_to_instance(model_a)
+            _apply_liger_kernel_to_instance(model_b)
 
         self.models = {
             "honest_prover": model_a,
             "sneaky_prover": model_b,
-            "verifier": verifier,
+            # "verifier": verifier,
         }
 
         # Reference models for RL
@@ -360,78 +390,46 @@ class DisjointSequentialTrainer:
                 self.args.honest_prover_name_or_path
             )
 
-    def _load_dataloaders(self):
-        # --- This is a placeholder - Replace with your actual dataset loading ---
-        logger.warning(
-            "Using placeholder dataset loading. Replace with your actual data loading logic."
+    def _load_datasets(self):
+        train_dataset = AppsDataset(
+            dataset_name=self.args.dataset_name,
+            tokenizer=self.tokenizer,
+            num_samples=self.args.train_num_samples,
+            split="train",
         )
 
-        # Example: Simple list dataset
-        class PlaceholderDataset(Dataset):
-            def __init__(self, tokenizer, num_samples=1000, max_length=50):
-                self.num_samples = num_samples
-                self.tokenizer = tokenizer
-                self.max_length = max_length
-                # Generate some dummy text
-                self.texts = [
-                    f"This is sample text number {i} for training."
-                    for i in range(num_samples)
-                ]
-
-            def __len__(self):
-                return self.num_samples
-
-            def __getitem__(self, idx):
-                encoding = self.tokenizer(
-                    self.texts[idx],
-                    max_length=self.max_length,
-                    padding="max_length",
-                    truncation=True,
-                    return_tensors="pt",
-                )
-                # Remove batch dimension added by tokenizer
-                encoding = {k: v.squeeze(0) for k, v in encoding.items()}
-                # Create labels (usually shifted input_ids for LM)
-                encoding["labels"] = encoding["input_ids"].clone()
-                return encoding
-
-        train_dataset = PlaceholderDataset(
-            self.tokenizer, num_samples=100
-        )  # Small for demo
-        eval_dataset = (
-            PlaceholderDataset(self.tokenizer, num_samples=50)
-            if self.args.validation_file
-            else None
+        eval_dataset = AppsDataset(
+            dataset_name=self.args.dataset_name,
+            tokenizer=self.tokenizer,
+            split="test",
         )
-        # ---------------------------------------------------------------------
-
-        data_collator = DataCollatorForLanguageModeling(
-            tokenizer=self.tokenizer, mlm=False
-        )  # TODO: # Data collator
 
         # def data_collator(features):  # No data collation is needed in GRPO
         #     return features
+        #
+        # # ---------------------------------------------------------------------
+        # train_dataloader = DataLoader(
+        #     train_dataset,
+        #     shuffle=True,  # Shuffle for training
+        #     collate_fn=data_collator,
+        #     batch_size=self.args.per_device_train_batch_size
+        # )
+        # eval_dataloader = None
+        # if eval_dataset:
+        #     eval_dataloader = DataLoader(
+        #         eval_dataset,
+        #         shuffle=False,  # No shuffle for eval
+        #         collate_fn=data_collator,
+        #         batch_size=self.args.per_device_eval_batch_size,
+        #     )
 
-        train_dataloader = DataLoader(
-            train_dataset,
-            shuffle=True,  # Shuffle for training
-            collate_fn=data_collator,
-            batch_size=self.args.train_batch_size,
-        )
-        eval_dataloader = None
-        if eval_dataset:
-            eval_dataloader = DataLoader(
-                eval_dataset,
-                shuffle=False,  # No shuffle for eval
-                collate_fn=data_collator,
-                batch_size=self.args.eval_batch_size,
-            )
+        # logger.info(f"Train Dataloader: {len(train_dataloader)} batches")
+        # if eval_dataloader:
+        #     logger.info(f"Eval Dataloader: {len(eval_dataloader)} batches")
+        logger.info(f"Train Dataset: {len(train_dataset)} samples")
+        logger.info(f"Eval Dataset: {len(eval_dataset)} samples")
 
-        logger.info(f"Train Dataloader: {len(train_dataloader)} batches")
-        if eval_dataloader:
-            logger.info(f"Eval Dataloader: {len(eval_dataloader)} batches")
-
-        return train_dataloader, eval_dataloader
+        return train_dataset, eval_dataset
 
     def _create_optimizers(self) -> None:
         # Simple AdamW optimizer setup - can be customized
@@ -450,7 +448,7 @@ class DisjointSequentialTrainer:
 
     def _calculate_num_training_steps(self) -> int:
         num_update_steps_per_epoch = (
-            len(self.train_dataloader) // self.args.gradient_accumulation_steps
+            len(self.train_dataset) // self.args.gradient_accumulation_steps
         )
         num_update_steps_per_epoch = max(
             num_update_steps_per_epoch, 1
@@ -516,12 +514,14 @@ class DisjointSequentialTrainer:
         prepared_b = self.accelerators["sneaky_prover"].prepare(
             self.models["sneaky_prover"],
             self.optimizers["sneaky_prover"],
+            self.train_dataloader_b,
             self.schedulers["sneaky_prover"],
         )
-        self.models["sneaky_prover"], self.optimizers["sneaky_prover"] = (
-            prepared_b[0],
-            prepared_b[1],
-        )
+        (
+            self.models["sneaky_prover"],
+            self.optimizers["sneaky_prover"],
+            self.train_dataloader_b,
+        ) = (prepared_b[0], prepared_b[1], prepared_b[2])
 
         # Prepare Eval Dataloader (using accelerator_a context is fine)
         if self.eval_dataloader:
@@ -529,32 +529,21 @@ class DisjointSequentialTrainer:
             self.eval_dataloader = self.accelerators["honest_prover"].prepare(
                 self.eval_dataloader
             )
+            self.eval_dataloader_b = self.accelerators["sneaky_prover"].prepare(
+                self.eval_dataloader_b
+            )
 
         logger.info("Component preparation complete.")
-
-    def _prepare_schedulers(self) -> None:
-        # Prepare schedulers separately after num_training_steps is known
-        if self.schedulers["honest_prover"] is not None:
-            logger.info("Preparing Scheduler A...")
-            self.schedulers["honest_prover"] = self.accelerators[
-                "honest_prover"
-            ].prepare(self.schedulers["honest_prover"])
-        if self.schedulers["sneaky_prover"] is not None:
-            logger.info("Preparing Scheduler B...")
-            self.schedulers["sneaky_prover"] = self.accelerators[
-                "sneaky_prover"
-            ].prepare(self.schedulers["sneaky_prover"])
-        logger.info("Scheduler preparation complete.")
 
     # --- Placeholder Methods ---
     def train(self):
         logger.info("***** Starting Training *****")
         logger.info(f"  Num Epochs = {self.args.num_train_epochs}")
         logger.info(
-            f"  Instantaneous batch size per device = {self.args.train_batch_size}"
+            f"  Instantaneous batch size per device = {self.args.per_device_train_batch_size}"
         )
         logger.info(
-            f"  Total train batch size (w. parallel, distributed & accumulation) = {self.args.train_batch_size * self.accelerator.num_processes * self.args.gradient_accumulation_steps}"
+            f"  Total train batch size (w. parallel, distributed & accumulation) = {self.args.per_device_train_batch_size * self.accelerator.num_processes * self.args.gradient_accumulation_steps}"
         )
         logger.info(
             f"  Gradient Accumulation steps = {self.args.gradient_accumulation_steps}"
@@ -817,9 +806,6 @@ class DisjointSequentialTrainer:
 
         # --- Save Loop State (on main process) ---
         if self.accelerator.is_main_process:
-            # Save RNG states
-            self.rng_tracker.save_state(os.path.join(checkpoint_dir, "rng_state.pth"))
-
             # Save custom state
             loop_state = {
                 "global_step": self.global_step,
@@ -1054,7 +1040,7 @@ class DisjointSequentialTrainer:
             buffer_index = self.global_step % self.args.gradient_accumulation_steps
             buffered_inputs = self._buffered_inputs[buffer_index]
             if (
-                self.state.global_step % self.num_iterations == 0
+                self.state.global_step % self.args.num_iterations == 0
                 or buffered_inputs is None
             ):
                 # buffered_inputs=None can occur when resuming from a checkpoint
@@ -1062,7 +1048,7 @@ class DisjointSequentialTrainer:
                 self._buffered_inputs[buffer_index] = inputs
             else:
                 inputs = buffered_inputs
-            self._step += 1
+            self.global_step += 1
         else:
             # In evaluation, we don't reuse completions across multiple updates, so we don't need to buffer inputs.
             inputs = self._generate_and_score_completions(inputs)
@@ -1075,51 +1061,16 @@ class DisjointSequentialTrainer:
         # TODO: Implement this method
         pass
 
+    def _test_inference(self):
+        # prompt = "Provide a script that prints the n-th Fibonacci number."
+        # Generate completions with the vLLM client
+        raise NotImplementedError("Not implemented")
 
-# --- Main Execution Logic ---
-def run_training():
-    script_args = get_args()
-
-    # --- Basic Sanity Checks ---
-    if not os.path.exists(script_args.ds_config_a):
-        raise FileNotFoundError(
-            f"DeepSpeed config for Model A not found at {script_args.ds_config_a}"
-        )
-    if not os.path.exists(script_args.ds_config_b):
-        raise FileNotFoundError(
-            f"DeepSpeed config for Model B not found at {script_args.ds_config_b}"
-        )
-    os.makedirs(script_args.output_dir, exist_ok=True)
-
-    trainer = DisjointSequentialTrainer(args=script_args)
-    trainer.train()
-
-
-if __name__ == "__main__":
-    # Create dummy DeepSpeed config files if they don't exist
-    ds_configs_exist = True
-    if not os.path.exists("ds_config_zero2.json"):
-        try:
-            with open("ds_config_zero2.json", "w") as f:
-                f.write(
-                    '{"zero_optimization": {"stage": 2}, "train_micro_batch_size_per_gpu": 1, "gradient_accumulation_steps": "auto", "gradient_clipping": "auto", "fp16": {"enabled": "auto"}}'
-                )  # More realistic dummy
-            logger.warning("Created dummy ds_config_zero2.json")
-        except OSError:
-            logger.error("Failed to create dummy ds_config_zero2.json.")
-            ds_configs_exist = False
-    if not os.path.exists("ds_config_zero3.json"):
-        try:
-            with open("ds_config_zero3.json", "w") as f:
-                f.write(
-                    '{"zero_optimization": {"stage": 3}, "train_micro_batch_size_per_gpu": 1, "gradient_accumulation_steps": "auto", "gradient_clipping": "auto", "fp16": {"enabled": "auto"}}'
-                )  # More realistic dummy
-            logger.warning("Created dummy ds_config_zero3.json")
-        except OSError:
-            logger.error("Failed to create dummy ds_config_zero3.json.")
-            ds_configs_exist = False
-
-    if ds_configs_exist:
-        run_training()
-    else:
-        logger.error("Cannot proceed without DeepSpeed config files.")
+    def _fetch_local_models(self, model_path: str) -> str:
+        """Fetches a local model from a given path."""
+        local_model_path = "/home/jvelja/local_models"
+        full_model_path = os.path.join(local_model_path, model_path)
+        if os.path.exists(full_model_path):
+            return full_model_path
+        else:
+            raise FileNotFoundError(f"Model not found at {full_model_path}")

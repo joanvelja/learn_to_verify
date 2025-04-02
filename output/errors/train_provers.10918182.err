@@ -1,0 +1,261 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.89it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.89it/s]
+
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.66it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.67it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.70s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.54s/it]
+
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.67s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.51s/it]
+
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:10,  3.12it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:10,  3.29it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:00<00:09,  3.35it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:09,  3.38it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:08,  3.41it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:01<00:08,  3.30it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:08,  3.34it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:08,  3.36it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:02<00:07,  3.37it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:02<00:07,  3.38it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:07,  3.40it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:13,  2.57it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:13,  2.55it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:03<00:06,  3.42it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:12,  2.70it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:12,  2.66it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:03<00:06,  3.43it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:11,  2.73it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:04<00:06,  3.44it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:11,  2.69it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:04<00:05,  3.44it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:11,  2.76it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:11,  2.72it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:04<00:05,  3.39it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:10,  2.78it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:11,  2.72it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:05<00:05,  3.38it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:10,  2.79it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:10,  2.72it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:05<00:05,  3.39it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:09,  2.81it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:05<00:04,  3.41it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:10,  2.72it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:09,  2.81it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:05<00:04,  3.43it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:09,  2.72it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:06<00:04,  3.41it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:09,  2.81it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:09,  2.71it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:06<00:03,  3.42it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:08,  2.79it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:06<00:03,  3.43it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:09,  2.71it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:08,  2.79it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:07<00:03,  3.43it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:08,  2.72it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:08,  2.80it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:07<00:02,  3.43it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:08,  2.73it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:07<00:02,  3.44it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:07,  2.80it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:08,  2.74it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:07<00:02,  3.44it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:07,  2.80it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:07,  2.75it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:08<00:02,  3.43it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:07,  2.79it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:08<00:01,  3.37it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:07,  2.75it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:05<00:06,  2.78it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:08<00:01,  3.39it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:05<00:06,  2.75it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:06,  2.77it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:09<00:01,  3.39it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:06,  2.73it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:09<00:00,  3.33it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:06<00:06,  2.75it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:06<00:06,  2.73it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:09<00:00,  3.31it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:06<00:05,  2.75it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:06<00:05,  2.74it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:10<00:00,  3.27it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.75it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.28it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.38it/s]
+Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.74it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:07<00:05,  2.75it/s]INFO:     Started server process [910096]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:07<00:05,  2.74it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:07<00:04,  2.74it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:08<00:04,  2.64it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:08<00:04,  2.82it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:08<00:04,  2.58it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:08<00:03,  2.88it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:08<00:03,  2.93it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:08<00:04,  2.55it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:09<00:03,  2.99it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:09<00:04,  2.25it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:09<00:02,  2.99it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:09<00:02,  2.84it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:10<00:04,  2.07it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:10<00:02,  2.87it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:10<00:01,  2.94it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:10<00:03,  2.05it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:10<00:01,  2.96it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:11<00:03,  2.08it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:11<00:01,  2.96it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:11<00:02,  2.31it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:11<00:00,  3.04it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:11<00:02,  2.44it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:11<00:00,  3.06it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:12<00:01,  2.58it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  3.06it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  2.85it/s]
+Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:12<00:01,  2.68it/s]INFO:     Started server process [910095]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:12<00:00,  2.72it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:13<00:00,  2.81it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.86it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.61it/s]
+INFO:     Started server process [910094]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+04/02/2025 03:26:14 - INFO - disjointTrainer - Logging level set to WARNING
+04/02/2025 03:26:14 - INFO - disjointTrainer - Logging level set to INFO
+04/02/2025 03:26:14 - INFO - disjointTrainer - Set random seed to 42
+04/02/2025 03:26:14 - INFO - disjointTrainer - Set random seed to 42
+04/02/2025 03:26:14 - INFO - disjointTrainer - Initializing Accelerators...
+04/02/2025 03:26:14 - INFO - disjointTrainer - Initializing Accelerators...
+04/02/2025 03:26:14 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/02/2025 03:26:14 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/02/2025 03:26:14 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/02/2025 03:26:14 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- Accelerator State ---
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Process index: 0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Local process index: 0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Device: cuda:0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Process index: 0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Local process index: 0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Device: cuda:0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Accelerator Device: cuda:0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/02/2025 03:26:14 - INFO - disjointTrainer -   torch.cuda.current_device(): 0
+04/02/2025 03:26:14 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA A100-SXM4-40GB
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+04/02/2025 03:26:14 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/02/2025 03:26:14 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+[rank0]:[W402 03:26:14.260656782 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- Accelerator State ---
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Process index: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Local process index: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Device: cuda:1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Process index: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Local process index: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Device: cuda:1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 03:26:14 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/02/2025 03:26:14 - INFO - disjointTrainer -   Accelerator Device: cuda:1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/02/2025 03:26:14 - INFO - disjointTrainer -   torch.cuda.current_device(): 1
+04/02/2025 03:26:14 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA A100-SXM4-40GB
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+[rank1]:[W402 03:26:14.262486152 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+04/02/2025 03:26:14 - INFO - disjointTrainer - vLLM Clients initialized.
+04/02/2025 03:26:14 - INFO - disjointTrainer - --- vLLM Clients State ---
+04/02/2025 03:26:14 - INFO - disjointTrainer - Main process initializing vLLM clients...
+04/02/2025 03:26:14 - INFO - disjointTrainer -   vLLM Client A: None
+04/02/2025 03:26:14 - INFO - disjointTrainer -   vLLM Client B: None
+04/02/2025 03:26:14 - INFO - disjointTrainer - Loading tokenizer from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+04/02/2025 03:26:14 - INFO - vllmclient - Server is up!
+04/02/2025 03:26:14 - INFO - disjointTrainer - vLLM Client A connected to 127.0.0.1:8000
+04/02/2025 03:26:14 - INFO - vllmclient - Server is up!
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 35, in <module>
+[rank1]:     run_training()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 29, in run_training
+[rank1]:     trainer = DisjointSequentialTrainer(args=script_args)
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 203, in __init__
+[rank1]:     self._load_models()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 329, in _load_models
+[rank1]:     self.args.honest_prover_name_or_path = _fetch_local_models(self.args.honest_prover_name_or_path)
+[rank1]:                                            ^^^^^^^^^^^^^^^^^^^
+[rank1]: NameError: name '_fetch_local_models' is not defined
+04/02/2025 03:26:14 - ERROR - disjointTrainer - An unexpected error occurred initializing vLLM Client B: NCCL error: unhandled system error (run with NCCL_DEBUG=INFO for details)
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 152, in __init__
+    self.vllm_client_b = VLLMClient(
+                         ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/vllmclient.py", line 88, in __init__
+    self.init_communicator()
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/vllmclient.py", line 217, in init_communicator
+    self.pynccl_comm = PyNcclCommunicator(pg, device="cuda:0")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/distributed/device_communicators/pynccl.py", line 99, in __init__
+    self.comm: ncclComm_t = self.nccl.ncclCommInitRank(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 277, in ncclCommInitRank
+    self.NCCL_CHECK(self._funcs["ncclCommInitRank"](ctypes.byref(comm),
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 256, in NCCL_CHECK
+    raise RuntimeError(f"NCCL error: {error_str}")
+RuntimeError: NCCL error: unhandled system error (run with NCCL_DEBUG=INFO for details)
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 35, in <module>
+[rank0]:     run_training()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 29, in run_training
+[rank0]:     trainer = DisjointSequentialTrainer(args=script_args)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 152, in __init__
+[rank0]:     self.vllm_client_b = VLLMClient(
+[rank0]:                          ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/vllmclient.py", line 88, in __init__
+[rank0]:     self.init_communicator()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/vllmclient.py", line 217, in init_communicator
+[rank0]:     self.pynccl_comm = PyNcclCommunicator(pg, device="cuda:0")
+[rank0]:                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/distributed/device_communicators/pynccl.py", line 99, in __init__
+[rank0]:     self.comm: ncclComm_t = self.nccl.ncclCommInitRank(
+[rank0]:                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 277, in ncclCommInitRank
+[rank0]:     self.NCCL_CHECK(self._funcs["ncclCommInitRank"](ctypes.byref(comm),
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 256, in NCCL_CHECK
+[rank0]:     raise RuntimeError(f"NCCL error: {error_str}")
+[rank0]: RuntimeError: NCCL error: unhandled system error (run with NCCL_DEBUG=INFO for details)
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    raise exc
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+    await response(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/responses.py", line 160, in __call__
+    await self.background()
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/background.py", line 41, in __call__
+    await task()
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/background.py", line 28, in __call__
+    await run_in_threadpool(self.func, *self.args, **self.kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2470, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/entrypoints/llm.py", line 495, in collective_rpc
+    return executor.collective_rpc(method, timeout, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/executor/uniproc_executor.py", line 56, in collective_rpc
+    answer = run_method(self.driver_worker, method, args, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/utils.py", line 2216, in run_method
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/vllm_serve.py", line 86, in init_communicator
+    pg = StatelessProcessGroup.create(host=host, port=port, rank=rank, world_size=world_size)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/vllm/distributed/utils.py", line 238, in create
+    store = TCPStore(
+            ^^^^^^^^^
+RuntimeError: The server socket has failed to listen on any local network address. port: 51216, useIpv6: 0, code: -98, name: EADDRINUSE, message: address already in use
+[rank0]:[W402 03:26:15.339695868 ProcessGroupNCCL.cpp:1496] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0402 03:26:16.674000 912530 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 912732 closing signal SIGTERM
+E0402 03:26:16.790000 912530 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 912731) of binary: /gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1196, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 878, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-04-02_03:26:16
+  host      : gcn14.local.snellius.surf.nl
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 912731)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

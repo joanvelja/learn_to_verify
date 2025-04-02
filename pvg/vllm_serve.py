@@ -16,7 +16,7 @@ from trl.import_utils import (
 
 
 if is_fastapi_available():
-    from fastapi import BackgroundTasks, FastAPI, HTTPException
+    from fastapi import BackgroundTasks, FastAPI
 
 
 if is_pydantic_available():
@@ -145,56 +145,48 @@ class WeightSyncWorker(Worker):
 
 
 @dataclass
-class ModelConfig:
-    """Configuration for a single model in the multi-model server."""
-
-    model_path: str
-    model_id: str  # A unique identifier for the model
-    revision: str | None = None
-    max_model_len: int | None = None
-    enable_prefix_caching: bool | None = None
-
-
-@dataclass
 class ScriptArguments:
     r"""
-    Arguments for the multi-model vLLM serve script.
+    Arguments for the script.
 
     Args:
-        models (`str`):
-            Comma-separated list of model paths and IDs in format "path1:id1,path2:id2".
-        revisions (`str` or `None`, *optional*, defaults to `None`):
-            Comma-separated list of revisions for each model. Use empty string for default revision.
+        model (`str`):
+            Model name or path to load the model from.
+        revision (`str` or `None`, *optional*, defaults to `None`):
+            Revision to use for the model. If not specified, the default branch will be used.
         tensor_parallel_size (`int`, *optional*, defaults to `1`):
-            Number of tensor parallel workers to use for each model.
+            Number of tensor parallel workers to use.
         host (`str`, *optional*, defaults to `"0.0.0.0"`):
             Host address to run the server on.
         port (`int`, *optional*, defaults to `8000`):
             Port to run the server on.
-        gpu_memory_utilization (`list[float]`, *optional*, defaults to `[0.9]`):
-            List of ratios (between 0 and 1) *must sum to ~1* of GPU memory to reserve for the model weights, activations, and KV cache.
+        gpu_memory_utilization (`float`, *optional*, defaults to `0.9`):
+            Ratio (between 0 and 1) of GPU memory to reserve for the model weights, activations, and KV cache on the
+            device dedicated to generation powered by vLLM. Higher values will increase the KV cache size and thus
+            improve the model's throughput. However, if the value is too high, it may cause out-of-memory (OOM) errors
+            during initialization.
         dtype (`str`, *optional*, defaults to `"auto"`):
-            Data type to use for vLLM generation.
-        max_model_lens (`str` or `None`, *optional*, defaults to `None`):
-            Comma-separated list of max_model_len values for each model. Use empty string for default.
-        enable_prefix_cachings (`str` or `None`, *optional*, defaults to `None`):
-            Comma-separated list of boolean values (True/False) for enabling prefix caching for each model.
+            Data type to use for vLLM generation. If set to `"auto"`, the data type will be automatically determined
+            based on the model configuration. Find the supported values in the vLLM documentation.
+        max_model_len (`int` or `None`, *optional*, defaults to `None`):
+            If set, the `max_model_len` to use for vLLM. This can be useful when running with reduced
+            `vllm_gpu_memory_utilization`, leading to a reduced KV cache size. If not set, vLLM will use the model
+            context size, which might be much larger than the KV cache, leading to inefficiencies.
+        enable_prefix_caching (`bool` or `None`, *optional*, defaults to `None`):
+            Whether to enable prefix caching in vLLM. If set to `True`, ensure that the model and the hardware support
+            this feature.
     """
 
-    models: str = field(
-        metadata={
-            "help": "Comma-separated list of model paths and IDs in format 'path1:id1,path2:id2'."
-        }
-    )
-    revisions: str | None = field(
+    model: str = field(metadata={"help": "Model name or path to load the model from."})
+    revision: str | None = field(
         default=None,
         metadata={
-            "help": "Comma-separated list of revisions for each model. Use empty string for default revision."
+            "help": "Revision to use for the model. If not specified, the default branch will be used."
         },
     )
     tensor_parallel_size: int = field(
         default=1,
-        metadata={"help": "Number of tensor parallel workers to use for each model."},
+        metadata={"help": "Number of tensor parallel workers to use."},
     )
     host: str = field(
         default="0.0.0.0",
@@ -204,96 +196,37 @@ class ScriptArguments:
         default=8000,
         metadata={"help": "Port to run the server on."},
     )
-    gpu_memory_utilization: list[float] = field(
-        default=[0.9],
+    gpu_memory_utilization: float = field(
+        default=0.9,
         metadata={
-            "help": "List of ratios (between 0 and 1) *must sum to ~1* of GPU memory to reserve for the model weights, activations, and KV "
-            "cache on the device dedicated to generation powered by vLLM."
+            "help": "Ratio (between 0 and 1) of GPU memory to reserve for the model weights, activations, and KV "
+            "cache on the device dedicated to generation powered by vLLM. Higher values will increase the KV cache "
+            "size and thus improve the model's throughput. However, if the value is too high, it may cause "
+            "out-of-memory (OOM) errors during initialization."
         },
     )
     dtype: str = field(
         default="auto",
         metadata={
             "help": "Data type to use for vLLM generation. If set to 'auto', the data type will be automatically "
-            "determined based on the model configuration."
+            "determined based on the model configuration. Find the supported values in the vLLM documentation."
         },
     )
-    max_model_lens: str | None = field(
+    max_model_len: int | None = field(
         default=None,
         metadata={
-            "help": "Comma-separated list of max_model_len values for each model. Use empty string for default."
+            "help": "If set, the `max_model_len` to use for vLLM. This can be useful when running with reduced "
+            "`vllm_gpu_memory_utilization`, leading to a reduced KV cache size. If not set, vLLM will use the model "
+            "context size, which might be much larger than the KV cache, leading to inefficiencies."
         },
     )
-    enable_prefix_cachings: str | None = field(
+    enable_prefix_caching: bool | None = field(
         default=None,
         metadata={
-            "help": "Comma-separated list of boolean values (True/False) for enabling prefix caching for each model."
+            "help": "Whether to enable prefix caching in vLLM. If set to `True`, ensure that the model and the "
+            "hardware support this feature."
         },
     )
-
-    def parse_model_configs(self) -> list[ModelConfig]:
-        """Parse model configurations from the command line arguments."""
-        model_configs = []
-
-        # Parse model paths and IDs
-        model_entries = self.models.split(",")
-        model_paths_ids = [entry.split(":") for entry in model_entries]
-        if any(len(entry) != 2 for entry in model_paths_ids):
-            raise ValueError("Model entries must be in the format 'path:id'")
-
-        # Parse revisions if provided
-        revisions = [""] * len(model_paths_ids)
-        if self.revisions:
-            revisions_list = self.revisions.split(",")
-            if len(revisions_list) != len(model_paths_ids):
-                raise ValueError("Number of revisions must match number of models")
-            revisions = [rev if rev else None for rev in revisions_list]
-
-        # Parse max_model_lens if provided
-        max_model_lens = [None] * len(model_paths_ids)
-        if self.max_model_lens:
-            max_model_lens_list = self.max_model_lens.split(",")
-            if len(max_model_lens_list) != len(model_paths_ids):
-                raise ValueError(
-                    "Number of max_model_len values must match number of models"
-                )
-            max_model_lens = [
-                int(max_len) if max_len else None for max_len in max_model_lens_list
-            ]
-
-        # Parse enable_prefix_cachings if provided
-        enable_prefix_cachings = [None] * len(model_paths_ids)
-        if self.enable_prefix_cachings:
-            enable_prefix_cachings_list = self.enable_prefix_cachings.split(",")
-            if len(enable_prefix_cachings_list) != len(model_paths_ids):
-                raise ValueError(
-                    "Number of enable_prefix_caching values must match number of models"
-                )
-            enable_prefix_cachings = [
-                (caching.lower() == "true") if caching else None
-                for caching in enable_prefix_cachings_list
-            ]
-
-        # Check that gpu_memory_utilization sums to 1
-        if sum(self.gpu_memory_utilization) > 1.0:
-            raise ValueError("gpu_memory_utilization sum must be <= 1.0")
-
-        # Create ModelConfig objects
-        for i, (path_id, revision, max_model_len, enable_prefix_caching) in enumerate(
-            zip(model_paths_ids, revisions, max_model_lens, enable_prefix_cachings)
-        ):
-            path, model_id = path_id
-            model_configs.append(
-                ModelConfig(
-                    model_path=path,
-                    model_id=model_id,
-                    revision=revision,
-                    max_model_len=max_model_len,
-                    enable_prefix_caching=enable_prefix_caching,
-                )
-            )
-
-        return model_configs
 
 
 def main(script_args: ScriptArguments):
@@ -317,30 +250,19 @@ def main(script_args: ScriptArguments):
             "vLLM is required to run the vLLM serve script. Please install it using `pip install vllm`."
         )
 
-    # Parse model configurations
-    model_configs = script_args.parse_model_configs()
-
-    # Initialize a dictionary to store LLM instances
-    llm_instances: dict[str, LLM] = {}
-
-    # Load all models
-    for config in model_configs:
-        logger.info(f"Loading model {config.model_id} from {config.model_path}")
-        llm = LLM(
-            model=config.model_path,
-            revision=config.revision,
-            tensor_parallel_size=script_args.tensor_parallel_size,
-            gpu_memory_utilization=script_args.gpu_memory_utilization,
-            dtype=script_args.dtype,
-            enable_prefix_caching=config.enable_prefix_caching,
-            max_model_len=config.max_model_len,
-            worker_cls=WeightSyncWorker,
-        )
-        llm_instances[config.model_id] = llm
-
-    # Get list of available model IDs
-    available_models = list(llm_instances.keys())
-    logger.info(f"Loaded {len(available_models)} models: {', '.join(available_models)}")
+    llm = LLM(
+        model=script_args.model,
+        revision=script_args.revision,
+        tensor_parallel_size=script_args.tensor_parallel_size,
+        gpu_memory_utilization=script_args.gpu_memory_utilization,
+        dtype=script_args.dtype,
+        # Automatic Prefix Caching caches the KV cache of existing queries, so that a new query can
+        # directly reuse the KV cache if it shares the same prefix with one of the existing queries.
+        # This is particularly useful here because we generate completions from the same prompts.
+        enable_prefix_caching=script_args.enable_prefix_caching,
+        max_model_len=script_args.max_model_len,
+        worker_cls=WeightSyncWorker,
+    )
 
     app = FastAPI()
 
@@ -350,42 +272,27 @@ def main(script_args: ScriptArguments):
         """
         Health check endpoint to verify that the server is running.
         """
-        return {"status": "ok", "available_models": available_models}
+        return {"status": "ok"}
 
-    @app.get("/models/")
-    async def list_models():
+    @app.get("/get_tensor_parallel_size/")
+    async def get_tensor_parallel_size():
         """
-        List all available models on the server.
-        """
-        return {"models": available_models}
-
-    @app.get("/get_tensor_parallel_size/{model_id}")
-    async def get_tensor_parallel_size(model_id: str):
-        """
-        Retrieves the tensor parallel size from the specified model's LLM engine.
-
-        Args:
-            model_id (`str`): The ID of the model to query.
+        Retrieves the tensor parallel size from the LLM engine.
 
         Returns:
-            `dict`: A dictionary containing the tensor parallel size.
+            `dict`:
+                A dictionary containing the tensor parallel size.
 
         Example response:
         ```json
         {"tensor_parallel_size": 8}
         ```
         """
-        if model_id not in llm_instances:
-            raise HTTPException(status_code=404, detail=f"Model {model_id} not found")
-
         return {
-            "tensor_parallel_size": llm_instances[
-                model_id
-            ].llm_engine.parallel_config.tensor_parallel_size
+            "tensor_parallel_size": llm.llm_engine.parallel_config.tensor_parallel_size
         }
 
     class GenerateRequest(BaseModel):
-        model_id: str
         prompts: list[str]
         n: int = 1
         repetition_penalty: float = 1.0
@@ -397,41 +304,31 @@ def main(script_args: ScriptArguments):
         guided_decoding_regex: str | None = None
 
     class GenerateResponse(BaseModel):
-        model_id: str
         completion_ids: list[list[int]]
 
     @app.post("/generate/", response_model=GenerateResponse)
     async def generate(request: GenerateRequest):
         """
-        Generates completions for the provided prompts using the specified model.
+        Generates completions for the provided prompts.
 
         Args:
             request (`GenerateRequest`):
-                - `model_id` (`str`): The ID of the model to use for generation.
                 - `prompts` (list of `str`): A list of prompts (text strings) for the model to generate completions.
 
         Returns:
             `GenerateResponse`:
-                - `model_id` (`str`): The ID of the model used for generation.
                 - `completion_ids` (list of list of `int`): A list of lists of token IDs for each generated completion.
 
         Example request:
         ```json
-        {"model_id": "model1", "prompts": ["Hello world", "What is AI?"]}
+        {"prompts": ["Hello world", "What is AI?"]}
         ```
 
         Example response:
         ```json
-        {"model_id": "model1", "completion_ids": [[101, 102, 103], [201, 202, 203]]}
+        {"completion_ids": [[101, 102, 103], [201, 202, 203]]}
         ```
         """
-        if request.model_id not in llm_instances:
-            raise HTTPException(
-                status_code=404, detail=f"Model {request.model_id} not found"
-            )
-
-        # Get the requested model
-        llm = llm_instances[request.model_id]
 
         # Guided decoding, if enabled
         if request.guided_decoding_regex is not None:
@@ -458,10 +355,9 @@ def main(script_args: ScriptArguments):
             for outputs in all_outputs
             for output in outputs.outputs
         ]
-        return {"model_id": request.model_id, "completion_ids": completion_ids}
+        return {"completion_ids": completion_ids}
 
     class InitCommunicatorRequest(BaseModel):
-        model_id: str
         host: str
         port: int
         world_size: int
@@ -472,34 +368,22 @@ def main(script_args: ScriptArguments):
     ):
         """
         Initializes the communicator for synchronizing model weights between a client and multiple server
-        workers for the specified model.
+        workers.
 
         Args:
             request (`InitCommunicatorRequest`):
-                - `model_id` (`str`): The ID of the model to initialize the communicator for.
                 - `host` (`str`): Hostname or IP address of the master node.
                 - `port` (`int`): Port number to be used for communication.
                 - `world_size` (`int`): Total number of participating processes in the group.
         """
-        if request.model_id not in llm_instances:
-            raise HTTPException(
-                status_code=404, detail=f"Model {request.model_id} not found"
-            )
-
-        # Get the requested model
-        llm = llm_instances[request.model_id]
-
         background_tasks.add_task(
             llm.collective_rpc,
             "init_communicator",
             args=(request.host, request.port, script_args.tensor_parallel_size + 1),
         )
-        return {
-            "message": f"Request received, initializing communicator for model {request.model_id}"
-        }
+        return {"message": "Request received, initializing communicator"}
 
     class UpdateWeightsRequest(BaseModel):
-        model_id: str
         name: str
         dtype: str
         shape: list[int]
@@ -509,25 +393,22 @@ def main(script_args: ScriptArguments):
         request: UpdateWeightsRequest, background_tasks: BackgroundTasks
     ):
         """
-        Updates the weights of the specified model with the provided tensor.
+        Updates the model weights with the provided tensor.
 
         Once this endpoint is called, the client process should broadcast the updated weights to all server workers.
 
         Args:
             request (`UpdateWeightsRequest`):
-                - `model_id` (`str`): The ID of the model to update the weights for.
                 - `name` (`str`): Name of the weight tensor being updated.
                 - `dtype` (`str`): Data type of the weight tensor (e.g., `"torch.float32"`).
-                - `shape` (list of `int`): Shape of the weight tensor.
+                - `shape` (list of `int`): Shape of the weight
+
         """
-        if request.model_id not in llm_instances:
-            raise HTTPException(
-                status_code=404, detail=f"Model {request.model_id} not found"
-            )
-
-        # Get the requested model
-        llm = llm_instances[request.model_id]
-
+        # The function is called this way: update_named_param(name="name", dtype=torch.float32, shape=(10, 10))
+        # So with collect_rpc we need to call it this way:
+        # llm.collective_rpc("update_named_param", args=("name", torch.float32, (10, 10)))
+        # And with background_tasks.add_task we need to call it this way:
+        # background_tasks.add_task(llm.collective_rpc, "update_named_param", args=("name", torch.float32, (10, 10)))
         dtype = torch.__getattribute__(request.dtype.split(".")[-1])
         background_tasks.add_task(
             llm.collective_rpc,
@@ -535,47 +416,26 @@ def main(script_args: ScriptArguments):
             args=(request.name, dtype, request.shape),
         )
 
-        return {
-            "message": f"Request received, updating named parameter for model {request.model_id}"
-        }
+        return {"message": "Request received, updating named parameter"}
 
-    @app.post("/reset_prefix_cache/{model_id}")
-    async def reset_prefix_cache(model_id: str):
+    @app.post("/reset_prefix_cache/")
+    async def reset_prefix_cache():
         """
-        Resets the prefix cache for the specified model.
-
-        Args:
-            model_id (`str`): The ID of the model to reset the prefix cache for.
+        Resets the prefix cache for the model.
         """
-        if model_id not in llm_instances:
-            raise HTTPException(status_code=404, detail=f"Model {model_id} not found")
-
-        # Get the requested model
-        llm = llm_instances[model_id]
-
         success = llm.llm_engine.reset_prefix_cache()
         return {
-            "message": f"Request received, resetting prefix cache for model {model_id}, status: {str(success)}"
+            "message": "Request received, resetting prefix cache status: "
+            + str(success)
         }
 
-    @app.post("/close_communicator/{model_id}")
-    async def close_communicator(model_id: str):
+    @app.post("/close_communicator/")
+    async def close_communicator():
         """
-        Closes the weight update group and cleans up associated resources for the specified model.
-
-        Args:
-            model_id (`str`): The ID of the model to close the communicator for.
+        Closes the weight update group and cleans up associated resources.
         """
-        if model_id not in llm_instances:
-            raise HTTPException(status_code=404, detail=f"Model {model_id} not found")
-
-        # Get the requested model
-        llm = llm_instances[model_id]
-
         llm.collective_rpc("close_communicator")
-        return {
-            "message": f"Request received, closing communicator for model {model_id}"
-        }
+        return {"message": "Request received, closing communicator"}
 
     # Start the server
     uvicorn.run(app, host=script_args.host, port=script_args.port)

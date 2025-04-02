@@ -1,52 +1,122 @@
 #!/bin/bash
+#SBATCH --partition=gpu_a100
+#SBATCH --nodes=1
+#SBATCH --gpus=4
+#SBATCH --ntasks=4
+#SBATCH --cpus-per-task=9
+#SBATCH --time=00:30:00
+#SBATCH --job-name=train_provers
+#SBATCH --output=output/logs/train_provers.%j.out
+#SBATCH --error=output/errors/train_provers.%j.err
+
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+# Get current path
+CURRENT_PATH=$(pwd)
+cd /home/jvelja/learn_to_verify
+
+# sbatch train_provers.sh
+
+# <--- Load Modules --->
+module load 2023
+module load CUDA/12.4.0
+module load py # aliased to Python/3.11.3-GCCcore-12.3.0
+
+cd /home/jvelja/learn_to_verify/src/verifiers
+
+source .venv/bin/activate
+echo "Activated virtual environment with uv"
+
+# module load 2023
+module load CUDA/12.4.0
+# module load py # aliased to Python/3.11.3-GCCcore-12.3.0
+# echo "Loaded CUDA 12.4.0"
+
+
 
 
 # --- Configuration ---
-# Paths to models
-MODEL_A_PATH="gpt2" # Replace with actual path/ID
-MODEL_B_PATH="gpt2-medium" # Replace with actual path/ID
-# (Placeholder) RM Model Path - uncomment and set if using vLLM for RM later
-# RM_MODEL_PATH="<path_to_your_rm_model>"
+# Get Parent directory
+PARENT_DIR=$(dirname "$CURRENT_PATH")
+
+# Paths to models/IDs on Hugging Face Hub or local paths
+LOCAL_MODELS_DIR="/home/jvelja/local_models"
+HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-3B-Instruct"
+SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B-Instruct"
+VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B-Instruct"
+
+# Fetch models from local paths if they exist (dir = local_models/{MODEL_PROVIDER e.g. Qwen}/MODEL_NAME e.g. Qwen2.5-Coder-3B-Instruct)
+# If they do not, echo an error message and exit
+if [ ! -d "${LOCAL_MODELS_DIR}/${HONEST_PROVER_PATH}" ]; then
+    echo "Error: Local model ${HONEST_PROVER_PATH} not found in ${LOCAL_MODELS_DIR}"
+    exit 1
+fi
+if [ ! -d "${LOCAL_MODELS_DIR}/${SNEAKY_PROVER_PATH}" ]; then
+    echo "Error: Local model ${SNEAKY_PROVER_PATH} not found in ${LOCAL_MODELS_DIR}"
+    exit 1
+fi
+if [ ! -d "${LOCAL_MODELS_DIR}/${VERIFIER_PATH}" ]; then
+    echo "Error: Local model ${VERIFIER_PATH} not found in ${LOCAL_MODELS_DIR}"
+    exit 1
+fi
+
+HONEST_PROVER_PATH="${LOCAL_MODELS_DIR}/${HONEST_PROVER_PATH}"
+echo "Using local model ${HONEST_PROVER_PATH}"
+SNEAKY_PROVER_PATH="${LOCAL_MODELS_DIR}/${SNEAKY_PROVER_PATH}"
+echo "Using local model ${SNEAKY_PROVER_PATH}"
+VERIFIER_PATH="${LOCAL_MODELS_DIR}/${VERIFIER_PATH}"
+echo "Using local model ${VERIFIER_PATH}"
+
+
+VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid the error?
+# export NCCL_DEBUG=INFO
+# export NCCL_DEBUG_SUBSYS=ALL # For even more verbose output if needed
+# export PYTHONFAULTHANDLER=1 # Useful for getting tracebacks on segfaults
 
 # vLLM Server Ports
-VLLM_PORT_A=8000
-VLLM_PORT_B=8001
-# (Placeholder) RM Server Port - uncomment if using vLLM for RM later
-# VLLM_PORT_RM=8002
+VLLM_PORT_HONEST=8000
+VLLM_PORT_SNEAKY=8001
+VLLM_PORT_VERIFIER=8002 # New port for the Verifier server
 
-# vLLM Server Host (use 127.0.0.1 for local communication)
+# vLLM Server Host (use 127.0.0.1 for local communication on a single node)
 VLLM_HOST="127.0.0.1"
 
-# Training Script Arguments
-OUTPUT_DIR="./output_disjoint_training_vllm"
-DS_CONFIG_A="ds_config_zero2.json" # Training DS config for model A
-DS_CONFIG_B="ds_config_zero3.json" # Training DS config for model B
-TRAIN_SCRIPT="advtrainer.py"
-VLLM_SERVE_SCRIPT="vllm_serve.py" # Path to your vLLM server script
+# Training Script Arguments & Paths
+OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
+DS_CONFIG_HONEST="ds_config_zero3.json" # Training DS config for Honest Prover
+DS_CONFIG_SNEAKY="ds_config_zero3.json" # Training DS config for Sneaky Prover
+TRAIN_SCRIPT="train.py"       # Your main Python training script
+VLLM_SERVE_SCRIPT="vllm_serve.py"       # Path to the vLLM server script
 
-# Accelerate Config (Optional - can configure via CLI args too)
-# ACCELERATE_CONFIG_FILE="accelerate_config.yaml"
+# GPU Allocation (N=1, G=8 example)
+VLLM_HONEST_GPUS="0"      # Honest Prover vLLM on GPU 0
+VLLM_SNEAKY_GPUS="1"      # Sneaky Prover vLLM on GPU 1
+VLLM_VERIFIER_GPUS="1"    # Verifier vLLM also on GPU 1 (Co-located)
+# TRAINING_GPUS="2,3,4,5,6,7" # Training processes on GPUs 2-7
+TRAINING_GPUS="2,3"
 
-# GPU Allocation
-VLLM_A_GPUS="0"
-VLLM_B_GPUS="1"
-# (Placeholder) RM GPU - uncomment if using vLLM for RM later
-# VLLM_RM_GPUS="1" # Co-located with Server B
-TRAINING_GPUS="2,3,4,5,6,7"
-
-# Calculate number of training processes
+# Calculate number of training processes based on allocated GPUs
 NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
 
 # Other vLLM args (adjust as needed)
 VLLM_DTYPE="auto"
-VLLM_GPU_MEM_UTIL=0.9 # Default, adjust if co-locating on GPU 1 later
+# Memory utilization needs careful tuning for co-located servers on GPU 1
+VLLM_GPU_MEM_UTIL_HONEST=0.9   # Can likely use most of GPU 0
+VLLM_GPU_MEM_UTIL_SNEAKY=0.65  # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_VERIFIER=0.25 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+# Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
 
 # --- Cleanup Function ---
 cleanup() {
     echo "Caught signal. Cleaning up background processes..."
-    # Find PIDs associated with this script's background tasks and kill them
-    # This is a simple approach; more robust methods might be needed in complex setups
-    pkill -P $$ # Kill processes whose parent is this script
+    # Kill all background processes started by this script
+    # Using pkill -P $$ might be too broad if other unrelated background tasks exist.
+    # Killing specific PIDs is safer if possible.
+    if [[ -n $VLLM_PID_HONEST ]]; then kill $VLLM_PID_HONEST || echo "Honest Server already stopped."; fi
+    if [[ -n $VLLM_PID_SNEAKY ]]; then kill $VLLM_PID_SNEAKY || echo "Sneaky Server already stopped."; fi
+    if [[ -n $VLLM_PID_VERIFIER ]]; then kill $VLLM_PID_VERIFIER || echo "Verifier Server already stopped."; fi
+    # Add kills for training PIDs if needed, though accelerate might handle its children.
     echo "Cleanup finished."
     exit 1
 }
@@ -56,102 +126,104 @@ trap cleanup SIGINT SIGTERM
 
 # --- Launch vLLM Servers ---
 
-echo "Starting vLLM Server A on GPU ${VLLM_A_GPUS} (Port: ${VLLM_PORT_A})..."
-CUDA_VISIBLE_DEVICES=$VLLM_A_GPUS python $VLLM_SERVE_SCRIPT \
-    --model $MODEL_A_PATH \
-    --port $VLLM_PORT_A \
+# Calculate tensor parallel size for each server based on assigned GPUs
+NUM_GPUS_PER_SERVER_HONEST=$(echo $VLLM_HONEST_GPUS | awk -F',' '{print NF}')
+NUM_GPUS_PER_SERVER_SNEAKY=$(echo $VLLM_SNEAKY_GPUS | awk -F',' '{print NF}')
+NUM_GPUS_PER_SERVER_VERIFIER=$(echo $VLLM_VERIFIER_GPUS | awk -F',' '{print NF}')
+
+cd /home/jvelja/learn_to_verify/pvg
+
+echo "Starting vLLM Server for Honest Prover on GPU(s) ${VLLM_HONEST_GPUS} (Port: ${VLLM_PORT_HONEST})..."
+CUDA_VISIBLE_DEVICES=$VLLM_HONEST_GPUS python $VLLM_SERVE_SCRIPT \
+    --model $HONEST_PROVER_PATH \
+    --port $VLLM_PORT_HONEST \
     --host 0.0.0.0 \
     --dtype $VLLM_DTYPE \
-    --gpu-memory-utilization $VLLM_GPU_MEM_UTIL \
-    --tensor-parallel-size 1 \
+    --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_HONEST \
+    --tensor-parallel-size $NUM_GPUS_PER_SERVER_HONEST \
     & # Run in background
-VLLM_PID_A=$!
-echo "vLLM Server A PID: $VLLM_PID_A"
+VLLM_PID_HONEST=$!
+echo "Honest Prover vLLM Server PID: $VLLM_PID_HONEST"
 
-echo "Starting vLLM Server B on GPU ${VLLM_B_GPUS} (Port: ${VLLM_PORT_B})..."
-CUDA_VISIBLE_DEVICES=$VLLM_B_GPUS python $VLLM_SERVE_SCRIPT \
-    --model $MODEL_B_PATH \
-    --port $VLLM_PORT_B \
+echo "Starting vLLM Server for Sneaky Prover on GPU(s) ${VLLM_SNEAKY_GPUS} (Port: ${VLLM_PORT_SNEAKY})..."
+CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
+    --model $SNEAKY_PROVER_PATH \
+    --port $VLLM_PORT_SNEAKY \
     --host 0.0.0.0 \
     --dtype $VLLM_DTYPE \
-    --gpu-memory-utilization $VLLM_GPU_MEM_UTIL \
-    --tensor-parallel-size 1 \
+    --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_SNEAKY \
+    --tensor-parallel-size $NUM_GPUS_PER_SERVER_SNEAKY \
     & # Run in background
-VLLM_PID_B=$!
-echo "vLLM Server B PID: $VLLM_PID_B"
+VLLM_PID_SNEAKY=$!
+echo "Sneaky Prover vLLM Server PID: $VLLM_PID_SNEAKY"
 
-# --- (Placeholder) Launch RM/Verifier Server ---
-# If using vLLM for RM and co-locating on GPU 1:
-# Adjust VLLM_GPU_MEM_UTIL for both Server B and RM Server carefully!
-# echo "Starting vLLM RM Server on GPU ${VLLM_RM_GPUS} (Port: ${VLLM_PORT_RM})..."
-# CUDA_VISIBLE_DEVICES=$VLLM_RM_GPUS python $VLLM_SERVE_SCRIPT \
-#     --model $RM_MODEL_PATH \
-#     --port $VLLM_PORT_RM \
-#     --host 0.0.0.0 \
-#     --dtype $VLLM_DTYPE \
-#     --gpu-memory-utilization <RM_MEM_UTIL> \ # Needs careful tuning
-#     --tensor-parallel-size 1 \
-#     &
-# VLLM_PID_RM=$!
-# echo "vLLM RM Server PID: $VLLM_PID_RM"
-# OR if RM is a simple python process:
-# echo "Starting RM/Verifier Process on GPU ${VLLM_RM_GPUS}..."
-# CUDA_VISIBLE_DEVICES=$VLLM_RM_GPUS python path/to/rm_script.py --port <rm_port> &
-# RM_PID=$!
-# echo "RM Process PID: $RM_PID"
-# ---------------------------------------------
+echo "Starting vLLM Server for Verifier on GPU(s) ${VLLM_VERIFIER_GPUS} (Port: ${VLLM_PORT_VERIFIER})..."
+CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
+    --model $VERIFIER_PATH \
+    --port $VLLM_PORT_VERIFIER \
+    --host 0.0.0.0 \
+    --dtype $VLLM_DTYPE \
+    --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_VERIFIER \
+    --tensor-parallel-size $NUM_GPUS_PER_SERVER_VERIFIER \
+    & # Run in background
+VLLM_PID_VERIFIER=$!
+echo "Verifier vLLM Server PID: $VLLM_PID_VERIFIER"
 
-echo "Waiting a few seconds for vLLM servers to initialize..."
-sleep 15 # Adjust as needed
+echo "Waiting ~45 seconds for vLLM servers to initialize..."
+sleep 45
 
 # --- Launch Training Script ---
-
 echo "Starting Training Script on GPUs ${TRAINING_GPUS}..."
 # Set CUDA_VISIBLE_DEVICES for the accelerate launch command itself
 export CUDA_VISIBLE_DEVICES=$TRAINING_GPUS
 
 # Use accelerate launch
+# Ensure your accelerate config (if any) or CLI args match DeepSpeed/BF16 needs
 accelerate launch \
     --num_processes $NUM_TRAINING_GPUS \
     --num_machines 1 \
-    --mixed_precision "no" \
+    --mixed_precision "bf16" \
     --use_deepspeed \
     $TRAIN_SCRIPT \
-    --model_a_name_or_path $MODEL_A_PATH \
-    --model_b_name_or_path $MODEL_B_PATH \
-    --ds_config_a $DS_CONFIG_A \
-    --ds_config_b $DS_CONFIG_B \
-    --output_dir $OUTPUT_DIR \
-    --vllm_host_a $VLLM_HOST \
-    --vllm_port_a $VLLM_PORT_A \
-    --vllm_host_b $VLLM_HOST \
-    --vllm_port_b $VLLM_PORT_B \
-    # Add other necessary training arguments from your ScriptArguments dataclass
-    --train_batch_size 4 \
+    --honest_prover_name_or_path "$HONEST_PROVER_PATH" \
+    --sneaky_prover_name_or_path "$SNEAKY_PROVER_PATH" \
+    --verifier_name_or_path "$VERIFIER_PATH" \
+    --ds_config_honest_prover "$DS_CONFIG_HONEST" \
+    --ds_config_sneaky_prover "$DS_CONFIG_SNEAKY" \
+    --output_dir "$OUTPUT_DIR" \
+    --vllm_host_a "$VLLM_HOST" \
+    --vllm_port_a "$VLLM_PORT_HONEST" \
+    --vllm_host_b "$VLLM_HOST" \
+    --vllm_port_b "$VLLM_PORT_SNEAKY" \
+    --vllm_host_c "$VLLM_HOST" \
+    --vllm_port_c "$VLLM_PORT_VERIFIER" \
+    --dataset_name "codeparrot/apps" \
+    --per_device_train_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --learning_rate_a 5e-5 \
     --learning_rate_b 5e-5 \
     --num_train_epochs 1 \
     --logging_steps 10 \
     --save_steps 100 \
-    # --validation_file <path> \
-    # --eval_steps 100 \
-    # --mixed_precision bf16 # Pass accelerate args here or use config file
-    # --config_file $ACCELERATE_CONFIG_FILE # If using a config file
+    # Add any other arguments required by your disjointTrainer.py's ExperimentArgs
 
-TRAIN_PID=$!
-echo "Training Script (Accelerate Main Process) PID: $TRAIN_PID (Note: PIDs for other ranks differ)"
+# Get the PID of the main accelerate process (for waiting)
+# This might be tricky as accelerate launch spawns multiple processes.
+# Waiting for any background job to finish might be simpler if TRAIN_SCRIPT is the last one.
+# Or find the main process PID if possible (e.g., rank 0).
+# For simplicity now, we'll just wait for all background jobs started by this script.
 
 # --- Wait for processes ---
-echo "Launch complete. Waiting for processes to finish..."
-# Wait for the training process to finish.
-# The vLLM servers will likely need manual termination or termination via the trap.
-wait $TRAIN_PID
+echo "Launch complete. Waiting for training process (and servers) to finish..."
+# Wait for the last background process launched (usually the training script)
+# This isn't perfectly robust, as servers might finish first if training errors out quickly.
+# A more robust solution might involve monitoring the training PID specifically if obtainable.
+wait
 
-# If training finishes normally, kill the servers (optional)
-echo "Training finished. Killing vLLM servers..."
-kill $VLLM_PID_A || echo "Server A already stopped."
-kill $VLLM_PID_B || echo "Server B already stopped."
-# kill $VLLM_PID_RM || echo "RM Server already stopped." # Uncomment if RM server was started
+# If training finishes normally, kill the servers
+echo "Training finished or script interrupted. Killing vLLM servers..."
+kill $VLLM_PID_HONEST || echo "Honest Server already stopped."
+kill $VLLM_PID_SNEAKY || echo "Sneaky Server already stopped."
+kill $VLLM_PID_VERIFIER || echo "Verifier Server already stopped."
 
 echo "Script finished."
