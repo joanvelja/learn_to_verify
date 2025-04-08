@@ -27,8 +27,8 @@ def run_training():
     os.makedirs(script_args.output_dir, exist_ok=True)
 
     trainer = DisjointSequentialTrainer(args=script_args)
-    del trainer
-    # trainer.train()
+    # del trainer
+    trainer.train()
     return
 
 

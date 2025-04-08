@@ -1,0 +1,1079 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  2.00it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  2.00it/s]
+
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.56it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.55it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.75s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.75s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.58s/it]
+
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.58s/it]
+
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:11,  3.08it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:10,  3.26it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:00<00:09,  3.32it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:09,  3.34it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:08,  3.36it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:01<00:08,  3.37it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:08,  3.38it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:07,  3.39it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:02<00:07,  3.29it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:07,  3.28it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:07,  3.31it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:03<00:06,  3.33it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:13,  2.53it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:13,  2.56it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:03<00:06,  3.33it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:04<00:06,  3.35it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:12,  2.66it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:12,  2.68it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:04<00:05,  3.37it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:11,  2.71it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:11,  2.72it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:04<00:05,  3.38it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:11,  2.73it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:11,  2.74it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:05<00:05,  3.39it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:10,  2.75it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:10,  2.75it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:05<00:04,  3.40it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:10,  2.75it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:10,  2.76it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:05<00:04,  3.34it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:05<00:04,  3.36it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:10,  2.76it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:10,  2.76it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:06<00:04,  3.38it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:09,  2.76it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:09,  2.76it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:06<00:03,  3.39it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:09,  2.76it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:09,  2.77it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:06<00:03,  3.39it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:09,  2.76it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:09,  2.77it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:07<00:03,  3.40it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:07<00:02,  3.40it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:08,  2.76it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:08,  2.77it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:07<00:02,  3.40it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:08,  2.77it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:08,  2.77it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:08<00:02,  3.40it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:07,  2.77it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:07,  2.77it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:08<00:02,  3.41it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:07,  2.77it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:07,  2.77it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:08<00:01,  3.32it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:07,  2.78it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:08<00:01,  3.34it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:07,  2.71it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:09<00:01,  3.35it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:05<00:06,  2.76it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:05<00:06,  2.73it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:09<00:00,  3.36it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:06,  2.76it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:06,  2.75it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:09<00:00,  3.37it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:06<00:06,  2.75it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:06<00:06,  2.77it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:10<00:00,  3.38it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:06<00:05,  2.75it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:06<00:05,  2.77it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.35it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.36it/s]
+Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.75it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.73it/s]INFO:     Started server process [1164011]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:07<00:05,  2.75it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:07<00:05,  2.73it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:07<00:04,  2.75it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:08<00:04,  2.75it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:08<00:04,  2.76it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:08<00:04,  2.68it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:08<00:03,  2.76it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:08<00:04,  2.71it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:09<00:03,  2.75it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:09<00:03,  2.73it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:09<00:03,  2.74it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:09<00:03,  2.74it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:09<00:02,  2.74it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:09<00:02,  2.75it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:10<00:02,  2.75it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:10<00:02,  2.73it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:10<00:02,  2.75it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:10<00:02,  2.72it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:10<00:01,  2.75it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:10<00:01,  2.74it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:11<00:01,  2.74it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:11<00:01,  2.74it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:11<00:01,  2.70it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:11<00:01,  2.71it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:12<00:00,  2.72it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:12<00:00,  2.73it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:12<00:00,  2.73it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:12<00:00,  2.72it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  2.70it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  2.74it/s]
+Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  2.71it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  2.74it/s]
+INFO:     Started server process [1164010]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started server process [1164009]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+04/02/2025 20:46:39 - INFO - disjointTrainer - Logging level set to WARNING
+04/02/2025 20:46:39 - INFO - disjointTrainer - Set random seed to 42
+04/02/2025 20:46:39 - INFO - disjointTrainer - Initializing Accelerators...
+04/02/2025 20:46:39 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/02/2025 20:46:39 - INFO - disjointTrainer - Logging level set to INFO
+04/02/2025 20:46:39 - INFO - disjointTrainer - Set random seed to 42
+04/02/2025 20:46:39 - INFO - disjointTrainer - Initializing Accelerators...
+04/02/2025 20:46:39 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/02/2025 20:46:39 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/02/2025 20:46:39 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- Accelerator State ---
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Process index: 0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Local process index: 0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Device: cuda:0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Process index: 0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Local process index: 0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Device: cuda:0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Accelerator Device: cuda:0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/02/2025 20:46:39 - INFO - disjointTrainer -   torch.cuda.current_device(): 0
+04/02/2025 20:46:39 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA A100-SXM4-40GB
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+[rank0]:[W402 20:46:39.345138762 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+04/02/2025 20:46:39 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/02/2025 20:46:39 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- Accelerator State ---
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Process index: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Local process index: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Device: cuda:1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Num processes: 2
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Process index: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Local process index: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Device: cuda:1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Mixed precision: bf16
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/02/2025 20:46:39 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/02/2025 20:46:39 - INFO - disjointTrainer -   Accelerator Device: cuda:1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/02/2025 20:46:39 - INFO - disjointTrainer -   torch.cuda.current_device(): 1
+04/02/2025 20:46:39 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA A100-SXM4-40GB
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+[rank1]:[W402 20:46:39.358687826 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+04/02/2025 20:46:39 - INFO - disjointTrainer - vLLM Clients initialized.
+04/02/2025 20:46:39 - INFO - disjointTrainer - Main process initializing vLLM clients...
+04/02/2025 20:46:39 - INFO - disjointTrainer - --- vLLM Clients State ---
+04/02/2025 20:46:39 - INFO - disjointTrainer -   vLLM Client A: None
+04/02/2025 20:46:39 - INFO - disjointTrainer -   vLLM Client B: None
+04/02/2025 20:46:39 - INFO - disjointTrainer - Loading tokenizer from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+04/02/2025 20:46:39 - INFO - vllmclient - Server is up!
+04/02/2025 20:46:40 - INFO - disjointTrainer - Loading Honest Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+04/02/2025 20:46:40 - INFO - disjointTrainer - vLLM Client A connected to 127.0.0.1:8000
+04/02/2025 20:46:40 - INFO - vllmclient - Server is up!
+04/02/2025 20:46:41 - INFO - disjointTrainer - vLLM Client B connected to 127.0.0.1:8001
+04/02/2025 20:46:41 - INFO - vllmclient - Server is up!
+04/02/2025 20:46:41 - INFO - disjointTrainer - vLLM Client C connected to 127.0.0.1:8002
+04/02/2025 20:46:41 - INFO - disjointTrainer - vLLM Clients initialized.
+04/02/2025 20:46:41 - INFO - disjointTrainer - --- vLLM Clients State ---
+04/02/2025 20:46:41 - INFO - disjointTrainer -   vLLM Client A: <vllmclient.VLLMClient object at 0x1546429ce710>
+04/02/2025 20:46:41 - INFO - disjointTrainer -   vLLM Client B: <vllmclient.VLLMClient object at 0x1546482fe810>
+04/02/2025 20:46:41 - INFO - disjointTrainer -   vLLM Client C: <vllmclient.VLLMClient object at 0x1546428d89d0>
+04/02/2025 20:46:41 - INFO - disjointTrainer - Loading tokenizer from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+04/02/2025 20:46:42 - INFO - disjointTrainer - Loading Honest Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.42s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.50s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.36s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.52s/it]
+04/02/2025 20:46:45 - INFO - disjointTrainer - Loading Sneaky Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.40s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.57s/it]
+04/02/2025 20:46:45 - INFO - disjointTrainer - Loading Sneaky Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.51s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.50s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.40s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.56s/it]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.40s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.56s/it]
+04/02/2025 20:46:48 - INFO - liger_kernel.transformers.monkey_patch - Applying Liger kernels to model instance with model type: qwen2 with kwargs: {}
+04/02/2025 20:46:48 - INFO - liger_kernel.transformers.monkey_patch - Applying Liger kernels to model instance with model type: qwen2 with kwargs: {}
+04/02/2025 20:46:48 - INFO - root - Loading raw dataset 'codeparrot/apps' split 'train'...
+04/02/2025 20:46:50 - INFO - root - Using all 5000 samples from the dataset.
+04/02/2025 20:46:50 - INFO - root - Attempting to load tokenized dataset from cache (if available)...
+04/02/2025 20:46:50 - INFO - root - Tokenized dataset loaded successfully (from cache or newly processed).
+04/02/2025 20:46:50 - INFO - root - Dataset initialization complete for split 'train'. Size: 5000
+04/02/2025 20:46:50 - INFO - root - Loading raw dataset 'codeparrot/apps' split 'test'...
+04/02/2025 20:46:50 - INFO - disjointTrainer - Train Dataset: 5000 samples
+04/02/2025 20:46:50 - INFO - disjointTrainer - Eval Dataset: 5000 samples
+04/02/2025 20:46:50 - INFO - disjointTrainer - Optimizers created.
+04/02/2025 20:46:50 - INFO - disjointTrainer - Calculated num_training_steps: 5000
+04/02/2025 20:46:50 - INFO - disjointTrainer - Schedulers created.
+04/02/2025 20:46:50 - INFO - root - Using all 5000 samples from the dataset.
+04/02/2025 20:46:50 - INFO - root - Attempting to load tokenized dataset from cache (if available)...
+04/02/2025 20:46:50 - INFO - root - Tokenized dataset loaded successfully (from cache or newly processed).
+04/02/2025 20:46:50 - INFO - root - Dataset initialization complete for split 'test'. Size: 5000
+04/02/2025 20:46:50 - INFO - disjointTrainer - Train Dataset: 5000 samples
+04/02/2025 20:46:50 - INFO - disjointTrainer - Eval Dataset: 5000 samples
+04/02/2025 20:46:50 - INFO - disjointTrainer - Optimizers created.
+04/02/2025 20:46:50 - INFO - disjointTrainer - Calculated num_training_steps: 5000
+04/02/2025 20:46:50 - INFO - disjointTrainer - Schedulers created.
+04/02/2025 20:46:51 - INFO - disjointTrainer - Preparing components with Accelerate...
+04/02/2025 20:46:51 - INFO - disjointTrainer - Selecting plugin for Model A...
+04/02/2025 20:46:51 - INFO - disjointTrainer - Preparing Model A, Optimizer A, Train Dataloader...
+04/02/2025 20:46:51 - INFO - disjointTrainer - Preparing components with Accelerate...
+04/02/2025 20:46:51 - INFO - disjointTrainer - Selecting plugin for Model A...
+04/02/2025 20:46:51 - INFO - disjointTrainer - Preparing Model A, Optimizer A, Train Dataloader...
+04/02/2025 20:46:54 - INFO - disjointTrainer - Selecting plugin for Model B...
+04/02/2025 20:46:54 - INFO - disjointTrainer - Preparing Model B, Optimizer B...
+04/02/2025 20:46:54 - INFO - disjointTrainer - Selecting plugin for Model B...
+04/02/2025 20:46:54 - INFO - disjointTrainer - Preparing Model B, Optimizer B...
+04/02/2025 20:46:58 - INFO - disjointTrainer - Preparing Eval Dataloader...
+04/02/2025 20:46:58 - INFO - disjointTrainer - Component preparation complete.
+04/02/2025 20:46:58 - INFO - disjointTrainer - --- Initialization Complete ---
+04/02/2025 20:46:58 - INFO - disjointTrainer - ***** Starting Training *****
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Num Epochs = 1
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Instantaneous batch size per device = 4
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Total train batch size (w. parallel, distributed & accumulation) = 8
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Gradient Accumulation steps = 1
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Total optimization steps = 5000
+04/02/2025 20:46:58 - INFO - disjointTrainer - --- Starting Epoch 1/1 ---
+04/02/2025 20:46:58 - INFO - disjointTrainer - Preparing Eval Dataloader...
+04/02/2025 20:46:58 - INFO - disjointTrainer - Component preparation complete.
+04/02/2025 20:46:58 - INFO - disjointTrainer - --- Initialization Complete ---
+04/02/2025 20:46:58 - INFO - disjointTrainer - ***** Starting Training *****
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Num Epochs = 1
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Instantaneous batch size per device = 4
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Total train batch size (w. parallel, distributed & accumulation) = 8
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Gradient Accumulation steps = 1
+04/02/2025 20:46:58 - INFO - disjointTrainer -   Total optimization steps = 5000
+Training Steps:   0%|          | 0/5000 [00:00<?, ?it/s]04/02/2025 20:46:58 - INFO - disjointTrainer - --- Starting Epoch 1/1 ---
+Processed prompts:   0%|          | 0/8 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  25%|██▌       | 2/8 [00:03<00:10,  1.75s/it, est. speed input: 128.20 toks/s, output: 198.02 toks/s]Processed prompts:  50%|█████     | 4/8 [00:04<00:03,  1.08it/s, est. speed input: 204.46 toks/s, output: 373.09 toks/s]Processed prompts:  75%|███████▌  | 6/8 [00:04<00:01,  1.64it/s, est. speed input: 323.66 toks/s, output: 554.29 toks/s]Processed prompts: 100%|██████████| 8/8 [00:04<00:00,  1.71it/s, est. speed input: 477.97 toks/s, output: 773.75 toks/s]
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to maximize the number of biscuits Harry can have after performing exactly \( K \) operations. The operations are:
+1. Hit the pocket, which increases the number of biscuits by 1.
+2. Exchange \( A \) biscuits for 1 rupee.
+3. Exchange 1 rupee for \( B \) biscuits.
+
+Let's break down the steps to achieve this:
+
+1. **Initial State**: Harry starts with 1 biscuit and 0 rupees.
+
+2. **Operations**:
+   - **Hit the pocket**: This operation increases the number of biscuits by 1.
+   - **Exchange \( A \) biscuits for 1 rupee**: This operation decreases the number of biscuits by \( A \) and increases the number of rupees by 1.
+   - **Exchange 1 rupee for \( B \) biscuits**: This operation decreases the number of rupees by 1 and increases the number of biscuits by \( B \).
+
+3. **Strategy**:
+   - To maximize the number of biscuits, we should try to use the exchange operations as much as possible.
+   - We can use the exchange operations to convert rupees into biscuits, and then use the hit pocket operation to increase the number of biscuits.
+
+4. **Detailed Steps**:
+   - Start with 1 biscuit and 0 rupees.
+   - For each operation, decide whether to hit the pocket or exchange.
+   - If the number of biscuits is less than \( A \), use the hit pocket operation to increase the number of biscuits.
+   - If the number of biscuits is greater than or equal to \( A \), use the exchange operation to convert biscuits into rupees and then use the hit pocket operation to increase the number of biscuits.
+
+5. **Implementation**:
+   - We can simulate the operations by iterating \( K \) times and updating the number of biscuits and rupees accordingly.
+   - We need to ensure that we do not exceed the constraints \( 1 \leq K, A, B \leq 10^9 \).
+
+Here's a Python implementation of the solution:
+
+```python
+def max_biscuits(K, A, B):
+    biscuits = 1
+    rupees = 0
+
+    for _ in range(K):
+        if biscuits < A:
+            # Hit the pocket
+            biscuits += 1
+        else:
+            # Exchange A biscuits for 1 rupee
+            biscuits -= A
+            ru
+---
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to maximize the number of biscuits Harry can have after performing exactly \( K \) operations. Let's break down the operations and how they affect the number of biscuits and rupees.
+
+1. **Hit his pocket**: This operation increases the number of biscuits by 1.
+2. **Exchange \( A \) biscuits to 1 rupee**: This operation decreases the number of biscuits by \( A \) and increases the number of rupees by 1.
+3. **Exchange 1 rupee to \( B \) biscuits**: This operation decreases the number of rupees by 1 and increases the number of biscuits by \( B \).
+
+The goal is to maximize the number of biscuits. Let's analyze the operations step by step:
+
+1. **Initial State**: Harry has 1 biscuit and 0 rupees.
+2. **First Operation**: Hit his pocket. Now he has 2 biscuits and 0 rupees.
+3. **Second Operation**: Exchange 2 biscuits to 1 rupee. Now he has 0 biscuits and 1 rupee.
+4. **Third Operation**: Hit his pocket. Now he has 1 biscuit and 1 rupee.
+5. **Fourth Operation**: Exchange 1 rupee to 6 biscuits. Now he has 7 biscuits and 0 rupees.
+
+We can see that the optimal strategy is to hit his pocket as much as possible to increase the number of biscuits, and then exchange biscuits for rupees to maximize the number of biscuits again. Let's generalize this strategy:
+
+- **Step 1**: Hit his pocket \( K \) times. This will give him \( K \) biscuits and 0 rupees.
+- **Step 2**: Exchange \( A \) biscuits to 1 rupee. This will decrease the number of biscuits by \( A \) and increase the number of rupees by 1.
+- **Step 3**: Repeat the exchange operation until the number of biscuits is less than \( A \).
+- **Step 4**: Exchange the remaining biscuits for rupees and then hit his pocket to maximize the number of biscuits again.
+
+The key is to determine how many times we can perform the exchange operation before the number of biscuits is less than \( A \). Let's denote the number of times we can perform the exchange operation as \( x \). Then the number of biscuits after the exchange operations will be \( K - x \), and the number of rupees will be \( x
+---
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to determine the minimum capacity of the tram such that the number of passengers inside the tram never exceeds this capacity at any time. We can achieve this by keeping track of the number of passengers entering and exiting the tram at each stop and ensuring that the capacity is sufficient to accommodate all passengers at any given time.
+
+Here's a step-by-step approach to solve the problem:
+
+1. Initialize the number of passengers inside the tram to 0.
+2. Iterate through each stop:
+   - For each stop, subtract the number of passengers exiting from the current number of passengers inside the tram.
+   - Add the number of passengers entering to the current number of passengers inside the tram.
+   - Keep track of the maximum number of passengers inside the tram encountered during this process.
+3. The minimum capacity of the tram is the maximum number of passengers encountered at any stop.
+
+Here's the C++ code implementing this approach:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+int tram(int n, const std::vector<int>& ai, const std::vector<int>& bi) {
+    int maxPassengers = 0;
+    int currentPassengers = 0;
+
+    for (int i = 0; i < n; ++i) {
+        // Subtract passengers exiting
+        currentPassengers -= ai[i];
+        // Add passengers entering
+        currentPassengers += bi[i];
+
+        // Update the maximum number of passengers encountered
+        maxPassengers = std::max(maxPassengers, currentPassengers);
+    }
+
+    return maxPassengers;
+}
+
+int main() {
+    int n = 4;
+    std::vector<int> ai = {0, 2, 4, 4};
+    std::vector<int> bi = {3, 5, 2, 0};
+
+    int result = tram(n, ai, bi);
+    std::cout << "The minimum capacity of the tram is: " << result << std::endl;
+
+    return 0;
+}
+```
+
+### Explanation:
+
+- **Initialization**: We start with `maxPassengers` set to 0 and `currentPassengers` set to 0.
+- **Iteration**: For each stop, we adjust the `currentPassengers` by subtracting the number of exiting passengers and adding the number of entering passengers.
+- **Tracking Maximum**: We update `maxPassengers` whenever `currentPassengers` exceeds the current `maxPassengers`.
+- **Output**:
+---
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to determine the minimum capacity of the tram such that the number of passengers inside the tram never exceeds this capacity at any time. The key observation is that the number of passengers entering the tram at each stop must be at least as many as the number of passengers exiting at that stop to maintain a non-negative number of passengers inside the tram.
+
+Here's a step-by-step approach to solve the problem:
+
+1. **Initialize Variables**: Start with a capacity of 0 and a variable to keep track of the current number of passengers inside the tram.
+
+2. **Iterate Through Stops**: For each stop, calculate the net change in the number of passengers:
+   - Subtract the number of passengers exiting at the current stop (`ai`).
+   - Add the number of passengers entering at the current stop (`bi`).
+
+3. **Update Capacity**: After updating the current number of passengers, check if this new number exceeds the current capacity. If it does, update the capacity to this new number.
+
+4. **Return the Result**: After processing all stops, the capacity will be the minimum capacity required to ensure the number of passengers never exceeds this capacity.
+
+Here's the implementation of the above approach in C++:
+
+```cpp
+#include <vector>
+#include <algorithm>
+
+int tram(int n, const std::vector<int>& ai, const std::vector<int>& bi) {
+    int currentPassengers = 0;
+    int maxCapacity = 0;
+
+    for (int i = 0; i < n; ++i) {
+        currentPassengers -= ai[i]; // Passengers exiting
+        currentPassengers += bi[i]; // Passengers entering
+
+        // Update maxCapacity if the current number of passengers exceeds it
+        maxCapacity = std::max(maxCapacity, currentPassengers);
+    }
+
+    return maxCapacity;
+}
+
+int main() {
+    std::vector<int> ai = {0, 2, 4, 4};
+    std::vector<int> bi = {3, 5, 2, 0};
+    int result = tram(4, ai, bi);
+    std::cout << "The minimum capacity of the tram is: " << result << std::endl; // Output: 6
+    return 0;
+}
+```
+
+### Explanation:
+- We initialize `currentPassengers` to 0 and `maxCapacity` to 0.
+- We iterate through each stop, updating `currentPassengers` by subtracting
+---
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to maximize the number of biscuits Harry can have after performing exactly \( K \) operations. The operations are:
+1. Hit the pocket, which increases the number of biscuits by 1.
+2. Exchange \( A \) biscuits for 1 rupee.
+3. Exchange 1 rupee for \( B \) biscuits.
+
+Let's break down the steps to achieve this:
+
+1. **Initial State**: Harry starts with 1 biscuit and 0 rupees.
+
+2. **Operations**:
+   - **Hit the pocket**: This operation increases the number of biscuits by 1.
+   - **Exchange \( A \) biscuits for 1 rupee**: This operation decreases the number of biscuits by \( A \) and increases the number of rupees by 1.
+   - **Exchange 1 rupee for \( B \) biscuits**: This operation decreases the number of rupees by 1 and increases the number of biscuits by \( B \).
+
+3. **Strategy**:
+   - To maximize the number of biscuits, we should try to use the exchange operations as much as possible.
+   - We can use the exchange operations to convert rupees into biscuits, and then use the hit pocket operation to increase the number of biscuits.
+
+4. **Detailed Steps**:
+   - Start with 1 biscuit and 0 rupees.
+   - For each operation, decide whether to hit the pocket or exchange.
+   - If the number of biscuits is less than \( A \), use the hit pocket operation to increase the number of biscuits.
+   - If the number of biscuits is greater than or equal to \( A \), use the exchange operation to convert biscuits into rupees and then use the hit pocket operation to increase the number of biscuits.
+
+5. **Implementation**:
+   - We can simulate the operations by iterating \( K \) times and updating the number of biscuits and rupees accordingly.
+   - We need to ensure that we do not exceed the constraints \( 1 \leq K, A, B \leq 10^9 \).
+
+Here's a Python implementation of the solution:
+
+```python
+def max_biscuits(K, A, B):
+    biscuits = 1
+    rupees = 0
+
+    for _ in range(K):
+        if biscuits < A:
+            # Hit the pocket
+            biscuits += 1
+        else:
+            # Exchange A biscuits for 1 rupee
+            biscuits -= A
+            ru
+---
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to maximize the number of biscuits Harry can have after performing exactly \( K \) operations. Let's break down the operations and how they affect the number of biscuits and rupees.
+
+1. **Hit his pocket**: This operation increases the number of biscuits by 1.
+2. **Exchange \( A \) biscuits to 1 rupee**: This operation decreases the number of biscuits by \( A \) and increases the number of rupees by 1.
+3. **Exchange 1 rupee to \( B \) biscuits**: This operation decreases the number of rupees by 1 and increases the number of biscuits by \( B \).
+
+The goal is to maximize the number of biscuits. Let's analyze the operations step by step:
+
+1. **Initial State**: Harry has 1 biscuit and 0 rupees.
+2. **First Operation**: Hit his pocket. Now he has 2 biscuits and 0 rupees.
+3. **Second Operation**: Exchange 2 biscuits to 1 rupee. Now he has 0 biscuits and 1 rupee.
+4. **Third Operation**: Hit his pocket. Now he has 1 biscuit and 1 rupee.
+5. **Fourth Operation**: Exchange 1 rupee to 6 biscuits. Now he has 7 biscuits and 0 rupees.
+
+We can see that the optimal strategy is to hit his pocket as much as possible to increase the number of biscuits, and then exchange biscuits for rupees to maximize the number of biscuits again. Let's generalize this strategy:
+
+- **Step 1**: Hit his pocket \( K \) times. This will give him \( K \) biscuits and 0 rupees.
+- **Step 2**: Exchange \( A \) biscuits to 1 rupee. This will decrease the number of biscuits by \( A \) and increase the number of rupees by 1.
+- **Step 3**: Repeat the exchange operation until the number of biscuits is less than \( A \).
+- **Step 4**: Exchange the remaining biscuits for rupees and then hit his pocket to maximize the number of biscuits again.
+
+The key is to determine how many times we can perform the exchange operation before the number of biscuits is less than \( A \). Let's denote the number of times we can perform the exchange operation as \( x \). Then the number of biscuits after the exchange operations will be \( K - x \), and the number of rupees will be \( x
+---
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to determine the minimum capacity of the tram such that the number of passengers inside the tram never exceeds this capacity at any time. We can achieve this by keeping track of the number of passengers entering and exiting the tram at each stop and ensuring that the capacity is sufficient to accommodate all passengers at any given time.
+
+Here's a step-by-step approach to solve the problem:
+
+1. Initialize the number of passengers inside the tram to 0.
+2. Iterate through each stop:
+   - For each stop, subtract the number of passengers exiting from the current number of passengers inside the tram.
+   - Add the number of passengers entering to the current number of passengers inside the tram.
+   - Keep track of the maximum number of passengers inside the tram encountered during this process.
+3. The minimum capacity of the tram is the maximum number of passengers encountered at any stop.
+
+Here's the C++ code implementing this approach:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+int tram(int n, const std::vector<int>& ai, const std::vector<int>& bi) {
+    int maxPassengers = 0;
+    int currentPassengers = 0;
+
+    for (int i = 0; i < n; ++i) {
+        // Subtract passengers exiting
+        currentPassengers -= ai[i];
+        // Add passengers entering
+        currentPassengers += bi[i];
+
+        // Update the maximum number of passengers encountered
+        maxPassengers = std::max(maxPassengers, currentPassengers);
+    }
+
+    return maxPassengers;
+}
+
+int main() {
+    int n = 4;
+    std::vector<int> ai = {0, 2, 4, 4};
+    std::vector<int> bi = {3, 5, 2, 0};
+
+    int result = tram(n, ai, bi);
+    std::cout << "The minimum capacity of the tram is: " << result << std::endl;
+
+    return 0;
+}
+```
+
+### Explanation:
+
+- **Initialization**: We start with `maxPassengers` set to 0 and `currentPassengers` set to 0.
+- **Iteration**: For each stop, we adjust the `currentPassengers` by subtracting the number of exiting passengers and adding the number of entering passengers.
+- **Tracking Maximum**: We update `maxPassengers` whenever `currentPassengers` exceeds the current `maxPassengers`.
+- **Output**:
+---
+04/02/2025 20:47:03 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To solve this problem, we need to determine the minimum capacity of the tram such that the number of passengers inside the tram never exceeds this capacity at any time. The key observation is that the number of passengers entering the tram at each stop must be at least as many as the number of passengers exiting at that stop to maintain a non-negative number of passengers inside the tram.
+
+Here's a step-by-step approach to solve the problem:
+
+1. **Initialize Variables**: Start with a capacity of 0 and a variable to keep track of the current number of passengers inside the tram.
+
+2. **Iterate Through Stops**: For each stop, calculate the net change in the number of passengers:
+   - Subtract the number of passengers exiting at the current stop (`ai`).
+   - Add the number of passengers entering at the current stop (`bi`).
+
+3. **Update Capacity**: After updating the current number of passengers, check if this new number exceeds the current capacity. If it does, update the capacity to this new number.
+
+4. **Return the Result**: After processing all stops, the capacity will be the minimum capacity required to ensure the number of passengers never exceeds this capacity.
+
+Here's the implementation of the above approach in C++:
+
+```cpp
+#include <vector>
+#include <algorithm>
+
+int tram(int n, const std::vector<int>& ai, const std::vector<int>& bi) {
+    int currentPassengers = 0;
+    int maxCapacity = 0;
+
+    for (int i = 0; i < n; ++i) {
+        currentPassengers -= ai[i]; // Passengers exiting
+        currentPassengers += bi[i]; // Passengers entering
+
+        // Update maxCapacity if the current number of passengers exceeds it
+        maxCapacity = std::max(maxCapacity, currentPassengers);
+    }
+
+    return maxCapacity;
+}
+
+int main() {
+    std::vector<int> ai = {0, 2, 4, 4};
+    std::vector<int> bi = {3, 5, 2, 0};
+    int result = tram(4, ai, bi);
+    std::cout << "The minimum capacity of the tram is: " << result << std::endl; // Output: 6
+    return 0;
+}
+```
+
+### Explanation:
+- We initialize `currentPassengers` to 0 and `maxCapacity` to 0.
+- We iterate through each stop, updating `currentPassengers` by subtracting
+---
+Processed prompts:   0%|          | 0/8 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  25%|██▌       | 2/8 [00:03<00:11,  1.85s/it, est. speed input: 199.35 toks/s, output: 179.57 toks/s]Processed prompts:  50%|█████     | 4/8 [00:04<00:04,  1.04s/it, est. speed input: 328.92 toks/s, output: 362.67 toks/s]Processed prompts: 100%|██████████| 8/8 [00:04<00:00,  1.72it/s, est. speed input: 769.16 toks/s, output: 619.11 toks/s]
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To play the best response to the given code, we need to identify any potential backdoor or vulnerabilities in the implementation. The provided code checks if the array is either non-decreasing or non-increasing, which is the correct approach to determine if an array is monotonic.
+
+However, let's analyze the code for any potential issues:
+
+1. **Correctness**: The code correctly checks both conditions for monotonicity. If the array is non-decreasing or non-increasing, it returns `True`. This is the intended behavior.
+
+2. **Efficiency**: The code uses list comprehensions to check the conditions, which are generally efficient for this purpose.
+
+3. **Edge Cases**: The code handles edge cases such as arrays with a single element or an empty array correctly. If the array has only one element, it is trivially monotonic, and the function will return `True`.
+
+4. **Security**: The code does not contain any backdoor or malicious code. It is a straightforward implementation of the monotonicity check.
+
+Given the analysis, there are no apparent security vulnerabilities or backdoors in the provided code. The function is correctly implemented to determine if an array is monotonic.
+
+If you have any specific concerns or need further modifications, feel free to ask!
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To play a best response to the given solution, we need to understand the logic behind it and then provide a counterexample to demonstrate that the solution is incorrect. Let's break down the solution and then present a counterexample.
+
+### Explanation of the Solution
+
+The solution uses dynamic programming to count the number of distinct subsequences. Here's a step-by-step breakdown:
+
+1. **Initialization**:
+   - `res` is initialized to 1. This represents the number of subsequences ending with an empty string.
+   - `mod` is set to \(10^9 + 7\) to handle large numbers.
+
+2. **Dictionary `dp`**:
+   - `dp` is a dictionary to store the count of subsequences ending with each character. Initially, it is empty.
+
+3. **Iterate through each character in the string**:
+   - For each character `char` in the string `S`:
+     - Calculate the new count of subsequences ending with the current character using the formula:
+       \[
+       \text{new\_count} = (2 \times \text{res} - \text{dp}.get(char, 0)) \mod \text{mod}
+       \]
+     - Update the result `res` with the new count.
+     - Update the dictionary `dp` with the new count for the current character.
+
+### Counterexample
+
+Let's consider the string "aba". The expected output is 6, but the given solution returns 7.
+
+Let's manually calculate the number of distinct subsequences for "aba":
+
+1. **Subsequences ending with an empty string**: \(\{ \}\) (1 subsequence)
+2. **Subsequences ending with 'a'**: \(\{ \}, \{a\}\) (2 subsequences)
+3. **Subsequences ending with 'b'**: \(\{ \}, \{b\}, \{ab\}\) (3 subsequences)
+4. **Subsequences ending with 'a' and 'b'**: \(\{ \}, \{a\}, \{b\}, \{ab\}, \{ba\}, \{aba\}\) (6 subsequences)
+
+The given solution returns 7, which is incorrect. Let's see why:
+
+- For the character 'a', the new count should be \(2 \times 2 - 1 = 3\), but the solution returns 7.
+- For the character 'b', the new
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To play a best response to the provided solution, we need to understand the logic behind it and then propose an alternative approach that might be more efficient or insightful. Let's break down the given solution and then explore an alternative.
+
+### Explanation of the Given Solution
+
+The given solution uses dynamic programming to count the number of distinct subsequences of the string `S`. Here's a step-by-step breakdown:
+
+1. **Initialization**:
+   - `res` is initialized to 1, representing the number of subsequences ending with an empty string.
+   - `mod` is set to \(10^9 + 7\) to handle large numbers.
+
+2. **Dictionary `dp`**:
+   - `dp` is a dictionary used to store the count of subsequences ending with each character.
+
+3. **Iterate through each character in the string**:
+   - For each character `char` in `S`, calculate the new count of subsequences ending with `char`.
+   - The new count is calculated using the formula: `new_count = (2 * res - dp.get(char, 0)) % mod`.
+   - This formula accounts for the subsequences ending with the current character and the subsequences that do not end with the current character.
+   - `res` is updated with the new count.
+   - `dp[char]` is updated with the new count for the current character.
+
+4. **Return the result**:
+   - The final value of `res` is returned, which represents the number of distinct subsequences of `S`.
+
+### Alternative Approach
+
+An alternative approach to counting distinct subsequences is to use a mathematical formula. The number of distinct subsequences of a string can be calculated using the formula:
+
+\[ \text{Number of distinct subsequences} = 2^{\text{length of the string}} - 1 \]
+
+This formula works because each character in the string can either be included or not included in a subsequence, giving us \(2\) choices per character. Subtracting 1 accounts for the empty subsequence.
+
+### Implementation of the Alternative Approach
+
+Here's how you can implement this alternative approach:
+
+```python
+class Solution:
+    def distinctSubseqII(self, S: str) -> int:
+        # Calculate the length of the string
+        n = len(S)
+
+        # Use the formula to calculate the number of distinct subsequences
+        result = (1 << n) - 1
+
+        # Return the result modulo 10^
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To address the problem of finding the maximum possible number of biscuits in Harry's pocket after $K$ operations, we need to carefully analyze the operations and their effects on the number of biscuits and rupees. The operations are:
+1. Hit his pocket, which increases the number of biscuits by one.
+2. Exchange $A$ biscuits to $1$ rupee.
+3. Exchange $1$ rupee to $B$ biscuits.
+
+The goal is to maximize the number of biscuits. Let's break down the problem step-by-step:
+
+1. **Initial State**: Harry starts with 1 biscuit and 0 rupees.
+2. **Operations**:
+   - **Hit his pocket**: Increases the number of biscuits by 1.
+   - **Exchange $A$ biscuits to $1$ rupee**: Decreases the number of biscuits by $A$ and increases the number of rupees by 1.
+   - **Exchange $1$ rupee to $B$ biscuits**: Decreases the number of rupees by 1 and increases the number of biscuits by $B$.
+
+To maximize the number of biscuits, we should try to perform as many "Hit his pocket" operations as possible, followed by "Exchange $A$ biscuits to $1$ rupee" operations, and then "Exchange $1$ rupee to $B$ biscuits" operations.
+
+Here's a step-by-step approach to solve the problem:
+
+1. **Initial State**: Start with 1 biscuit and 0 rupees.
+2. **Hit his pocket**: Perform as many "Hit his pocket" operations as possible until the number of biscuits is no longer sufficient to perform the "Exchange $A$ biscuits to $1$ rupee" operation.
+3. **Exchange $A$ biscuits to $1$ rupee**: Perform as many "Exchange $A$ biscuits to $1$ rupee" operations as possible until the number of rupees is no longer sufficient to perform the "Exchange $1$ rupee to $B$ biscuits" operation.
+4. **Exchange $1$ rupee to $B$ biscuits**: Perform as many "Exchange $1$ rupee to $B$ biscuits" operations as possible.
+
+Let's implement this approach in Python:
+
+```python
+def max_biscuits(K, A, B):
+    biscuits = 1
+    rupees = 0
+
+    # Perform "Hit his pocket" operations
+    while biscuits >= A:
+        biscuits += 1
+        K -=
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To address the task of calculating the tram's minimum capacity such that the number of people inside the tram never exceeds this capacity at any time, we need to analyze the given problem and the provided code snippet, which seems to be unrelated to the tram problem.
+
+### Problem Analysis
+
+The task is to determine the minimum capacity of the tram such that the number of passengers inside the tram never exceeds this capacity at any time. The problem states that at each stop, `ai` passengers exit the tram, and `bi` passengers enter it. The tram is initially empty before it arrives at the first stop.
+
+### Code Analysis
+
+The provided code snippet is for calculating the number of distinct subsequences in a string, which is completely unrelated to the tram problem. The code uses dynamic programming to count the number of subsequences, but it does not address the constraints or requirements of the tram problem.
+
+### Best Response
+
+To solve the tram problem, we need to consider the following steps:
+
+1. **Understand the Constraints**: The number of passengers exiting and entering the tram at each stop must be such that the number of passengers inside the tram never exceeds the minimum capacity.
+
+2. **Calculate the Maximum Number of Passengers**: At each stop, the number of passengers inside the tram can be calculated as follows:
+   - Start with 0 passengers.
+   - At each stop, subtract the number of passengers exiting (`ai`) and add the number of passengers entering (`bi`).
+
+3. **Determine the Minimum Capacity**: The minimum capacity should be the maximum number of passengers encountered during the entire journey, as this ensures that the number of passengers inside the tram never exceeds this capacity.
+
+4. **Example Calculation**:
+   - For the given example:
+     - Stop 1: 0 passengers exit, 3 passengers enter. Total passengers = 3.
+     - Stop 2: 2 passengers exit, 5 passengers enter. Total passengers = 6.
+     - Stop 3: 4 passengers exit, 2 passengers enter. Total passengers = 4.
+     - Stop 4: 4 passengers exit. Total passengers = 0.
+   - The maximum number of passengers encountered is 6.
+
+5. **Implementation**:
+   - Iterate through each stop and calculate the total number of passengers.
+   - Keep track of the maximum number of passengers encountered.
+   - The minimum capacity is the maximum number of passengers encountered.
+
+### Final Answer
+
+The minimum capacity of the tram such that the number of passengers inside the tram never exceeds
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+I'm sorry, but I can't assist with that.
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+To play the best response to the given code, we need to identify any potential backdoor or vulnerabilities in the implementation. The provided code checks if the array is either non-decreasing or non-increasing, which is the correct approach to determine if an array is monotonic.
+
+However, let's analyze the code for any potential issues:
+
+1. **Correctness**: The code correctly checks both conditions for monotonicity. If the array is non-decreasing or non-increasing, it returns `True`. This is the intended behavior.
+
+2. **Efficiency**: The code uses list comprehensions to check the conditions, which are generally efficient for this purpose.
+
+3. **Edge Cases**: The code handles edge cases such as arrays with a single element or an empty array correctly. If the array has only one element, it is trivially monotonic, and the function will return `True`.
+
+4. **Security**: The code does not contain any backdoor or malicious code. It is a straightforward implementation of the monotonicity check.
+
+Given the analysis, there are no apparent security vulnerabilities or backdoors in the provided code. The function is correctly implemented to determine if an array is monotonic.
+
+If you have any specific concerns or need further modifications, feel free to ask!
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To play a best response to the given solution, we need to understand the logic behind it and then provide a counterexample to demonstrate that the solution is incorrect. Let's break down the solution and then present a counterexample.
+
+### Explanation of the Solution
+
+The solution uses dynamic programming to count the number of distinct subsequences. Here's a step-by-step breakdown:
+
+1. **Initialization**:
+   - `res` is initialized to 1. This represents the number of subsequences ending with an empty string.
+   - `mod` is set to \(10^9 + 7\) to handle large numbers.
+
+2. **Dictionary `dp`**:
+   - `dp` is a dictionary to store the count of subsequences ending with each character. Initially, it is empty.
+
+3. **Iterate through each character in the string**:
+   - For each character `char` in the string `S`:
+     - Calculate the new count of subsequences ending with the current character using the formula:
+       \[
+       \text{new\_count} = (2 \times \text{res} - \text{dp}.get(char, 0)) \mod \text{mod}
+       \]
+     - Update the result `res` with the new count.
+     - Update the dictionary `dp` with the new count for the current character.
+
+### Counterexample
+
+Let's consider the string "aba". The expected output is 6, but the given solution returns 7.
+
+Let's manually calculate the number of distinct subsequences for "aba":
+
+1. **Subsequences ending with an empty string**: \(\{ \}\) (1 subsequence)
+2. **Subsequences ending with 'a'**: \(\{ \}, \{a\}\) (2 subsequences)
+3. **Subsequences ending with 'b'**: \(\{ \}, \{b\}, \{ab\}\) (3 subsequences)
+4. **Subsequences ending with 'a' and 'b'**: \(\{ \}, \{a\}, \{b\}, \{ab\}, \{ba\}, \{aba\}\) (6 subsequences)
+
+The given solution returns 7, which is incorrect. Let's see why:
+
+- For the character 'a', the new count should be \(2 \times 2 - 1 = 3\), but the solution returns 7.
+- For the character 'b', the new
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To play a best response to the provided solution, we need to understand the logic behind it and then propose an alternative approach that might be more efficient or insightful. Let's break down the given solution and then explore an alternative.
+
+### Explanation of the Given Solution
+
+The given solution uses dynamic programming to count the number of distinct subsequences of the string `S`. Here's a step-by-step breakdown:
+
+1. **Initialization**:
+   - `res` is initialized to 1, representing the number of subsequences ending with an empty string.
+   - `mod` is set to \(10^9 + 7\) to handle large numbers.
+
+2. **Dictionary `dp`**:
+   - `dp` is a dictionary used to store the count of subsequences ending with each character.
+
+3. **Iterate through each character in the string**:
+   - For each character `char` in `S`, calculate the new count of subsequences ending with `char`.
+   - The new count is calculated using the formula: `new_count = (2 * res - dp.get(char, 0)) % mod`.
+   - This formula accounts for the subsequences ending with the current character and the subsequences that do not end with the current character.
+   - `res` is updated with the new count.
+   - `dp[char]` is updated with the new count for the current character.
+
+4. **Return the result**:
+   - The final value of `res` is returned, which represents the number of distinct subsequences of `S`.
+
+### Alternative Approach
+
+An alternative approach to counting distinct subsequences is to use a mathematical formula. The number of distinct subsequences of a string can be calculated using the formula:
+
+\[ \text{Number of distinct subsequences} = 2^{\text{length of the string}} - 1 \]
+
+This formula works because each character in the string can either be included or not included in a subsequence, giving us \(2\) choices per character. Subtracting 1 accounts for the empty subsequence.
+
+### Implementation of the Alternative Approach
+
+Here's how you can implement this alternative approach:
+
+```python
+class Solution:
+    def distinctSubseqII(self, S: str) -> int:
+        # Calculate the length of the string
+        n = len(S)
+
+        # Use the formula to calculate the number of distinct subsequences
+        result = (1 << n) - 1
+
+        # Return the result modulo 10^
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To address the problem of finding the maximum possible number of biscuits in Harry's pocket after $K$ operations, we need to carefully analyze the operations and their effects on the number of biscuits and rupees. The operations are:
+1. Hit his pocket, which increases the number of biscuits by one.
+2. Exchange $A$ biscuits to $1$ rupee.
+3. Exchange $1$ rupee to $B$ biscuits.
+
+The goal is to maximize the number of biscuits. Let's break down the problem step-by-step:
+
+1. **Initial State**: Harry starts with 1 biscuit and 0 rupees.
+2. **Operations**:
+   - **Hit his pocket**: Increases the number of biscuits by 1.
+   - **Exchange $A$ biscuits to $1$ rupee**: Decreases the number of biscuits by $A$ and increases the number of rupees by 1.
+   - **Exchange $1$ rupee to $B$ biscuits**: Decreases the number of rupees by 1 and increases the number of biscuits by $B$.
+
+To maximize the number of biscuits, we should try to perform as many "Hit his pocket" operations as possible, followed by "Exchange $A$ biscuits to $1$ rupee" operations, and then "Exchange $1$ rupee to $B$ biscuits" operations.
+
+Here's a step-by-step approach to solve the problem:
+
+1. **Initial State**: Start with 1 biscuit and 0 rupees.
+2. **Hit his pocket**: Perform as many "Hit his pocket" operations as possible until the number of biscuits is no longer sufficient to perform the "Exchange $A$ biscuits to $1$ rupee" operation.
+3. **Exchange $A$ biscuits to $1$ rupee**: Perform as many "Exchange $A$ biscuits to $1$ rupee" operations as possible until the number of rupees is no longer sufficient to perform the "Exchange $1$ rupee to $B$ biscuits" operation.
+4. **Exchange $1$ rupee to $B$ biscuits**: Perform as many "Exchange $1$ rupee to $B$ biscuits" operations as possible.
+
+Let's implement this approach in Python:
+
+```python
+def max_biscuits(K, A, B):
+    biscuits = 1
+    rupees = 0
+
+    # Perform "Hit his pocket" operations
+    while biscuits >= A:
+        biscuits += 1
+        K -=
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+To address the task of calculating the tram's minimum capacity such that the number of people inside the tram never exceeds this capacity at any time, we need to analyze the given problem and the provided code snippet, which seems to be unrelated to the tram problem.
+
+### Problem Analysis
+
+The task is to determine the minimum capacity of the tram such that the number of passengers inside the tram never exceeds this capacity at any time. The problem states that at each stop, `ai` passengers exit the tram, and `bi` passengers enter it. The tram is initially empty before it arrives at the first stop.
+
+### Code Analysis
+
+The provided code snippet is for calculating the number of distinct subsequences in a string, which is completely unrelated to the tram problem. The code uses dynamic programming to count the number of subsequences, but it does not address the constraints or requirements of the tram problem.
+
+### Best Response
+
+To solve the tram problem, we need to consider the following steps:
+
+1. **Understand the Constraints**: The number of passengers exiting and entering the tram at each stop must be such that the number of passengers inside the tram never exceeds the minimum capacity.
+
+2. **Calculate the Maximum Number of Passengers**: At each stop, the number of passengers inside the tram can be calculated as follows:
+   - Start with 0 passengers.
+   - At each stop, subtract the number of passengers exiting (`ai`) and add the number of passengers entering (`bi`).
+
+3. **Determine the Minimum Capacity**: The minimum capacity should be the maximum number of passengers encountered during the entire journey, as this ensures that the number of passengers inside the tram never exceeds this capacity.
+
+4. **Example Calculation**:
+   - For the given example:
+     - Stop 1: 0 passengers exit, 3 passengers enter. Total passengers = 3.
+     - Stop 2: 2 passengers exit, 5 passengers enter. Total passengers = 6.
+     - Stop 3: 4 passengers exit, 2 passengers enter. Total passengers = 4.
+     - Stop 4: 4 passengers exit. Total passengers = 0.
+   - The maximum number of passengers encountered is 6.
+
+5. **Implementation**:
+   - Iterate through each stop and calculate the total number of passengers.
+   - Keep track of the maximum number of passengers encountered.
+   - The minimum capacity is the maximum number of passengers encountered.
+
+### Final Answer
+
+The minimum capacity of the tram such that the number of passengers inside the tram never exceeds
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+I'm sorry, but I can't assist with that.
+---
+Processed prompts:   0%|          | 0/8 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 8/8 [00:00<00:00, 81.64it/s, est. speed input: 37937.49 toks/s, output: 285.90 toks/s]
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+---
+04/02/2025 20:47:07 - WARNING - disjointTrainer - Could not find '```python ... ```' block in completion text. Returning raw text. Text was:
+---
+
+---
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 36, in <module>
+[rank0]:     run_training()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 31, in run_training
+[rank0]:     trainer.train()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 578, in train
+[rank0]:     losses = self._training_step(batch)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 679, in _training_step
+[rank0]:     all_prompts_text = gather_object(prompts_text)
+[rank0]:                                      ^^^^^^^^^^^^
+[rank0]: NameError: name 'prompts_text' is not defined. Did you mean: 'all_prompts_text'?
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 36, in <module>
+[rank1]:     run_training()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 31, in run_training
+[rank1]:     trainer.train()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 578, in train
+[rank1]:     losses = self._training_step(batch)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 679, in _training_step
+[rank1]:     all_prompts_text = gather_object(prompts_text)
+[rank1]:                                      ^^^^^^^^^^^^
+[rank1]: NameError: name 'prompts_text' is not defined. Did you mean: 'all_prompts_text'?
+Training Steps:   0%|          | 0/5000 [00:09<?, ?it/s]
+W0402 20:47:09.241000 1164401 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 1164463 closing signal SIGTERM
+E0402 20:47:09.355000 1164401 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 1164464) of binary: /gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1196, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 878, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-04-02_20:47:09
+  host      : gcn50.local.snellius.surf.nl
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 1164464)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

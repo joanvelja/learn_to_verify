@@ -11,7 +11,7 @@ from transformers import AutoTokenizer
 class AppsDataset(Dataset):
     """
     Dataset for efficient handling of APPS with tokenization optimization.
-    Loads data, tokenizes without padding, and handles caching.
+    Loads data, tokenizes only the question column without padding, and handles caching.
     """
 
     def __init__(
@@ -21,7 +21,12 @@ class AppsDataset(Dataset):
         split: str = "train",  # Specify split during initialization
         num_samples: int | None = None,  # Use None for all samples
         max_length: int | None = None,
-        text_column: str = "question",
+        tokenize_column: str = "question",  # Column to tokenize
+        keep_columns: list[str] = [
+            "question",
+            "solutions",
+            "input_output",
+        ],  # Columns to keep
         cache_dir: str | None = None,
         preprocessing_num_workers: int | None = None,
         min_length: int | None = None,
@@ -36,7 +41,8 @@ class AppsDataset(Dataset):
             split: Dataset split to load ('train', 'validation', 'test').
             num_samples: Number of samples to load (None for all).
             max_length: Maximum sequence length for truncation (None means no truncation during initial tokenization).
-            text_column: Name of the column containing the text.
+            tokenize_column: Name of the column to tokenize.
+            keep_columns: List of columns to keep in the final dataset.
             cache_dir: Directory to cache tokenized datasets.
             preprocessing_num_workers: Number of workers for preprocessing.
             min_length: Minimum sequence length (filters shorter sequences after tokenization).
@@ -44,7 +50,8 @@ class AppsDataset(Dataset):
         """
         self.tokenizer = tokenizer
         self.max_length = max_length
-        self.text_column = text_column
+        self.tokenize_column = tokenize_column
+        self.keep_columns = keep_columns
         self.min_length = min_length
         self.truncation_strategy = truncation_strategy
         self.split = split
@@ -84,11 +91,7 @@ class AppsDataset(Dataset):
                 self._tokenize_function,
                 batched=True,
                 num_proc=preprocessing_num_workers,
-                remove_columns=[
-                    col
-                    for col in self.raw_dataset.column_names
-                    if col != self.text_column
-                ],
+                # Don't remove the keep_columns as we need them in the final dataset
                 load_from_cache_file=True,  # Enable caching
                 cache_file_name=cache_file_path,  # Specify cache file hint
                 desc=f"Tokenizing {split} dataset",
@@ -109,11 +112,7 @@ class AppsDataset(Dataset):
                 self._tokenize_function,
                 batched=True,
                 num_proc=preprocessing_num_workers,
-                remove_columns=[
-                    col
-                    for col in self.raw_dataset.column_names
-                    if col != self.text_column
-                ],
+                # Don't remove the keep_columns
                 load_from_cache_file=True,  # Still try to use implicit caching
                 desc=f"Tokenizing {split} dataset (fallback)",
             )
@@ -138,20 +137,34 @@ class AppsDataset(Dataset):
         )
 
     def _tokenize_function(self, examples):
-        """Tokenization logic applied via map."""
+        """Tokenization logic applied only to the question column."""
         # Tokenize without padding (padding done dynamically in collator)
         # Only truncate if max_length is specified during dataset init
         truncation = bool(self.max_length)
 
+        # Only tokenize the specified column
         tokenized_output = self.tokenizer(
-            examples[self.text_column],
+            examples[self.tokenize_column],
             truncation=truncation,
             max_length=self.max_length,
             # No padding here!
             return_attention_mask=True,  # Keep attention mask
             return_token_type_ids=False,  # Not needed for decoder-only models
         )
-        return tokenized_output
+
+        # Copy the tokenization results to the output
+        result = {}
+
+        # Add tokenization outputs (input_ids, attention_mask)
+        for key, value in tokenized_output.items():
+            result[key] = value
+
+        # Add all the columns we want to keep
+        for column in self.keep_columns:
+            if column in examples:
+                result[column] = examples[column]
+
+        return result
 
     def __len__(self) -> int:
         """Return the number of examples in the tokenized dataset."""
@@ -164,14 +177,14 @@ class AppsDataset(Dataset):
         """
         item = self.tokenized_dataset[idx]
 
-        # Convert lists to tensors
+        # Convert token lists to tensors
         input_ids = torch.tensor(item["input_ids"], dtype=torch.long)
         attention_mask = torch.tensor(item["attention_mask"], dtype=torch.long)
 
         return {
+            "question": item["question"],
+            "solutions": item["solutions"],
+            "input_output": item["input_output"],
             "input_ids": input_ids,
             "attention_mask": attention_mask,
         }
-
-
-#

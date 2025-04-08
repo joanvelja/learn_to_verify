@@ -1,0 +1,230 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  2.25it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  2.25it/s]
+
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.33it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.36it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  2.04s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.85s/it]
+
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  2.09s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.89s/it]
+
+Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:11,  2.93it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:11,  2.98it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:10,  3.00it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:09,  3.15it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:09,  3.26it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:01<00:09,  3.17it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:09,  3.10it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:08,  3.05it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:02<00:08,  2.94it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:08,  2.95it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:08,  2.95it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:11,  2.87it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:03<00:07,  2.97it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:10,  3.10it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:13,  2.54it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:07,  2.97it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:00<00:10,  3.18it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:12,  2.67it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:04<00:07,  2.96it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:09,  3.22it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:11,  2.70it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:04<00:06,  2.96it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:09,  3.24it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:11,  2.71it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:05<00:06,  2.98it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:01<00:08,  3.25it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:11,  2.71it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:08,  3.27it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:05<00:06,  2.99it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:08,  3.26it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:10,  2.71it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:06<00:05,  2.92it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:02<00:07,  3.27it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:06<00:05,  2.94it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:10,  2.73it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:07,  3.27it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:06<00:05,  2.95it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:09,  2.74it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:07,  3.28it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:07<00:04,  2.95it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:09,  2.74it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:03<00:07,  3.28it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:07<00:04,  2.96it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:09,  2.74it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:06,  3.28it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:07<00:04,  2.97it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:04<00:06,  3.29it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:08,  2.73it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:08<00:03,  2.98it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:04<00:06,  3.29it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:08,  2.73it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:08<00:03,  2.98it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:04<00:05,  3.29it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:08,  2.74it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:05<00:05,  3.29it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:08<00:03,  2.96it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:07,  2.75it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:05<00:05,  3.29it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:09<00:02,  2.95it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:07,  2.76it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:05<00:04,  3.29it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:09<00:02,  2.95it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:06<00:04,  3.28it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:05<00:06,  2.76it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:09<00:02,  2.90it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:06<00:04,  3.29it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:06,  2.75it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:10<00:01,  2.90it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:06<00:03,  3.29it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:06<00:06,  2.74it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:10<00:01,  2.93it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:07<00:03,  3.28it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:06<00:05,  2.73it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:10<00:01,  2.95it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:07<00:03,  3.28it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:11<00:00,  2.96it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.74it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:07<00:03,  3.28it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:11<00:00,  2.96it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:07<00:02,  3.19it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:07<00:05,  2.75it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:08<00:02,  3.22it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:11<00:00,  2.93it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:11<00:00,  2.97it/s]
+Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:08<00:04,  2.68it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:08<00:02,  3.24it/s]INFO:     Started server process [1640421]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:08<00:04,  2.72it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:08<00:01,  3.25it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:08<00:03,  2.85it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:09<00:01,  3.25it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:09<00:03,  2.95it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:09<00:01,  3.25it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:09<00:02,  3.03it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:09<00:00,  3.13it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:09<00:02,  3.04it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:10<00:00,  3.17it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:10<00:02,  3.08it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:10<00:00,  3.20it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:10<00:01,  3.12it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.17it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.24it/s]
+Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:10<00:01,  3.15it/s]INFO:     Started server process [1640420]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:10<00:01,  3.16it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:11<00:00,  3.12it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:11<00:00,  3.14it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:11<00:00,  3.16it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  3.12it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:12<00:00,  2.86it/s]
+INFO:     Started server process [1640419]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+04/05/2025 20:33:40 - INFO - disjointTrainer - Logging level set to WARNING
+04/05/2025 20:33:40 - INFO - disjointTrainer - Set random seed to 42
+04/05/2025 20:33:40 - INFO - disjointTrainer - Initializing Accelerators...
+04/05/2025 20:33:40 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/05/2025 20:33:40 - INFO - disjointTrainer - Logging level set to INFO
+04/05/2025 20:33:40 - INFO - disjointTrainer - Set random seed to 42
+04/05/2025 20:33:40 - INFO - disjointTrainer - Initializing Accelerators...
+04/05/2025 20:33:40 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/05/2025 20:33:40 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/05/2025 20:33:40 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+04/05/2025 20:33:40 - INFO - disjointTrainer - LLM interaction logs will be saved to: ./output_disjoint_training_vllm_prover_verifier/llm_interaction_logs
+04/05/2025 20:33:40 - INFO - disjointTrainer - --- Accelerator State ---
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Num processes: 2
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Process index: 0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Local process index: 0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Device: cuda:0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Mixed precision: bf16
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/05/2025 20:33:40 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Num processes: 2
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Process index: 0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Local process index: 0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Device: cuda:0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Mixed precision: bf16
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/05/2025 20:33:40 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/05/2025 20:33:40 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/05/2025 20:33:40 - INFO - disjointTrainer -   Accelerator Device: cuda:0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/05/2025 20:33:40 - INFO - disjointTrainer -   torch.cuda.current_device(): 0
+04/05/2025 20:33:40 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA A100-SXM4-40GB
+04/05/2025 20:33:40 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+[rank0]:[W405 20:33:41.746277166 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+04/05/2025 20:33:41 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/05/2025 20:33:41 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+04/05/2025 20:33:41 - INFO - disjointTrainer - --- Accelerator State ---
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Num processes: 2
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Process index: 1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Local process index: 1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Device: cuda:1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Mixed precision: bf16
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/05/2025 20:33:41 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Num processes: 2
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Process index: 1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Local process index: 1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Device: cuda:1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Mixed precision: bf16
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/05/2025 20:33:41 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/05/2025 20:33:41 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/05/2025 20:33:41 - INFO - disjointTrainer -   Accelerator Device: cuda:1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/05/2025 20:33:41 - INFO - disjointTrainer -   torch.cuda.current_device(): 1
+04/05/2025 20:33:41 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA A100-SXM4-40GB
+04/05/2025 20:33:41 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+[rank1]:[W405 20:33:41.782835068 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+04/05/2025 20:33:41 - INFO - disjointTrainer - vLLM Clients initialized.
+04/05/2025 20:33:41 - INFO - disjointTrainer - --- vLLM Clients State ---
+04/05/2025 20:33:41 - INFO - disjointTrainer -   vLLM Client A: None
+04/05/2025 20:33:41 - INFO - disjointTrainer - Main process initializing vLLM clients...
+04/05/2025 20:33:41 - INFO - disjointTrainer -   vLLM Client B: None
+04/05/2025 20:33:41 - INFO - disjointTrainer - Loading tokenizer from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+04/05/2025 20:33:41 - INFO - vllmclient - Server is up!
+04/05/2025 20:33:41 - INFO - disjointTrainer - Loading Honest Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+04/05/2025 20:33:42 - INFO - disjointTrainer - vLLM Client A connected to 127.0.0.1:8000
+04/05/2025 20:33:42 - INFO - vllmclient - Server is up!
+04/05/2025 20:33:42 - INFO - disjointTrainer - vLLM Client B connected to 127.0.0.1:8001
+04/05/2025 20:33:42 - INFO - vllmclient - Server is up!
+04/05/2025 20:33:43 - INFO - disjointTrainer - vLLM Client C connected to 127.0.0.1:8002
+04/05/2025 20:33:43 - INFO - disjointTrainer - vLLM Clients initialized.
+04/05/2025 20:33:43 - INFO - disjointTrainer - --- vLLM Clients State ---
+04/05/2025 20:33:43 - INFO - disjointTrainer -   vLLM Client A: <vllmclient.VLLMClient object at 0x14c6f10b1790>
+04/05/2025 20:33:43 - INFO - disjointTrainer -   vLLM Client B: <vllmclient.VLLMClient object at 0x14c6f220cc90>
+04/05/2025 20:33:43 - INFO - disjointTrainer -   vLLM Client C: <vllmclient.VLLMClient object at 0x14c6f02bb310>
+04/05/2025 20:33:43 - INFO - disjointTrainer - Loading tokenizer from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+04/05/2025 20:33:43 - INFO - disjointTrainer - Loading Honest Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.40s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.50s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.36s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.52s/it]
+04/05/2025 20:33:46 - INFO - disjointTrainer - Loading Sneaky Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.40s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.57s/it]
+04/05/2025 20:33:46 - INFO - disjointTrainer - Loading Sneaky Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-3B-Instruct
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.51s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.50s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.40s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.57s/it]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.40s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.57s/it]
+04/05/2025 20:33:50 - INFO - liger_kernel.transformers.monkey_patch - Applying Liger kernels to model instance with model type: qwen2 with kwargs: {}
+04/05/2025 20:33:50 - INFO - liger_kernel.transformers.monkey_patch - Applying Liger kernels to model instance with model type: qwen2 with kwargs: {}
+04/05/2025 20:33:50 - INFO - root - Loading raw dataset 'codeparrot/apps' split 'train'...
+04/05/2025 20:33:51 - INFO - root - Using all 5000 samples from the dataset.
+04/05/2025 20:33:51 - INFO - root - Attempting to load tokenized dataset from cache (if available)...
+04/05/2025 20:33:51 - INFO - root - Tokenized dataset loaded successfully (from cache or newly processed).
+04/05/2025 20:33:51 - INFO - root - Dataset initialization complete for split 'train'. Size: 5000
+04/05/2025 20:33:51 - INFO - root - Loading raw dataset 'codeparrot/apps' split 'test'...
+04/05/2025 20:33:51 - INFO - root - Using all 5000 samples from the dataset.
+04/05/2025 20:33:51 - INFO - root - Attempting to load tokenized dataset from cache (if available)...
+04/05/2025 20:33:51 - INFO - root - Tokenized dataset loaded successfully (from cache or newly processed).
+04/05/2025 20:33:51 - INFO - root - Dataset initialization complete for split 'test'. Size: 5000
+04/05/2025 20:33:51 - INFO - disjointTrainer - Train Dataset: 5000 samples
+04/05/2025 20:33:51 - INFO - disjointTrainer - Eval Dataset: 5000 samples
+04/05/2025 20:33:51 - INFO - disjointTrainer - Optimizers created.
+04/05/2025 20:33:51 - INFO - disjointTrainer - Calculated num_training_steps: 5000
+04/05/2025 20:33:51 - INFO - disjointTrainer - Schedulers created.
+04/05/2025 20:33:51 - INFO - disjointTrainer - Train Dataset: 5000 samples
+04/05/2025 20:33:51 - INFO - disjointTrainer - Eval Dataset: 5000 samples
+04/05/2025 20:33:51 - INFO - disjointTrainer - Optimizers created.
+04/05/2025 20:33:51 - INFO - disjointTrainer - Calculated num_training_steps: 5000
+04/05/2025 20:33:51 - INFO - disjointTrainer - Schedulers created.
+04/05/2025 20:33:52 - INFO - disjointTrainer - Preparing components with Accelerate...
+04/05/2025 20:33:52 - INFO - disjointTrainer - Selecting plugin for Model A...
+04/05/2025 20:33:52 - INFO - disjointTrainer - Preparing Model A, Optimizer A, Train Dataloader...
+04/05/2025 20:33:52 - INFO - disjointTrainer - Preparing components with Accelerate...
+04/05/2025 20:33:52 - INFO - disjointTrainer - Selecting plugin for Model A...
+04/05/2025 20:33:52 - INFO - disjointTrainer - Preparing Model A, Optimizer A, Train Dataloader...
+04/05/2025 20:33:55 - INFO - disjointTrainer - Selecting plugin for Model B...
+04/05/2025 20:33:55 - INFO - disjointTrainer - Preparing Model B, Optimizer B...
+04/05/2025 20:33:56 - INFO - disjointTrainer - Selecting plugin for Model B...
+04/05/2025 20:33:56 - INFO - disjointTrainer - Preparing Model B, Optimizer B...
+04/05/2025 20:33:59 - INFO - disjointTrainer - Preparing Eval Dataloader...
+04/05/2025 20:33:59 - INFO - disjointTrainer - Component preparation complete.
+04/05/2025 20:33:59 - INFO - disjointTrainer - --- Initialization Complete ---
+04/05/2025 20:33:59 - INFO - disjointTrainer - ***** Starting Training *****
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Num Epochs = 1
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Instantaneous batch size per device = 4
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Total train batch size (w. parallel, distributed & accumulation) = 8
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Gradient Accumulation steps = 1
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Total optimization steps = 5000
+04/05/2025 20:33:59 - INFO - disjointTrainer - --- Starting Epoch 1/1 ---
+04/05/2025 20:33:59 - INFO - disjointTrainer - Preparing Eval Dataloader...
+04/05/2025 20:33:59 - INFO - disjointTrainer - Component preparation complete.
+04/05/2025 20:33:59 - INFO - disjointTrainer - --- Initialization Complete ---
+04/05/2025 20:33:59 - INFO - disjointTrainer - ***** Starting Training *****
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Num Epochs = 1
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Instantaneous batch size per device = 4
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Total train batch size (w. parallel, distributed & accumulation) = 8
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Gradient Accumulation steps = 1
+04/05/2025 20:33:59 - INFO - disjointTrainer -   Total optimization steps = 5000
+Training Steps:   0%|          | 0/5000 [00:00<?, ?it/s]04/05/2025 20:33:59 - INFO - disjointTrainer - --- Starting Epoch 1/1 ---
+Processed prompts:   0%|          | 0/8 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  25%|██▌       | 2/8 [00:03<00:09,  1.50s/it, est. speed input: 151.09 toks/s, output: 122.13 toks/s]Processed prompts:  50%|█████     | 4/8 [00:03<00:03,  1.16it/s, est. speed input: 226.23 toks/s, output: 303.12 toks/s]Processed prompts:  75%|███████▌  | 6/8 [00:04<00:01,  1.54it/s, est. speed input: 330.02 toks/s, output: 472.34 toks/s]Processed prompts: 100%|██████████| 8/8 [00:04<00:00,  1.73it/s, est. speed input: 486.80 toks/s, output: 693.48 toks/s]
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 36, in <module>
+[rank0]:     run_training()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 31, in run_training
+[rank0]:     trainer.train()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 585, in train
+[rank0]:     losses = self._training_step(batch)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 683, in _training_step
+[rank0]:     inputs = self._prepare_inputs(batch)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 1067, in _prepare_inputs
+[rank0]:     inputs = self._generate_and_score_completions(inputs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 1112, in _generate_and_score_completions
+[rank0]:     generation_config=generation_config_a,
+[rank0]:                       ^^^^^^^^^^^^^^^^^^^
+[rank0]: NameError: name 'generation_config_a' is not defined
+Training Steps:   0%|          | 0/5000 [00:04<?, ?it/s]
+W0405 20:34:05.482000 1640812 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 1640883 closing signal SIGTERM
+E0405 20:34:05.646000 1640812 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 1640882) of binary: /gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1196, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 878, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-04-05_20:34:05
+  host      : gcn47.local.snellius.surf.nl
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1640882)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

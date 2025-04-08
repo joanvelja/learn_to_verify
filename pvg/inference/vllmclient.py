@@ -137,7 +137,8 @@ class VLLMClient:
         min_p: float = 0.0,
         max_tokens: int = 16,
         guided_decoding_regex: str | None = None,
-    ) -> list[list[str]]:
+        logprobs: int | None = None,
+    ) -> list[list[str]] | tuple[list[list[str]], list[list[dict[int, float]]]]:
         """
         Generates model completions for the provided prompts.
 
@@ -178,10 +179,15 @@ class VLLMClient:
                 "min_p": min_p,
                 "max_tokens": max_tokens,
                 "guided_decoding_regex": guided_decoding_regex,
+                "logprobs": logprobs,
             },
         )
         if response.status_code == 200:
-            return response.json()["completion_ids"]
+            return (
+                response.json()["completion_ids"]
+                if logprobs is None
+                else (response.json()["completion_ids"], response.json()["logprobs"])
+            )
         else:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 

@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from collections.abc import Sequence
 
 import torch
+import math
+import json
 
 from trl import TrlParser
 from trl.import_utils import (
@@ -302,9 +304,11 @@ def main(script_args: ScriptArguments):
         min_p: float = 0.0
         max_tokens: int = 16
         guided_decoding_regex: str | None = None
+        logprobs: int | None = None
 
     class GenerateResponse(BaseModel):
         completion_ids: list[list[int]]
+        logprobs: list[list[dict[int, float | None]]] | None = None
 
     @app.post("/generate/", response_model=GenerateResponse)
     async def generate(request: GenerateRequest):
@@ -348,14 +352,84 @@ def main(script_args: ScriptArguments):
             min_p=request.min_p,
             max_tokens=request.max_tokens,
             guided_decoding=guided_decoding,
+            logprobs=request.logprobs,
         )
         all_outputs = llm.generate(request.prompts, sampling_params=sampling_params)
-        completion_ids = [
-            list(output.token_ids)
-            for outputs in all_outputs
-            for output in outputs.outputs
-        ]
-        return {"completion_ids": completion_ids}
+        # completion_ids = [
+        #     list(output.token_ids)
+        #     for outputs in all_outputs
+        #     for output in outputs.outputs
+        # ]
+        # return {"completion_ids": completion_ids}
+        # --- Extract completion_ids AND logprobs ---
+        completion_ids = []
+        logprobs_data = [] if request.logprobs is not None else None
+
+        # --- Add Detailed Logging ---
+        raw_logprobs_for_logging = []
+
+        for i, request_output in enumerate(all_outputs):
+            for j, output in enumerate(request_output.outputs):
+                completion_ids.append(list(output.token_ids))
+                if request.logprobs is not None and output.logprobs is not None:
+                    token_logprobs_list = []
+                    raw_step_logprobs_list = []  # For logging
+
+                    for k, step_logprobs in enumerate(output.logprobs):
+                        raw_step_data = {}  # For logging
+                        if step_logprobs:
+                            current_step_dict: dict[int, float | None] = {}
+                            for token_id, logprob_obj in step_logprobs.items():
+                                # --- Log the raw value ---
+                                raw_val = logprob_obj.logprob
+                                raw_step_data[int(token_id)] = (
+                                    raw_val  # Store raw value for logging
+                                )
+                                # --------------------------
+
+                                # Replace non-finite values with None for JSON compatibility
+                                if not math.isfinite(raw_val):
+                                    current_step_dict[int(token_id)] = None
+                                else:
+                                    # Check if it's exactly 0.0 - might indicate an issue or high prob
+                                    if raw_val == 0.0:
+                                        logger.debug(
+                                            f"Logprob is exactly 0.0 for token {token_id} at step {k}, output {j}, request {i}"
+                                        )
+                                    current_step_dict[int(token_id)] = raw_val
+
+                            token_logprobs_list.append(current_step_dict)
+                            raw_step_logprobs_list.append(
+                                raw_step_data
+                            )  # Add raw data for this step
+                        else:
+                            token_logprobs_list.append({})
+                            raw_step_logprobs_list.append({})  # Add empty raw data
+
+                    logprobs_data.append(token_logprobs_list)
+                    raw_logprobs_for_logging.append(
+                        raw_step_logprobs_list
+                    )  # Add raw data for this output
+
+                elif request.logprobs is not None:
+                    logprobs_data.append([])
+                    raw_logprobs_for_logging.append([])  # Add empty raw data
+
+        # --- Log the raw data before returning ---
+        # Use json.dumps for potentially cleaner multi-line output if needed
+        logger.info(
+            f"Raw logprobs extracted (before None conversion): {json.dumps(raw_logprobs_for_logging, indent=2)}"
+        )
+        logger.info(
+            f"Processed logprobs for response: {json.dumps(logprobs_data, indent=2)}"
+        )
+
+        # --- Return both completion_ids and logprobs ---
+        return (
+            {"completion_ids": completion_ids, "logprobs": logprobs_data}
+            if request.logprobs is not None
+            else {"completion_ids": completion_ids}
+        )
 
     class InitCommunicatorRequest(BaseModel):
         host: str

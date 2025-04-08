@@ -1,0 +1,93 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.30s/it]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.30s/it]
+
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:02<00:02,  2.59s/it]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:02<00:02,  2.59s/it]
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:12,  2.75it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:11,  2.97it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:00<00:10,  3.06it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:10,  3.10it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:09,  3.01it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:01<00:09,  3.06it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:09,  3.09it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:08,  3.12it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:02<00:08,  3.13it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:07,  3.15it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:07,  3.15it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:03<00:07,  3.09it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:07,  3.11it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:04<00:06,  3.13it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:04<00:06,  3.14it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:05<00:06,  3.15it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:05<00:05,  3.16it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:05<00:05,  3.17it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:06<00:05,  3.18it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:06<00:04,  3.18it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:06<00:04,  3.18it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:07<00:04,  3.19it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:07<00:03,  3.18it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:07<00:03,  3.18it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:07<00:03,  3.18it/s]Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:12<00:00,  7.12s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:12<00:00,  7.12s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:12<00:00,  6.44s/it]
+
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:12<00:00,  6.44s/it]
+
+Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:08<00:02,  3.16it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:08<00:02,  3.07it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:08<00:02,  3.03it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:09<00:01,  3.03it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:09<00:01,  3.12it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:09<00:01,  3.00it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:10<00:01,  2.95it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:10<00:00,  2.92it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:11<00:00,  2.90it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:11<00:00,  2.84it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:11<00:00,  3.07it/s]
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]INFO:     Started server process [2453351]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:11,  2.83it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:12,  2.70it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:10,  3.07it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:10,  3.00it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:00<00:10,  3.16it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:00<00:10,  3.12it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:09,  3.21it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:09,  3.18it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:09,  3.09it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:09,  3.21it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:01<00:09,  3.16it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:01<00:08,  3.24it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:08,  3.20it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:08,  3.25it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:08,  3.21it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:02<00:08,  3.22it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:02<00:08,  3.22it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:02<00:08,  3.22it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:07,  3.23it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:07,  3.24it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:07,  3.25it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:03<00:07,  3.25it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:03<00:07,  3.26it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:03<00:07,  3.26it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:06,  3.21it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:04<00:06,  3.27it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:04<00:06,  3.23it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:04<00:06,  3.27it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:04<00:06,  3.25it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:04<00:06,  3.27it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:04<00:05,  3.26it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:04<00:05,  3.28it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:05<00:05,  3.27it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:05<00:05,  3.21it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:05<00:05,  3.27it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:05<00:05,  3.12it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:05<00:04,  3.27it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:05<00:05,  3.12it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:06<00:04,  3.27it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:06<00:04,  3.10it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:06<00:04,  3.26it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:06<00:04,  3.09it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:06<00:03,  3.26it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:06<00:04,  3.08it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:07<00:03,  3.27it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:07<00:03,  3.09it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:07<00:03,  3.27it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:07<00:03,  3.06it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:07<00:03,  3.26it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:07<00:03,  3.03it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:08<00:02,  3.26it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:08<00:02,  3.02it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:08<00:02,  3.27it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:08<00:02,  3.27it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:08<00:02,  2.99it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:08<00:01,  3.27it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:08<00:02,  3.00it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:09<00:01,  3.25it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:09<00:02,  2.97it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:09<00:01,  3.22it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:09<00:01,  2.87it/s]The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:09<00:00,  3.16it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:09<00:01,  2.90it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:10<00:00,  3.17it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:10<00:01,  2.88it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:10<00:00,  3.19it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:10<00:00,  2.87it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.13it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:10<00:00,  3.22it/s]
+Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:11<00:00,  2.90it/s]INFO:     Started server process [2453350]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:11<00:00,  2.88it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:11<00:00,  3.07it/s]
+INFO:     Started server process [2453349]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+04/05/2025 20:22:53 - INFO - disjointTrainer - Logging level set to INFO
+04/05/2025 20:22:53 - INFO - disjointTrainer - Logging level set to WARNING
+04/05/2025 20:22:53 - INFO - disjointTrainer - Set random seed to 42
+04/05/2025 20:22:53 - INFO - disjointTrainer - Set random seed to 42
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 36, in <module>
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 36, in <module>
+        run_training()run_training()
+
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 29, in run_training
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 29, in run_training
+    trainer = DisjointSequentialTrainer(args=script_args)
+trainer = DisjointSequentialTrainer(args=script_args)
+                          ^ ^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^  File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 60, in __init__
+
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 60, in __init__
+    if self.accelerator.is_main_process:
+    if self.accelerator.is_main_process:
+           ^ ^ ^ ^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^AttributeError^:
+'DisjointSequentialTrainer' object has no attribute 'accelerator'AttributeError: 'DisjointSequentialTrainer' object has no attribute 'accelerator'. Did you mean: 'accelerators'?. Did you mean: '
+accelerators'?
+W0405 20:22:54.361000 2453727 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 2454408 closing signal SIGTERM
+E0405 20:22:54.425000 2453727 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 2454407) of binary: /gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1196, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 878, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-04-05_20:22:54
+  host      : gcn56.local.snellius.surf.nl
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 2454407)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

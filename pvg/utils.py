@@ -1,8 +1,22 @@
 import torch
 from copy import deepcopy
 import deepspeed
+import re
+import logging
 from dataclasses import dataclass, field
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, AutoTokenizer
+from typing import Literal
+from prompts import (
+    BASE_HONEST,
+    BASE_SNEAKY,
+    BASE_VERIFIER,
+    INSTRUCT_HONEST,
+    INSTRUCT_SNEAKY,
+    INSTRUCT_VERIFIER,
+)
+from trl.trainer.utils import pad
+
+logger = logging.getLogger(__name__)
 
 
 # torch.nanstd doesn't exist, so we define it here
@@ -209,14 +223,18 @@ class FlatExperimentArgs:
     )
 
     # --- Fields from TrainingConfig ---
-    learning_rate_a: float = field(
+    learning_rate_honest_prover: float = field(
         default=5e-5, metadata={"help": "LR for Honest Prover."}
     )
-    learning_rate_b: float = field(
+    learning_rate_sneaky_prover: float = field(
         default=5e-5, metadata={"help": "LR for Sneaky Prover."}
     )
-    weight_decay_a: float = field(default=0.0, metadata={"help": "Weight decay A."})
-    weight_decay_b: float = field(default=0.0, metadata={"help": "Weight decay B."})
+    weight_decay_honest_prover: float = field(
+        default=0.0, metadata={"help": "Weight decay Honest Prover."}
+    )
+    weight_decay_sneaky_prover: float = field(
+        default=0.0, metadata={"help": "Weight decay Sneaky Prover."}
+    )
     per_device_train_batch_size: int = field(
         default=4, metadata={"help": "Train batch size per device."}
     )
@@ -235,11 +253,11 @@ class FlatExperimentArgs:
     max_train_steps: int | None = field(
         default=None, metadata={"help": "Max train steps."}
     )
-    max_grad_norm_a: float | None = field(
-        default=1.0, metadata={"help": "Max grad norm A."}
+    max_grad_norm_honest_prover: float | None = field(
+        default=1.0, metadata={"help": "Max grad norm Honest Prover."}
     )
-    max_grad_norm_b: float | None = field(
-        default=1.0, metadata={"help": "Max grad norm B."}
+    max_grad_norm_sneaky_prover: float | None = field(
+        default=1.0, metadata={"help": "Max grad norm Sneaky Prover."}
     )
     sync_steps: int = field(default=1, metadata={"help": "Sync steps."})
     num_generations: int = field(default=2, metadata={"help": "Num generations."})
@@ -250,43 +268,71 @@ class FlatExperimentArgs:
 
     # --- Fields from DistributedConfig ---
     ds_config_honest_prover: str = field(
-        default="", metadata={"help": "DS config path A."}
+        default="", metadata={"help": "DS config path Honest Prover."}
     )
     ds_config_sneaky_prover: str = field(
-        default="", metadata={"help": "DS config path B."}
+        default="", metadata={"help": "DS config path Sneaky Prover."}
     )
     mixed_precision: str | None = field(
         default="bf16", metadata={"help": "Mixed precision."}
     )
 
     # --- Fields from InferenceConfig ---
-    vllm_host_a: str = field(default="127.0.0.1", metadata={"help": "vLLM host A."})
-    vllm_port_a: int = field(default=8000, metadata={"help": "vLLM port A."})
-    vllm_host_b: str = field(default="127.0.0.1", metadata={"help": "vLLM host B."})
-    vllm_port_b: int = field(default=8001, metadata={"help": "vLLM port B."})
-    vllm_host_c: str = field(default="127.0.0.1", metadata={"help": "vLLM host C."})
-    vllm_port_c: int = field(default=8002, metadata={"help": "vLLM port C."})
+    vllm_host_honest_prover: str = field(
+        default="127.0.0.1", metadata={"help": "vLLM host Honest Prover."}
+    )
+    vllm_port_honest_prover: int = field(
+        default=8000, metadata={"help": "vLLM port Honest Prover."}
+    )
+    vllm_host_sneaky_prover: str = field(
+        default="127.0.0.1", metadata={"help": "vLLM host Sneaky Prover."}
+    )
+    vllm_port_sneaky_prover: int = field(
+        default=8001, metadata={"help": "vLLM port Sneaky Prover."}
+    )
+    vllm_host_verifier: str = field(
+        default="127.0.0.1", metadata={"help": "vLLM host Verifier."}
+    )
+    vllm_port_verifier: int = field(
+        default=8002, metadata={"help": "vLLM port Verifier."}
+    )
     vllm_server_timeout: float = field(
         default=60.0, metadata={"help": "vLLM server timeout."}
     )
-    vllm_max_new_tokens_a: int = field(
-        default=64, metadata={"help": "Max new tokens A."}
+    vllm_max_new_tokens_honest_prover: int = field(
+        default=64, metadata={"help": "Max new tokens Honest Prover."}
     )
-    vllm_temperature_a: float = field(default=0.7, metadata={"help": "Temperature A."})
-    vllm_max_new_tokens_b: int = field(
-        default=64, metadata={"help": "Max new tokens B."}
+    vllm_temperature_honest_prover: float = field(
+        default=0.7, metadata={"help": "Temperature Honest Prover."}
     )
-    vllm_temperature_b: float = field(default=0.7, metadata={"help": "Temperature B."})
-    vllm_max_new_tokens_c: int = field(
-        default=64, metadata={"help": "Max new tokens C."}
+    vllm_max_new_tokens_sneaky_prover: int = field(
+        default=64, metadata={"help": "Max new tokens Sneaky Prover."}
     )
-    vllm_temperature_c: float = field(default=0.7, metadata={"help": "Temperature C."})
-    vllm_top_p_a: float = field(default=1.0, metadata={"help": "Top-p A."})
-    vllm_top_k_a: int = field(default=-1, metadata={"help": "Top-k A."})
-    vllm_top_p_b: float = field(default=1.0, metadata={"help": "Top-p B."})
-    vllm_top_k_b: int = field(default=-1, metadata={"help": "Top-k B."})
-    vllm_top_p_c: float = field(default=1.0, metadata={"help": "Top-p C."})
-    vllm_top_k_c: int = field(default=-1, metadata={"help": "Top-k C."})
+    vllm_temperature_sneaky_prover: float = field(
+        default=0.7, metadata={"help": "Temperature Sneaky Prover."}
+    )
+    vllm_max_new_tokens_verifier: int = field(
+        default=64, metadata={"help": "Max new tokens Verifier."}
+    )
+    vllm_temperature_verifier: float = field(
+        default=0.7, metadata={"help": "Temperature Verifier."}
+    )
+    vllm_top_p_honest_prover: float = field(
+        default=1.0, metadata={"help": "Top-p Honest Prover."}
+    )
+    vllm_top_k_honest_prover: int = field(
+        default=-1, metadata={"help": "Top-k Honest Prover."}
+    )
+    vllm_top_p_sneaky_prover: float = field(
+        default=1.0, metadata={"help": "Top-p Sneaky Prover."}
+    )
+    vllm_top_k_sneaky_prover: int = field(
+        default=-1, metadata={"help": "Top-k Sneaky Prover."}
+    )
+    vllm_top_p_verifier: float = field(
+        default=1.0, metadata={"help": "Top-p Verifier."}
+    )
+    vllm_top_k_verifier: int = field(default=-1, metadata={"help": "Top-k Verifier."})
 
     # --- Fields from LoggingSavingConfig ---
     output_dir: str = field(default="", metadata={"help": "Output directory."})
@@ -298,6 +344,17 @@ class FlatExperimentArgs:
         default=None, metadata={"help": "Resume checkpoint path."}
     )
 
+    # --- Fields from InstructionConfig ---
+    honest_prover_system_prompt: str = field(
+        default="", metadata={"help": "System prompt for Honest Prover."}
+    )
+    sneaky_prover_system_prompt: str = field(
+        default="", metadata={"help": "System prompt for Sneaky Prover."}
+    )
+    verifier_system_prompt: str = field(
+        default="", metadata={"help": "System prompt for Verifier."}
+    )
+
 
 # --- Update get_args function ---
 def get_args():
@@ -306,3 +363,295 @@ def get_args():
     # parse_args_into_dataclasses returns a tuple, get the first element which is our args instance
     script_args = parser.parse_args_into_dataclasses()[0]
     return script_args  # Returns an instance of FlatExperimentArgs
+
+
+# Storage classes for _generate_and_score_completions
+class Container:
+    def __init__(
+        self,
+        tokenizer: AutoTokenizer,
+        raw_prompts: list[str],
+        system_prompts: dict[
+            Literal["honest_prover", "sneaky_prover", "verifier"], str
+        ],
+        devices: dict[str, torch.device],
+    ) -> None:
+        self.tokenizer = tokenizer
+        self.raw_prompts = raw_prompts  # List of strings (problem queries), not preprocessed for generation (i.e., not formatted with system prompts, etc.) --> PROBLEM HERE: Only questions, not solutions! Handling input preparation for sneaky & verifier is a pain
+        self.system_prompts = system_prompts  # Dict of system prompts for all models
+        self.devices = devices  # Dict of devices for all models
+
+        self.container = {  # Container for all the relevant stuff
+            "honest_prover": {
+                "prompt_texts": [],
+                "prompt_ids": [],
+                "prompt_mask": [],
+                "completion_texts": [],
+                "completion_ids": [],
+                "completion_mask": [],
+                "prompt_completion_ids": [],
+                "prompt_completion_mask": [],
+                "logits_to_keep": -1,
+                "is_eos": [],
+            },
+            "sneaky_prover": {
+                "prompt_texts": [],
+                "prompt_ids": [],
+                "prompt_mask": [],
+                "completion_texts": [],
+                "completion_ids": [],
+                "completion_mask": [],
+                "prompt_completion_ids": [],
+                "prompt_completion_mask": [],
+                "logits_to_keep": -1,
+                "is_eos": [],
+            },
+            "verifier": {  # TODO: Check if we need to store verifiers ids and masks here (we shouldnt?)
+                "prompt_texts": [],
+                "prompt_ids": [],
+                "prompt_mask": [],
+                "completion_texts": [],
+                "completion_ids": [],
+                "completion_mask": [],
+                "prompt_completion_ids": [],
+                "prompt_completion_mask": [],
+                "logits_to_keep": -1,
+                "is_eos": [],
+            },
+        }
+
+        self.prompt_bank = (
+            {  # Bank of prompts for all models (callable by model_key and format_type)
+                "honest_prover": {
+                    "base": BASE_HONEST,
+                    "instruct": INSTRUCT_HONEST,
+                    "args": ["problem"],
+                },
+                "sneaky_prover": {
+                    "base": BASE_SNEAKY,
+                    "instruct": INSTRUCT_SNEAKY,
+                    "args": ["problem", "honest_solution"],
+                },
+                "verifier": {
+                    "base": BASE_VERIFIER,
+                    "instruct": INSTRUCT_VERIFIER,
+                    "args": ["problem", "solution"],
+                },
+            }
+        )
+        self.honest_solutions: list[str] | None = (
+            None  # Solutions from the honest prover
+        )
+        self.sneaky_solutions: list[str] | None = (
+            None  # Solutions from the sneaky prover
+        )
+        self.verifier_rewards: list[float] | None = None  # Rewards from the verifier
+
+    # TODO: Check completions_ids type!!!!!!
+    def load_completions(
+        self,
+        model_key: Literal["honest_prover", "sneaky_prover", "verifier"],
+        completions_str: list[str],
+        completions_ids,
+        rewards: list[float] | None = None,
+    ):
+        """Load completions from a model."""
+        if model_key == "honest_prover":
+            self.container[model_key]["completion_texts"] = completions_str
+            self.container[model_key]["completion_ids"] = completions_ids
+            self.honest_solutions = [
+                self.extract_solution(completion) for completion in completions_str
+            ]
+        elif model_key == "sneaky_prover":
+            self.container[model_key]["completion_texts"] = completions_str
+            self.container[model_key]["completion_ids"] = completions_ids
+            self.sneaky_solutions = [
+                self.extract_solution(completion) for completion in completions_str
+            ]
+        elif model_key == "verifier":
+            self.container[model_key]["completion_texts"] = completions_str
+            self.container[model_key]["completion_ids"] = completions_ids
+            self.verifier_rewards = rewards
+
+    def extract_solution(self, completion_text: str) -> str:
+        """
+        Extracts the code block enclosed in ```<language> ... ``` from a completion text.
+        It finds the first occurrence of such a block, regardless of the specified language.
+        Provides fallbacks if the delimiters are not found as expected.
+        """
+        # Regex to find ``` followed by any language identifier (optional), newline, content, and closing ```
+        # - ```(?:[a-zA-Z0-9]+)? : Matches ``` optionally followed by a language identifier (alphanumeric)
+        # - \s*\n                 : Matches optional whitespace and a newline
+        # - (.*?)                : Captures the content non-greedily (the actual code/solution)
+        # - \n?```               : Matches an optional newline and the closing ```
+        # re.DOTALL makes '.' match newlines as well
+        match = re.search(
+            r"```(?:[a-zA-Z0-9]*)?\s*\n(.*?)\n?```", completion_text, re.DOTALL
+        )
+
+        if match:
+            # Extract the captured group (the code) and strip whitespace
+            solution = match.group(1).strip()
+            return solution
+        else:
+            # Handle cases where the block is not found
+            logger.warning(
+                f"Could not find '```...```' block in completion text. Returning raw text. Text was:\n---\n{completion_text}\n---"
+            )
+            # Fallback: Return the original text (TODO: Find a better fallback, maybe a penalty for the model?)
+            return completion_text
+
+    def make_query_prompt(
+        self,
+        model_key: Literal["honest_prover", "sneaky_prover", "verifier"],
+        format_type: Literal["base", "instruct"],
+    ) -> str:
+        """Make an instruction prompt from a question. Does not .format() and fill in the prompt."""
+        if format_type == "base":
+            return self.prompt_bank[model_key]["base"]
+        elif format_type == "instruct":
+            chat = [
+                {"role": "system", "content": self.system_prompts[model_key]},
+                {"role": "user", "content": self.prompt_bank[model_key]["instruct"]},
+            ]
+            return self.tokenizer.apply_chat_template(
+                chat, tokenize=False, add_generation_prompt=True
+            )
+
+    def prepare_inputs(
+        self,
+        model_key: Literal["honest_prover", "sneaky_prover", "verifier"],
+        format_type: Literal["base", "instruct"],
+    ) -> None:
+        """Prepare inputs for a model. This implies the str prompt filled in, the tokenized prompt, and the mask."""
+        if model_key == "sneaky_prover" and self.honest_solutions is None:
+            raise ValueError(
+                "Honest solutions are required for sneaky prover prompt preparation."
+            )
+
+        if model_key == "verifier" and (
+            self.sneaky_solutions is None or self.honest_solutions is None
+        ):
+            raise ValueError(
+                "Sneaky and honest solutions are required for verifier prompt preparation."
+            )
+
+        # TODO: This is the wrong way to do this. .format() should, conditionally on model_key, fill in either:
+        # - honest_prover: problem --> raw_prompts[i] --> .format(problem=raw_prompts[i]) for all problems in raw_prompts
+        # - sneaky_prover: problem, honest_solution --> raw_prompts[i], honest_solutions[i] --> .format(problem=raw_prompts[i], honest_solution=honest_solutions[i]) for all i in range(len(raw_prompts)) # Assumes raw_prompts and honest_solutions are of same length
+        # - verifier: problem, solution --> raw_prompts[i], solutions[i] (where solutions is joint sneaky & honest solutions -- concat) --> .format(problem=raw_prompts[i], solution=solutions[i]) for all i in range(len(raw_prompts))
+
+        # if format_type == "base":
+        #     formatted_prompts = [self.make_query_prompt(model_key, format_type).format(**{arg: self.raw_prompts[i] for arg in self.prompt_bank[model_key]["args"]}) for i in range(len(self.raw_prompts))]
+        # elif format_type == "instruct":
+        #     formatted_prompts = [self.make_query_prompt(model_key, format_type).format(**{arg: self.raw_prompts[i] for arg in self.prompt_bank[model_key]["args"]}) for i in range(len(self.raw_prompts))]
+
+        if model_key == "honest_prover":
+            formatted_prompts = [
+                self.make_query_prompt(model_key, format_type).format(
+                    problem=self.raw_prompts[i]
+                )
+                for i in range(len(self.raw_prompts))
+            ]
+        elif model_key == "sneaky_prover":
+            formatted_prompts = [
+                self.make_query_prompt(model_key, format_type).format(
+                    problem=self.raw_prompts[i],
+                    honest_solution=self.honest_solutions[i],
+                )
+                for i in range(len(self.raw_prompts))
+            ]
+        elif model_key == "verifier":
+            formatted_prompts = [
+                self.make_query_prompt(model_key, format_type).format(
+                    problem=self.raw_prompts[i], solution=self.honest_solutions[i]
+                )
+                for i in range(len(self.raw_prompts))
+            ]
+            formatted_prompts += [
+                self.make_query_prompt(model_key, format_type).format(
+                    problem=self.raw_prompts[i], solution=self.sneaky_solutions[i]
+                )
+                for i in range(len(self.raw_prompts))
+            ]
+            # Shuffle?
+            # random.shuffle(formatted_prompts)
+
+        tokenized_prompts = self.tokenizer(
+            formatted_prompts,
+            return_tensors="pt",
+            padding=True,
+            padding_side="left",
+            add_special_tokens=False,
+        ).to(self.devices[model_key])
+
+        self.container[model_key]["prompt_texts"] = formatted_prompts
+        self.container[model_key]["prompt_ids"] = tokenized_prompts["input_ids"]
+        self.container[model_key]["prompt_mask"] = tokenized_prompts["attention_mask"]
+
+    def pad_and_concatenate(
+        self, model_key: Literal["honest_prover", "sneaky_prover", "verifier"]
+    ) -> None:
+        """Pad and concatenate the completion ids for a model."""
+        # See below
+        # completion_ids_a = [torch.tensor(ids, device=device_a) for ids in completion_ids_a]
+        # completion_ids_a = pad(completion_ids_a, padding_value=self.tokenizer.pad_token_id)
+        # prompt_completion_ids_a = torch.cat([prompt_ids_a, completion_ids_a], dim=1)
+
+        # completion_ids_b = [torch.tensor(ids, device=device_a) for ids in completion_ids_b]
+        # completion_ids_b = pad(completion_ids_b, padding_value=self.tokenizer.pad_token_id)
+        # prompt_completion_ids_b = torch.cat([prompt_ids_b, completion_ids_b], dim=1)
+
+        # completion_ids (for every model_key) is a list of list of ints (each inner list is a completion), but it must be tensorized and padded
+        # Why list[list[int]]?
+        # vLLM client returns a json.response object, which is handled easily via the above data structure. We need to do an extra step to tensorize first and then pad : (list[torch.Tensor], padding_value: int = 0, padding_side: str = "right")
+        self.container[model_key]["completion_ids"] = [
+            torch.tensor(ids, device=self.devices[model_key])
+            for ids in self.container[model_key]["completion_ids"]
+        ]  # Needed to pass to pad ()
+        self.container[model_key]["completion_ids"] = pad(
+            self.container[model_key]["completion_ids"],
+            padding_value=self.tokenizer.pad_token_id,
+        )
+        self.container[model_key]["prompt_completion_ids"] = torch.cat(
+            [
+                self.container[model_key]["prompt_ids"],
+                self.container[model_key]["completion_ids"],
+            ],
+            dim=1,
+        )
+
+    def mask_completion(
+        self, model_key: Literal["honest_prover", "sneaky_prover", "verifier"]
+    ) -> None:
+        """Mask the completion ids for a model."""
+        # See below
+        # is_eos_a = completion_ids_a == self.tokenizer.eos_token_id
+        # eos_idx_a = torch.full((is_eos_a.size(0),), is_eos_a.size(1), dtype=torch.long, device=device_a)
+        # eos_idx_a[is_eos_a.any(dim=1)] = is_eos_a.int().argmax(dim=1)[is_eos_a.any(dim=1)]
+        # sequence_indices_a = torch.arange(is_eos_a.size(1), device=device_a).expand(is_eos_a.size(0), -1)
+        # completion_mask_a = (sequence_indices_a <= eos_idx_a.unsqueeze(1)).int()
+
+        is_eos = (
+            self.container[model_key]["completion_ids"] == self.tokenizer.eos_token_id
+        )
+        eos_idx = torch.full(
+            (is_eos.size(0),),
+            is_eos.size(1),
+            dtype=torch.long,
+            device=self.devices[model_key],
+        )
+        eos_idx[is_eos.any(dim=1)] = is_eos.int().argmax(dim=1)[is_eos.any(dim=1)]
+        sequence_indices = torch.arange(
+            is_eos.size(1), device=self.devices[model_key]
+        ).expand(is_eos.size(0), -1)
+        completion_mask = (sequence_indices <= eos_idx.unsqueeze(1)).int()
+
+        self.container[model_key]["completion_mask"] = completion_mask
+        self.container[model_key]["prompt_completion_mask"] = torch.cat(
+            [self.container[model_key]["prompt_mask"], completion_mask], dim=1
+        )
+        self.container[model_key]["logits_to_keep"] = self.container[model_key][
+            "completion_ids"
+        ].size(1)
+        self.container[model_key]["is_eos"] = is_eos

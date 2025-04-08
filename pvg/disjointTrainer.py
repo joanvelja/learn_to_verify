@@ -1,11 +1,18 @@
 import logging
 import os
 import json
-from typing import Any
+from typing import Any, Literal
+from collections import defaultdict, deque
 import copy
+from pvg.utils import Container
 import torch
 from accelerate import Accelerator
-from accelerate.utils import DeepSpeedPlugin, ProjectConfiguration
+from accelerate.utils import (
+    DeepSpeedPlugin,
+    ProjectConfiguration,
+    gather_object,
+    broadcast_object_list,
+)
 from transformers import (
     set_seed,
     AutoModelForCausalLM,  # Assuming Causal LM for now
@@ -15,7 +22,7 @@ from transformers import (
 )
 from torch.utils.data import DataLoader, Dataset  # Add Dataset import
 from tqdm.auto import tqdm  # For progress bars
-from vllmclient import VLLMClient
+from inference import VLLMClient
 from torch.utils.data import Sampler
 from contextlib import nullcontext
 import deepspeed
@@ -23,7 +30,12 @@ from rep_sampler import RepeatRandomSampler
 from trl.trainer.utils import selective_log_softmax
 from dataset import AppsDataset
 from liger_kernel.transformers import _apply_liger_kernel_to_instance
+from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
 from logger_config import setup_logger
+from utils import prepare_deepspeed, nanstd
+import uuid
+import datetime
+import re
 
 logger = setup_logger(__name__)
 
@@ -38,12 +50,14 @@ class DisjointSequentialTrainer:
         self.schedulers: dict[str, torch.optim.lr_scheduler._LRScheduler] = {}
         self.dataloaders: dict[str, torch.utils.data.DataLoader] = {}
         self.deepspeed_plugins: dict[str, DeepSpeedPlugin] = {}
-        self.vllm_client_a = None  # Initialize to None
-        self.vllm_client_b = None  # Initialize to None
-        self.vllm_client_c = None  # Initialize to None
+        self.vllm_clients: dict[str, VLLMClient | None] = {
+            "honest_prover": None,
+            "sneaky_prover": None,
+            "verifier": None,
+        }
         self._signature_columns = None
 
-        # Check what this is for
+        # Buffer to store inputs for gradient accumulation steps
         self._buffered_inputs = [None] * args.gradient_accumulation_steps
 
         # State variables
@@ -58,6 +72,16 @@ class DisjointSequentialTrainer:
         self._initialize_accelerators()
         # Use accelerator_a for general state/logging, device info etc.
         self.accelerator = self.accelerators["honest_prover"]
+
+        # Create LLM interaction log directory on main process
+        self.llm_interaction_log_dir = os.path.join(
+            self.args.output_dir, "llm_interaction_logs"
+        )
+        if self.accelerator.is_main_process:
+            os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
+            logger.info(
+                f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}"
+            )
 
         # Log accelerator state (using accelerator_a is sufficient)
         accel_state = self.accelerators["honest_prover"].state
@@ -122,88 +146,45 @@ class DisjointSequentialTrainer:
         # --- End GPU Visibility Logging ---
 
         # Wait for everyone
-        self.accelerator.wait_for_everyone()
+        # self.accelerator.wait_for_everyone() # Not needed (seems like)
 
         # --- Instantiate vLLM Clients (Main Process Only) ---
         if self.accelerator.is_main_process:
             logger.info("Main process initializing vLLM clients...")
-            try:
-                self.vllm_client_a = VLLMClient(
-                    host=self.args.vllm_host_a,
-                    server_port=self.args.vllm_port_a,
-                    connection_timeout=self.args.vllm_server_timeout,
-                )
-                logger.info(
-                    f"vLLM Client A connected to {self.args.vllm_host_a}:{self.args.vllm_port_a}"
-                )
-            except ConnectionError as e:
-                logger.error(
-                    f"Failed to connect to vLLM server A: {e}. Ensure it's running and accessible.",
-                    exc_info=True,
-                )
-                raise  # Or handle gracefully depending on requirements
-            except Exception as e:
-                logger.error(
-                    f"An unexpected error occurred initializing vLLM Client A: {e}",
-                    exc_info=True,
-                )
-                raise
+            base_group_port = 51216
+            # Initialize vLLM clients - Honest Prover
+            self._initialize_vllm_client(
+                client_key="honest_prover",
+                host=self.args.vllm_host_a,
+                port=self.args.vllm_port_a,
+                group_port=base_group_port,
+                timeout=self.args.vllm_server_timeout,
+            )
+            # Initialize vLLM clients - Sneaky Prover
+            self._initialize_vllm_client(
+                client_key="sneaky_prover",
+                host=self.args.vllm_host_b,
+                port=self.args.vllm_port_b,
+                group_port=base_group_port + 1,
+                timeout=self.args.vllm_server_timeout,
+            )
+            # Initialize vLLM clients - Verifier
+            self._initialize_vllm_client(
+                client_key="verifier",
+                host=self.args.vllm_host_c,
+                port=self.args.vllm_port_c,
+                group_port=base_group_port + 2,
+                timeout=self.args.vllm_server_timeout,
+            )
 
-            try:
-                group_port_b = 51216 + 1
-                self.vllm_client_b = VLLMClient(
-                    host=self.args.vllm_host_b,
-                    server_port=self.args.vllm_port_b,
-                    group_port=group_port_b,
-                    connection_timeout=self.args.vllm_server_timeout,
-                )
-                logger.info(
-                    f"vLLM Client B connected to {self.args.vllm_host_b}:{self.args.vllm_port_b}"
-                )
-            except ConnectionError as e:
-                logger.error(
-                    f"Failed to connect to vLLM server B: {e}. Ensure it's running and accessible.",
-                    exc_info=True,
-                )
-                raise
-            except Exception as e:
-                logger.error(
-                    f"An unexpected error occurred initializing vLLM Client B: {e}",
-                    exc_info=True,
-                )
-                raise
-
-            try:
-                group_port_c = 51216 + 2
-                self.vllm_client_c = VLLMClient(
-                    host=self.args.vllm_host_c,
-                    server_port=self.args.vllm_port_c,
-                    group_port=group_port_c,
-                    connection_timeout=self.args.vllm_server_timeout,
-                )
-                logger.info(
-                    f"vLLM Client C connected to {self.args.vllm_host_c}:{self.args.vllm_port_c}"
-                )
-            except ConnectionError as e:
-                logger.error(
-                    f"Failed to connect to vLLM server C: {e}. Ensure it's running and accessible.",
-                    exc_info=True,
-                )
-                raise
-            except Exception as e:
-                logger.error(
-                    f"An unexpected error occurred initializing vLLM Client C: {e}",
-                    exc_info=True,
-                )
-                raise
         # --- End vLLM Client Instantiation ---
         logger.info("vLLM Clients initialized.")
         logger.info("--- vLLM Clients State ---")
-        logger.info(f"  vLLM Client A: {self.vllm_client_a}")
-        logger.info(f"  vLLM Client B: {self.vllm_client_b}")
+        logger.info(f"  vLLM Client A: {self.vllm_clients['honest_prover']}")
+        logger.info(f"  vLLM Client B: {self.vllm_clients['sneaky_prover']}")
         (
-            logger.info(f"  vLLM Client C: {self.vllm_client_c}")
-            if self.vllm_client_c
+            logger.info(f"  vLLM Client C: {self.vllm_clients['verifier']}")
+            if self.vllm_clients["verifier"]
             else None
         )
 
@@ -218,12 +199,23 @@ class DisjointSequentialTrainer:
         # Now create schedulers with the correct number of steps
         self._create_schedulers(self.num_training_steps)
 
+        def data_collator(features):  # No data collation is needed in GRPO
+            return features
+
         # Dummy: dataloaders (though we won't use them)
         self.train_dataloader = DataLoader(
-            self.train_dataset, batch_size=self.args.per_device_train_batch_size
+            self.train_dataset,
+            batch_size=self.args.per_device_train_batch_size,
+            sampler=self._get_train_sampler(),
+            drop_last=True,
+            collate_fn=data_collator,
         )
         self.eval_dataloader = DataLoader(
-            self.eval_dataset, batch_size=self.args.per_device_eval_batch_size
+            self.eval_dataset,
+            batch_size=self.args.per_device_eval_batch_size,
+            sampler=self._get_eval_sampler(self.eval_dataset),
+            drop_last=True,
+            collate_fn=data_collator,
         )
         # Copy for model_b
         self.train_dataloader_b = copy.deepcopy(self.train_dataloader)
@@ -250,7 +242,78 @@ class DisjointSequentialTrainer:
                 f"batch size, the valid values for the number of generations are: {possible_values}."
             )
 
+        # --- 7. Initialize the Metrics used for logging ---
+        # Initialize the metrics
+        self._metrics = {
+            "honest_prover": {
+                "train": defaultdict(list),
+                "eval": defaultdict(list),
+            },
+            "sneaky_prover": {
+                "train": defaultdict(list),
+                "eval": defaultdict(list),
+            },
+            "verifier": {
+                "train": defaultdict(list),
+                "eval": defaultdict(list),
+            },
+        }
+        self._total_train_tokens = {
+            "honest_prover": 0,
+            "sneaky_prover": 0,
+            "verifier": 0,
+        }
+
+        # maxlen is set to the total number of forward passes per step. This value of `maxlen` ensures we log only the
+        # final optimization step.
+        maxlen = (
+            self.accelerator.num_processes
+            * self.args.per_device_train_batch_size
+            * self.args.gradient_accumulation_steps
+        )
+        self._textual_logs = {
+            "prompt": deque(maxlen=maxlen),
+            "completion": deque(maxlen=maxlen),
+            "rewards": defaultdict(lambda: deque(maxlen=maxlen)),
+        }
+
         logger.info("--- Initialization Complete ---")
+
+    def _initialize_vllm_client(
+        self,
+        client_key: str,
+        host: str,
+        port: int,
+        group_port: int | None,
+        timeout: float,
+    ):
+        """Initializes a single VLLMClient instance and handles errors."""
+        logger.info(f"Attempting to initialize vLLM client: {client_key}")
+        try:
+            client_kwargs = {
+                "host": host,
+                "server_port": port,
+                "connection_timeout": timeout,
+            }
+            if group_port is not None:
+                client_kwargs["group_port"] = group_port
+
+            self.vllm_clients[client_key] = VLLMClient(**client_kwargs)
+            logger.info(
+                f"Successfully connected vLLM client '{client_key}' to {host}:{port}"
+            )
+        except ConnectionError as e:
+            logger.error(
+                f"Failed to connect to vLLM server '{client_key}' at {host}:{port}. Ensure it's running and accessible: {e}",
+                exc_info=True,
+            )
+            raise
+        except Exception as e:
+            logger.error(
+                f"An unexpected error occurred initializing vLLM Client '{client_key}': {e}",
+                exc_info=True,
+            )
+            raise
 
     def _set_seed(self) -> None:
         set_seed(self.args.seed)
@@ -358,21 +421,26 @@ class DisjointSequentialTrainer:
         model_a = AutoModelForCausalLM.from_pretrained(
             self.args.honest_prover_name_or_path, **model_init_kwargs
         )
+        # --- Enable Gradient Checkpointing for Model A ---
+        if self.args.gradient_checkpointing:
+            model_a = self._enable_gradient_checkpointing(model_a)
+            logger.info("Gradient checkpointing enabled for Honest Prover.")
+
         logger.info(
             f"Loading Sneaky Prover from {self.args.sneaky_prover_name_or_path}"
         )
         model_b = AutoModelForCausalLM.from_pretrained(
             self.args.sneaky_prover_name_or_path, **model_init_kwargs
         )
+        # --- Enable Gradient Checkpointing for Model B ---
+        if self.args.gradient_checkpointing:
+            model_b = self._enable_gradient_checkpointing(model_b)
+            logger.info("Gradient checkpointing enabled for Sneaky Prover.")
         # logger.info(f"Loading Verifier from {self.args.verifier_name_or_path}")
-        # # TODO: Load Verifier
+        # # TODO: Load Verifier (depending on the type of verifier we want to use?)
         # verifier = AutoModelForCausalLM.from_pretrained(
         #     self.args.verifier_name_or_path, **model_init_kwargs
         # )
-
-        if self.args.apply_liger_kernel:
-            _apply_liger_kernel_to_instance(model_a)
-            _apply_liger_kernel_to_instance(model_b)
 
         self.models = {
             "honest_prover": model_a,
@@ -383,11 +451,32 @@ class DisjointSequentialTrainer:
         # Reference models for RL
         if self.args.beta == 0.0:
             # If beta is 0.0, the reference model is not needed
-            self.ref_model = None
+            self.ref_model_a = None
+            self.ref_model_b = None
         # elif is_deepspeed_zero3_enabled():
         else:
-            self.ref_model = AutoModelForCausalLM.from_pretrained(
+            self.ref_model_a = AutoModelForCausalLM.from_pretrained(
                 self.args.honest_prover_name_or_path
+            )
+            self.ref_model_b = AutoModelForCausalLM.from_pretrained(
+                self.args.sneaky_prover_name_or_path
+            )
+        self.ref_models = {
+            "honest_prover": self.ref_model_a,
+            "sneaky_prover": self.ref_model_b,
+        }
+
+        if (
+            self.args.apply_liger_kernel
+        ):  # Optimization stuff (claims 60% memory savings)
+            _apply_liger_kernel_to_instance(model_a)
+            _apply_liger_kernel_to_instance(model_b)
+            self.liger_grpo_loss = LigerFusedLinearGRPOLoss(
+                beta=self.args.beta,
+                epsilon_low=self.args.epsilon_low,
+                epsilon_high=self.args.epsilon_high,
+                temperature=self.args.vllm_temperature_honest_prover,
+                use_ref_model=True if self.ref_model_a is not None else False,
             )
 
     def _load_datasets(self):
@@ -484,53 +573,94 @@ class DisjointSequentialTrainer:
         logger.info("Schedulers created.")
         self.schedulers = {"honest_prover": scheduler_a, "sneaky_prover": scheduler_b}
 
+    def _prepare_training_components(
+        self,
+        model_key: Literal["honest_prover", "sneaky_prover"],
+        dataloader: DataLoader,
+    ) -> tuple[
+        PreTrainedModel,
+        torch.optim.Optimizer,
+        DataLoader,
+        torch.optim.lr_scheduler._LRScheduler,
+    ]:
+        """
+        Selects the DeepSpeed plugin and prepares the model, optimizer, dataloader, and scheduler
+        for the specified model_key using its associated accelerator.
+
+        Args:
+            model_key: The key identifying the model and its components.
+            dataloader: The specific dataloader instance to prepare for this model.
+
+        Returns:
+            A tuple containing the prepared (model, optimizer, dataloader, scheduler).
+        """
+        accelerator: Accelerator = self.accelerators[model_key]
+        model: PreTrainedModel = self.models[model_key]
+        optimizer: torch.optim.Optimizer = self.optimizers[model_key]
+        scheduler: torch.optim.lr_scheduler._LRScheduler = self.schedulers[model_key]
+
+        logger.info(f"Selecting plugin and preparing components for {model_key}...")
+        accelerator.state.select_deepspeed_plugin(model_key)
+
+        prepared_components: tuple[
+            PreTrainedModel,
+            torch.optim.Optimizer,
+            DataLoader,
+            torch.optim.lr_scheduler._LRScheduler,
+        ] = accelerator.prepare(model, optimizer, dataloader, scheduler)
+
+        logger.info(f"Components prepared for {model_key}.")
+        # Returns: model, optimizer, dataloader, scheduler (in that order)
+        return prepared_components
+
     def _prepare_components(self) -> None:
         logger.info("Preparing components with Accelerate...")
-        # Prepare Model A components
-        logger.info("Selecting plugin for Model A...")
-        self.accelerators["honest_prover"].state.select_deepspeed_plugin(
-            "honest_prover"
-        )
-        logger.info("Preparing Model A, Optimizer A, Train Dataloader...")
-        prepared_a = self.accelerators["honest_prover"].prepare(
-            self.models["honest_prover"],
-            self.optimizers["honest_prover"],
-            self.train_dataloader,
-            self.schedulers["honest_prover"],
-        )
+
+        # Prepare Model A (Honest Prover) components
         (
             self.models["honest_prover"],
             self.optimizers["honest_prover"],
             self.train_dataloader,
-        ) = (prepared_a[0], prepared_a[1], prepared_a[2])
+            self.schedulers["honest_prover"],  # Prepare returns scheduler too
+        ) = self._prepare_training_components(
+            model_key="honest_prover",
+            dataloader=self.train_dataloader,  # Pass the specific dataloader
+        )
 
-        # Prepare Model B components
-        logger.info("Selecting plugin for Model B...")
-        # Use accelerator_b's state object, though it points to the same shared state
-        self.accelerators["sneaky_prover"].state.select_deepspeed_plugin(
-            "sneaky_prover"
-        )
-        logger.info("Preparing Model B, Optimizer B...")
-        prepared_b = self.accelerators["sneaky_prover"].prepare(
-            self.models["sneaky_prover"],
-            self.optimizers["sneaky_prover"],
-            self.train_dataloader_b,
-            self.schedulers["sneaky_prover"],
-        )
+        # Prepare Model B (Sneaky Prover) components
         (
             self.models["sneaky_prover"],
             self.optimizers["sneaky_prover"],
             self.train_dataloader_b,
-        ) = (prepared_b[0], prepared_b[1], prepared_b[2])
+            self.schedulers["sneaky_prover"],  # Prepare returns scheduler too
+        ) = self._prepare_training_components(
+            model_key="sneaky_prover",
+            dataloader=self.train_dataloader_b,  # Pass the specific dataloader for B
+        )
 
-        # Prepare Eval Dataloader (using accelerator_a context is fine)
+        # Prepare Eval Dataloaders (using either accelerator context is fine, let's use honest_prover's)
+        # Note: accelerator.prepare handles DataLoaders differently (doesn't require plugin selection)
         if self.eval_dataloader:
-            logger.info("Preparing Eval Dataloader...")
+            logger.info("Preparing Eval Dataloaders...")
             self.eval_dataloader = self.accelerators["honest_prover"].prepare(
                 self.eval_dataloader
             )
-            self.eval_dataloader_b = self.accelerators["sneaky_prover"].prepare(
+            self.eval_dataloader_b = self.accelerators[
+                "sneaky_prover"
+            ].prepare(  # Use respective accelerator
                 self.eval_dataloader_b
+            )
+
+        # Prepare reference models (using existing logic as it's slightly different)
+        if self.ref_model_a:  # One check is enough if logic is symmetric
+            logger.info("Preparing reference models with DeepSpeed...")
+            self.ref_models["honest_prover"] = prepare_deepspeed(
+                self.ref_model_a,
+                self.accelerators["honest_prover"],
+            )
+            self.ref_models["sneaky_prover"] = prepare_deepspeed(
+                self.ref_model_b,
+                self.accelerators["sneaky_prover"],
             )
 
         logger.info("Component preparation complete.")
@@ -542,8 +672,14 @@ class DisjointSequentialTrainer:
         logger.info(
             f"  Instantaneous batch size per device = {self.args.per_device_train_batch_size}"
         )
+        # Calculate the effective batch size correctly
+        effective_train_batch_size = (
+            self.args.per_device_train_batch_size
+            * self.accelerator.num_processes  # Use num_processes from one accelerator
+            * self.args.gradient_accumulation_steps
+        )
         logger.info(
-            f"  Total train batch size (w. parallel, distributed & accumulation) = {self.args.per_device_train_batch_size * self.accelerator.num_processes * self.args.gradient_accumulation_steps}"
+            f"  Total train batch size (w. parallel, distributed & accumulation) = {effective_train_batch_size}"
         )
         logger.info(
             f"  Gradient Accumulation steps = {self.args.gradient_accumulation_steps}"
@@ -566,18 +702,44 @@ class DisjointSequentialTrainer:
             logger.info(
                 f"--- Starting Epoch {epoch+1}/{self.args.num_train_epochs} ---"
             )
+            # Optional: Track loss over accumulation steps for more stable logging
+            # accumulated_loss_a = 0.0
+            # accumulated_loss_b = 0.0
 
+            # --- Training Loop ---
             for step, batch in enumerate(self.train_dataloader):
                 # --- vLLM Generation & Training Step ---
                 # Generation happens on main process, results broadcast if needed
                 # Loss calculation and backward happen on all processes
                 losses = self._training_step(batch)
+                loss_a = losses["loss_a"]
+                loss_b = losses["loss_b"]
+
+                # Optional: Track loss over accumulation steps for more stable logging
+                # accumulated_loss_a += loss_a.item()
+                # accumulated_loss_b += loss_b.item()
+
+                # --- Gradient Accumulation ---
+                # Scale the loss for this micro-batch
+                loss_a_scaled = loss_a / self.args.gradient_accumulation_steps
+                loss_b_scaled = loss_b / self.args.gradient_accumulation_steps
+
+                # Perform backward pass to accumulate gradients
+                # Use the correct accelerator for each model's loss
+                # The backward pass should happen *before* the sync step check
+                self.accelerators["honest_prover"].backward(loss_a_scaled)
+                self.accelerators["sneaky_prover"].backward(loss_b_scaled)
+
+                # --- Synchronization Point Check ---
+                # Determine if this is the last step of an accumulation cycle or the overall last step
+                is_last_step_in_batch = (step + 1) == len(self.train_dataloader)
+                is_accumulation_boundary = (
+                    step + 1
+                ) % self.args.gradient_accumulation_steps == 0
+                is_sync_step = is_accumulation_boundary or is_last_step_in_batch
 
                 # --- Optimizer Step ---
-                is_sync_step = (
-                    (step + 1) % self.args.gradient_accumulation_steps == 0
-                ) or (step + 1 == len(self.train_dataloader))
-                if is_sync_step:
+                if is_sync_step:  # See above for explanation of this
                     # Clip Gradients (Optional)
                     if self.args.max_grad_norm_a is not None:
                         self.accelerators["honest_prover"].clip_grad_norm_(
@@ -607,12 +769,18 @@ class DisjointSequentialTrainer:
                         {
                             "loss_a": losses["loss_a"].item(),
                             "loss_b": losses["loss_b"].item(),
+                            "step": self.global_step,  # Show global step
+                            #  Example using averaged loss:
+                            # "avg_loss_a": accumulated_loss_a / self.args.gradient_accumulation_steps,
+                            # "avg_loss_b": accumulated_loss_b / self.args.gradient_accumulation_steps,
                         }
                     )  # Use .item() carefully
 
                     # --- Logging ---
                     if self.global_step % self.args.logging_steps == 0:
-                        self._log_metrics(losses)  # Pass detached losses
+                        # Log metrics based on the last micro-batch loss or averaged loss
+                        # Pass the unscaled losses from the last micro-batch
+                        self._log_metrics({"loss_a": loss_a, "loss_b": loss_b})
 
                     # --- Evaluation ---
                     if (
@@ -629,6 +797,10 @@ class DisjointSequentialTrainer:
                     # Decide when to sync weights (e.g., every N steps)
                     if self.global_step % self.args.sync_steps == 0:
                         self._sync_weights_to_vllm()
+
+                    # Reset accumulated loss trackers if using them for logging
+                    # accumulated_loss_a = 0.0
+                    # accumulated_loss_b = 0.0
 
                 if (
                     self.args.max_train_steps is not None
@@ -655,38 +827,35 @@ class DisjointSequentialTrainer:
         1. Generates sequences using vLLM (main process).
         2. Broadcasts generated sequences (if needed).
         3. Computes loss and gradients using training models (all processes).
-        Returns detached losses and potentially the generated data.
         """
-        # --- Model A ---
-        # Generate intermediate output (no gradients needed for this part)
-        # This needs specific implementation based on how B uses A's output
-        # with torch.no_grad():
-        #     # Example: Get hidden states or generate text
-        #     # intermediate_output_a = self.models["honest_prover"](...) # Or .generate()
-        #     # For now, let's assume B doesn't need A's output directly in this step
-        #     intermediate_output_a = None  # Placeholder
 
+        # Plan:
+        # 0. Prepare the inputs via vLLM + scoring + advantages for both provers [honest_prover, sneaky_prover]
+        inputs = self._prepare_inputs(batch)  # This returns the following:
+        # {
+        #     "prompt_ids": prompt_ids,
+        #     "prompt_mask": prompt_mask,
+        #     "completion_ids": completion_ids,
+        #     "completion_mask": completion_mask,
+        #     "advantages": advantages,
+        #     "old_per_token_logps": old_per_token_logps,
+        #     "ref_per_token_logps": ref_per_token_logps,
+        # }
+
+        # --- Model A ---
         # Forward/Backward for Model A's own loss
-        outputs_a = self.models["honest_prover"](**batch)
-        loss_a = outputs_a.loss
-        # Normalize loss for accumulation
-        loss_a_scaled = loss_a / self.args.gradient_accumulation_steps
-        self.accelerators["honest_prover"].backward(loss_a_scaled)
+        loss_a = self.compute_loss(
+            self.models["honest_prover"], inputs["honest_prover"], "honest_prover"
+        )
 
         # --- Model B ---
-        # Construct inputs for B (using batch and potentially intermediate_output_a)
-        inputs_b = batch  # Placeholder - modify as needed
-        # if intermediate_output_a is not None:
-        #     inputs_b['encoder_hidden_states'] = intermediate_output_a # Example
+        # Forward/Backward for Model B's own loss
+        loss_b = self.compute_loss(
+            self.models["sneaky_prover"], inputs["sneaky_prover"], "sneaky_prover"
+        )
 
-        outputs_b = self.models["sneaky_prover"](**inputs_b)
-        loss_b = outputs_b.loss
-        # Normalize loss for accumulation
-        loss_b_scaled = loss_b / self.args.gradient_accumulation_steps
-        self.accelerators["sneaky_prover"].backward(loss_b_scaled)
-
-        # Return detached losses for logging
-        return {"loss_a": loss_a.detach(), "loss_b": loss_b.detach()}
+        # --- Return losses ---
+        return {"loss_a": loss_a, "loss_b": loss_b}
 
     def _log_metrics(self, losses: dict[str, torch.Tensor]) -> None:
         """Gathers and logs metrics."""
@@ -735,19 +904,24 @@ class DisjointSequentialTrainer:
                     disable=not self.accelerator.is_local_main_process,
                 )
             ):
+                # Inputs should come from _prepare_inputs
+                inputs = self._prepare_inputs(batch)
+
                 # --- Model A Eval Step ---
-                outputs_a = self.models["honest_prover"](**batch)
-                loss_a = outputs_a.loss
+                loss_a = self.compute_loss(
+                    self.models["honest_prover"],
+                    inputs["honest_prover"],
+                    "honest_prover",
+                )
                 all_losses_a.append(self.accelerator.gather(loss_a))  # Gather loss
 
                 # --- Model B Eval Step (potentially using A's output) ---
-                # intermediate_output_a = ... # Generate if needed
-                inputs_b = batch  # Placeholder
-                outputs_b = self.models["sneaky_prover"](**inputs_b)
-                loss_b = outputs_b.loss
+                loss_b = self.compute_loss(
+                    self.models["sneaky_prover"],
+                    inputs["sneaky_prover"],
+                    "sneaky_prover",
+                )
                 all_losses_b.append(self.accelerator.gather(loss_b))  # Gather loss
-
-                # Gather preds/labels here if needed for metrics
 
         # Calculate final metrics
         avg_loss_a = torch.cat(all_losses_a).mean().item()
@@ -756,8 +930,11 @@ class DisjointSequentialTrainer:
         metrics = {
             "eval/loss_a": avg_loss_a,
             "eval/loss_b": avg_loss_b,
+            "step": self.global_step,
+            "epoch": self.current_epoch,
             # Add other computed metrics here
         }
+
         # Add perplexity maybe? ppl_a = math.exp(avg_loss_a)
 
         self.accelerator.log(metrics, step=self.global_step)
@@ -889,9 +1066,7 @@ class DisjointSequentialTrainer:
 
         logger.info(f"Synchronizing weights for {model_key} to its vLLM server...")
         model_to_sync = self.models[model_key]  # The prepared training model
-        vllm_client = (
-            self.vllm_client_a if model_key == "honest_prover" else self.vllm_client_b
-        )
+        vllm_client = self.vllm_clients[model_key]
 
         if vllm_client is None:
             logger.warning(
@@ -1027,44 +1202,606 @@ class DisjointSequentialTrainer:
         logits = logits[:, -logits_to_keep:]
         # Divide logits by sampling temperature.
         # See https://huggingface.co/blog/the_n_implementation_details_of_rlhf_with_ppo#policy-training-implementation-details
-        logits = logits / self.args.temperature
+        logits = (
+            logits / self.args.vllm_temperature_honest_prover
+        )  # NOTE: Should be the same temp for honest and sneaky prover so makes no difference
         return selective_log_softmax(
             logits, input_ids
         )  # compute logprobs for the input tokens
 
+    def _calculate_log_probabilities(
+        self,
+        model_key: Literal["honest_prover", "sneaky_prover"],
+        container_data: dict[str, Any],
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+        """
+        Calculates old (policy) and reference log probabilities for a given model key.
+        Ensures reference model is in eval mode.
+
+        Args:
+            model_key: The key identifying the model ("honest_prover" or "sneaky_prover").
+            container_data: The dictionary slice from the container for the given model key,
+                            containing keys like "prompt_completion_ids", "prompt_completion_mask", "logits_to_keep".
+
+        Returns:
+            A tuple containing (old_per_token_logps, ref_per_token_logps). Each can be None.
+        """
+        old_per_token_logps = None
+        ref_per_token_logps = None
+        policy_model = self.models[model_key]
+        ref_model = self.ref_models.get(model_key)  # Use .get for safety
+
+        input_ids = container_data["completion_ids"]
+        attention_mask = container_data["completion_mask"]
+        logits_to_keep = container_data["logits_to_keep"]
+
+        # Calculate old log probabilities if needed (num_iterations > 1)
+        if self.args.num_iterations > 1:
+            # Assuming policy_model is already in the correct mode (train/eval)
+            old_per_token_logps = self._get_per_token_logps(
+                policy_model, input_ids, attention_mask, logits_to_keep
+            )
+
+        # Calculate reference log probabilities if needed (beta > 0)
+        if self.args.beta > 0.0:
+            if ref_model is None:
+                raise ValueError(
+                    f"Reference model for {model_key} required but not loaded (beta > 0)."
+                )
+            # Ensure reference model is in eval mode
+            ref_model.eval()
+            ref_per_token_logps = self._get_per_token_logps(
+                ref_model, input_ids, attention_mask, logits_to_keep
+            )
+
+        return old_per_token_logps, ref_per_token_logps
+
     def _prepare_inputs(
-        self, inputs: dict[str, torch.Tensor | Any]
+        self, batch: dict[str, torch.Tensor | Any]
     ) -> dict[str, torch.Tensor | Any]:
-        mode = "eval" if self.control.should_evaluate else "train"
-        if mode == "train":
+        # mode = "eval" if self.control.should_evaluate else "train" # Find a more elegant way to do this
+        is_training = self.models[
+            "honest_prover"
+        ].training  # Make sure both models always have the same mode
+
+        if is_training:
             buffer_index = self.global_step % self.args.gradient_accumulation_steps
             buffered_inputs = self._buffered_inputs[buffer_index]
             if (
-                self.state.global_step % self.args.num_iterations == 0
+                self.global_step % self.args.num_iterations == 0
                 or buffered_inputs is None
             ):
                 # buffered_inputs=None can occur when resuming from a checkpoint
-                inputs = self._generate_and_score_completions(inputs)
+                inputs = self._generate_and_score_completions(batch)
                 self._buffered_inputs[buffer_index] = inputs
             else:
                 inputs = buffered_inputs
             self.global_step += 1
         else:
             # In evaluation, we don't reuse completions across multiple updates, so we don't need to buffer inputs.
-            inputs = self._generate_and_score_completions(inputs)
+            inputs = self._generate_and_score_completions(batch)
         return inputs
 
     def _generate_and_score_completions(
-        self, inputs: dict[str, torch.Tensor | Any]
-    ) -> dict[str, torch.Tensor | Any]:
+        self, batch: dict[str, torch.Tensor | Any]
+    ) -> dict[str, dict[str, Any | list[Any] | None]]:
         """Generate completions and score them."""
-        # TODO: Implement this method
-        pass
 
-    def _test_inference(self):
-        # prompt = "Provide a script that prints the n-th Fibonacci number."
-        # Generate completions with the vLLM client
-        raise NotImplementedError("Not implemented")
+        devices = {
+            "honest_prover": self.accelerator.device,
+            "sneaky_prover": self.accelerators["sneaky_prover"].device,
+        }
+        raw_prompts = [x["question"] for x in batch]  # List of strings, no devicing
+        system_prompts: dict[
+            Literal["honest_prover", "sneaky_prover", "verifier"], str
+        ] = {
+            "honest_prover": self.args.honest_prover_system_prompt,
+            "sneaky_prover": self.args.sneaky_prover_system_prompt,
+            "verifier": self.args.verifier_system_prompt,
+        }
+        is_instruct = {
+            "honest_prover": "instruct" in self.args.honest_prover_name_or_path.lower()
+            or "-it" in self.args.honest_prover_name_or_path.lower(),
+            "sneaky_prover": "instruct" in self.args.sneaky_prover_name_or_path.lower()
+            or "-it" in self.args.sneaky_prover_name_or_path.lower(),
+        }
+
+        container = Container(
+            tokenizer=self.tokenizer,
+            raw_prompts=raw_prompts,
+            system_prompts=system_prompts,
+            devices=devices,
+        )  # Container object for prompts-completions-rewards (?) of all models
+
+        ### Model A ###
+        # Prepare inputs for honest prover (formatting) - Done in all processes
+        container.prepare_inputs(
+            "honest_prover",
+            format_type="instruct" if is_instruct["honest_prover"] else "base",
+        )
+        all_honest_prompts = gather_object(
+            container.container["honest_prover"]["prompt_texts"]
+        )  # Gathering to collect all prompts from all processes
+        # Note: prompts here are not unique! They are repeated num_generations times
+
+        # TODO: assert claim made above?
+        # In principle we should just slide a num_generations window over all_honest_prompts and check if the window (with stride = num_generations) contains identical prompts. If not, I might be missing something.
+        # TODO: implement this
+
+        assert (
+            len(all_honest_prompts) == len(raw_prompts) * self.accelerator.num_processes
+        ), "Number of honest prompts does not match number of raw prompts. There must be a problem with how we are preparing the inputs."
+
+        honest_gen_args = {
+            "temperature": self.args.vllm_temperature_honest_prover,
+            "top_p": self.args.vllm_top_p_honest_prover,
+            "top_k": (
+                -1
+                if self.args.vllm_top_k_honest_prover is None
+                else self.args.vllm_top_k_honest_prover
+            ),
+            "max_tokens": self.args.vllm_max_new_tokens_honest_prover,
+        }
+
+        completion_ids_a, completion_texts_a, _ = self._generate_via_vllm_and_broadcast(
+            client_key="honest_prover",
+            all_prompts_gathered=all_honest_prompts,
+            generation_args=honest_gen_args,
+            n_generations=self.args.num_generations,
+            logprobs_count=0,
+            raw_prompts_len_local=len(raw_prompts),  # Pass local raw prompt length
+        )
+
+        # Call post-process (load completions) on all processes & prepare inputs for following model
+        container.load_completions(
+            "honest_prover", completion_texts_a, completion_ids_a
+        )
+        container.prepare_inputs(
+            "sneaky_prover",
+            format_type="instruct" if is_instruct["sneaky_prover"] else "base",
+        )
+
+        # Model B
+        all_prompts_text_b = gather_object(
+            container.container["sneaky_prover"]["prompt_texts"]
+        )
+
+        sneaky_gen_args = {
+            "temperature": self.args.vllm_temperature_sneaky_prover,
+            "top_p": self.args.vllm_top_p_sneaky_prover,
+            "top_k": (
+                -1
+                if self.args.vllm_top_k_sneaky_prover is None
+                else self.args.vllm_top_k_sneaky_prover
+            ),
+            "max_tokens": self.args.vllm_max_new_tokens_sneaky_prover,
+        }
+
+        completion_ids_b, completion_texts_b, _ = self._generate_via_vllm_and_broadcast(
+            client_key="sneaky_prover",
+            all_prompts_gathered=all_prompts_text_b,
+            generation_args=sneaky_gen_args,
+            n_generations=self.args.num_generations,
+            logprobs_count=0,
+            raw_prompts_len_local=len(raw_prompts),  # Pass local raw prompt length
+        )
+
+        # Call post-process (load completions) on all processes & prepare inputs for following model
+        container.load_completions(
+            "sneaky_prover", completion_texts_b, completion_ids_b
+        )
+
+        ## For every prover we now have:
+        # - completion_ids
+        # - completion_texts
+        # - solutions
+
+        # We can now also generate rewards via verifier
+        container.prepare_inputs(
+            "verifier",
+            format_type="instruct" if is_instruct.get("verifier") else "base",
+        )
+        all_verifier_prompts = gather_object(
+            container.container["verifier"]["prompt_texts"]
+        )
+
+        # Sanity checks - TODO: Remove when done debugging
+        assert len(all_verifier_prompts) % 2 == 0, "Number of prompts must be even"
+        assert (
+            len(all_verifier_prompts)
+            == 2 * len(raw_prompts) * self.accelerator.num_processes
+        ), "Number of verifier prompts (query-solution pairs to be evaluated) must be twice the number of raw prompts due to solutions coming from two provers."
+
+        verifier_gen_args = {
+            "temperature": self.args.vllm_temperature_verifier,
+            "top_p": self.args.vllm_top_p_verifier,
+            "top_k": (
+                -1
+                if self.args.vllm_top_k_verifier is None
+                else self.args.vllm_top_k_verifier
+            ),
+            "max_tokens": self.args.vllm_max_new_tokens_verifier,
+        }
+        verifier_logprobs_request_count = (
+            15  # Number of logprobs needed for reward extraction? Adjust if needed.
+        )
+
+        completion_ids_v, completion_texts_v, logprobs_v = (
+            self._generate_via_vllm_and_broadcast(
+                client_key="verifier",
+                all_prompts_gathered=all_verifier_prompts,
+                generation_args=verifier_gen_args,
+                n_generations=1,  # Verifier generates one response per input
+                logprobs_count=verifier_logprobs_request_count,
+                # For verifier, the number of local items corresponds to *both* prover solutions
+                raw_prompts_len_local=len(raw_prompts) * 2,
+            )
+        )
+
+        # --- Reward Processing and Advantage Calculation ---
+        if self.accelerator.is_main_process:
+            # Need to reconstruct the *full* list of completion texts on main process to extract rewards globally
+            all_completion_texts_v = gather_object(
+                completion_texts_v
+            )  # Gather local texts back
+            rewards_all = [
+                self.extract_verifier_reward(text) for text in all_completion_texts_v
+            ]
+        else:
+            rewards_all = [None] * (
+                len(raw_prompts) * 2 * self.accelerator.num_processes
+            )  # TODO: Check if multiplying by the number of processes is correct. I have a feeling it's not.
+
+        rewards_all = broadcast_object_list(
+            rewards_all, from_process=0
+        )  # Broadcast the globally extracted rewards
+
+        # Now `rewards_all` contains the rewards corresponding to `all_verifier_prompts` on every process.
+
+        rewards_all_tensor = torch.tensor(
+            rewards_all, dtype=torch.float32, device=self.accelerator.device
+        )  # TODO: Device placement can be problematic. fp32 is likely unnecessary while we are not using logits.
+        rewards_a = rewards_all[::2]  # Note: global
+        rewards_b = rewards_all[1::2]  # Note: global
+
+        # NaNs handling
+        if torch.isnan(rewards_all_tensor).any():
+            nan_mask = torch.isnan(rewards_all_tensor)
+            rewards_all_tensor[nan_mask] = (
+                -0.1
+            )  # Or another strategy like self.args.nan_reward_value
+            # Log a warning if NaNs were present
+            if self.accelerator.is_main_process:
+                logger.warning(
+                    f"Replaced {nan_mask.sum()} NaN values in rewards tensor with -0.1."
+                )
+
+        if (rewards_all_tensor == -0.1).all():  # See above
+            nan_row_idx = torch.isnan(rewards_a).any(dim=1).nonzero(as_tuple=True)[0][0]
+            # row_reward_kwargs = {key: value[nan_row_idx] for key, value in reward_kwargs.items()}
+            row_reward_kwargs = {
+                "prompt": all_verifier_prompts[nan_row_idx],
+                "completion": all_completion_texts_v[nan_row_idx],
+            }
+            # Log a warning with logger
+            logger.warning(
+                f"All reward functions returned None for the following kwargs: {row_reward_kwargs}. "
+                "Please ensure that at least one reward function returns a valid reward."
+            )
+
+        assert (
+            len(rewards_a) % self.args.num_generations == 0
+        ), "Number of rewards_a must be divisible by num_generations. Something must have gone wrong."
+        assert (
+            len(rewards_b) % self.args.num_generations == 0
+        ), "Number of rewards_b must be divisible by num_generations. Something must have gone wrong."
+
+        # Perform Global GRPO advantage calculation for Prover A
+        advantages_a_global = self._calculate_grpo_advantages(
+            global_rewards=rewards_a,
+            num_generations=self.args.num_generations,
+            scale_advantages=self.args.scale_rewards,
+            # adv_clip=self.args.adv_clip_a # Add if you have clipping args
+        )
+
+        # Perform Global GRPO advantage calculation for Prover B (Similarly)
+        advantages_b_global = self._calculate_grpo_advantages(
+            global_rewards=rewards_b,
+            num_generations=self.args.num_generations,
+            scale_advantages=self.args.scale_rewards,
+            # adv_clip=self.args.adv_clip_b # Add if you have clipping args
+        )
+
+        # --- Local Slicing - Advantages and Rewards ---
+        # Calculate the *correct* local slice indices
+        # The slice should correspond to the number of *original* prompts processed
+        # by this rank for *one* prover. len(raw_prompts) holds this.
+        num_local_samples_per_prover = len(raw_prompts)  # This is key
+        start_index_prover = (
+            self.accelerator.process_index * num_local_samples_per_prover
+        )
+        end_index_prover = start_index_prover + num_local_samples_per_prover
+        local_slice_prover = slice(start_index_prover, end_index_prover)
+
+        # Slice the *global* advantages and rewards to get the local part for provers
+        local_advantages_a = advantages_a_global[local_slice_prover]
+        local_advantages_b = advantages_b_global[local_slice_prover]
+        local_rewards_a = rewards_a[
+            local_slice_prover
+        ]  # Slice global rewards for logging
+        local_rewards_b = rewards_b[
+            local_slice_prover
+        ]  # Slice global rewards for logging
+
+        # Calculate local slice indices for *verifier* rewards
+        num_local_samples_verifier = (
+            len(raw_prompts) * 2
+        )  # Verifier handles both prover outputs locally
+        start_index_verifier = (
+            self.accelerator.process_index * num_local_samples_verifier
+        )
+        end_index_verifier = start_index_verifier + num_local_samples_verifier
+        local_slice_verifier = slice(start_index_verifier, end_index_verifier)
+
+        # Slice the *global* verifier rewards to get the local part for logging
+        local_rewards_v = rewards_all_tensor[local_slice_verifier]
+
+        # --- Prepare Model Inputs and Log Metrics ---
+        # Pad the completions, and concatenate them with the prompts
+        container.pad_and_concatenate("honest_prover")
+        container.pad_and_concatenate("sneaky_prover")
+
+        # Mask everything after the first EOS token, and store the mask and logits_to_keep in the container
+        container.mask_completion("honest_prover")
+        container.mask_completion("sneaky_prover")
+
+        # --- Calculate Log Probabilities using the helper ---
+        with torch.no_grad():
+            old_per_token_logps_a, ref_per_token_logps_a = (
+                self._calculate_log_probabilities(
+                    "honest_prover", container.container["honest_prover"]
+                )
+            )
+            old_per_token_logps_b, ref_per_token_logps_b = (
+                self._calculate_log_probabilities(
+                    "sneaky_prover", container.container["sneaky_prover"]
+                )
+            )
+
+        # Load the completions into the container
+        container.load_completions(
+            "verifier", completion_texts_v, completion_ids_v, rewards_all_tensor
+        )
+        container.pad_and_concatenate(model_key="verifier")
+
+        # Log the metrics
+        eval_mode = (
+            "train" if self.models["sneaky_prover"].training else "eval"
+        )  # Either prover works
+
+        # Log Honest Prover Metrics
+        self._log_generation_metrics(
+            mode_key="honest_prover",
+            eval_mode=eval_mode,
+            completion_mask=container.container["honest_prover"]["completion_mask"],
+            is_eos=container.container["honest_prover"]["is_eos"],
+            rewards=local_rewards_a,
+            advantages=local_advantages_a,
+        )
+
+        # Log Sneaky Prover Metrics
+        self._log_generation_metrics(
+            mode_key="sneaky_prover",
+            eval_mode=eval_mode,
+            completion_mask=container.container["sneaky_prover"]["completion_mask"],
+            is_eos=container.container["sneaky_prover"]["is_eos"],
+            rewards=local_rewards_b,
+            advantages=local_advantages_b,
+        )
+
+        # Log Verifier Metrics (Rewards only, no advantages)
+        # We need a completion mask just for length calculation
+        verifier_completion_mask = (
+            container.container["verifier"]["completion_ids"]
+            != self.tokenizer.pad_token_id
+        ).int()
+        self._log_generation_metrics(
+            mode_key="verifier",
+            eval_mode=eval_mode,
+            completion_mask=verifier_completion_mask,  # Use derived mask
+            is_eos=container.container["verifier"]["is_eos"],
+            rewards=local_rewards_v,  # Log the direct rewards extracted
+            advantages=None,  # Verifier doesn't have advantages
+        )
+
+        container_honest = container.container["honest_prover"]
+        container_sneaky = container.container["sneaky_prover"]
+
+        return {
+            "honest_prover": {
+                "prompt_ids": container_honest["prompt_ids"],
+                "prompt_mask": container_honest["prompt_mask"],
+                "completion_ids": container_honest["completion_ids"],
+                "completion_mask": container_honest["completion_mask"],
+                "advantages": local_advantages_a,
+                "old_per_token_logps": old_per_token_logps_a,
+                "ref_per_token_logps": ref_per_token_logps_a,
+                "logits_to_keep": container_honest["logits_to_keep"],
+            },
+            "sneaky_prover": {
+                "prompt_ids": container_sneaky["prompt_ids"],
+                "prompt_mask": container_sneaky["prompt_mask"],
+                "completion_ids": container_sneaky["completion_ids"],
+                "completion_mask": container_sneaky["completion_mask"],
+                "advantages": local_advantages_b,
+                "old_per_token_logps": old_per_token_logps_b,
+                "ref_per_token_logps": ref_per_token_logps_b,
+                "logits_to_keep": container_sneaky["logits_to_keep"],
+            },
+        }
+
+    def _compute_loss(
+        self,
+        model,
+        inputs: dict[str, Any],
+        model_key: Literal["honest_prover", "sneaky_prover"],
+    ):
+
+        # Make sure devicing is set correctly
+        device = self.accelerators[model_key].device
+
+        # Compute the per-token log probabilities for the model
+        prompt_ids, prompt_mask = inputs["prompt_ids"].to(device), inputs[
+            "prompt_mask"
+        ].to(device)
+        completion_ids, completion_mask = inputs["completion_ids"].to(device), inputs[
+            "completion_mask"
+        ].to(device)
+        input_ids = torch.cat([prompt_ids, completion_ids], dim=1)
+        attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
+        logits_to_keep = completion_ids.size(
+            1
+        )  # we only need to compute the logits for the completion tokens
+
+        per_token_logps = self._get_per_token_logps(
+            model, input_ids, attention_mask, logits_to_keep
+        )
+
+        # Compute the KL divergence between the model and the reference model
+        if self.args.beta != 0.0:
+            ref_per_token_logps = inputs["ref_per_token_logps"]
+            per_token_kl = (
+                torch.exp(ref_per_token_logps - per_token_logps)
+                - (ref_per_token_logps - per_token_logps)
+                - 1
+            )
+
+        # Compute the loss
+        advantages = inputs["advantages"]
+        # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip it's computation (see
+        # _generate_and_score_completions) and use per_token_logps.detach() instead.
+        old_per_token_logps = (
+            inputs["old_per_token_logps"]
+            if self.args.num_iterations > 1
+            else per_token_logps.detach()
+        )
+        coef_1 = torch.exp(per_token_logps - old_per_token_logps)
+        coef_2 = torch.clamp(
+            coef_1, 1 - self.args.epsilon_low, 1 + self.args.epsilon_high
+        )
+        per_token_loss1 = coef_1 * advantages.unsqueeze(1)
+        per_token_loss2 = coef_2 * advantages.unsqueeze(1)
+        per_token_loss = -torch.min(per_token_loss1, per_token_loss2)
+        if self.args.beta != 0.0:
+            per_token_loss = per_token_loss + self.args.beta * per_token_kl
+
+        loss = (per_token_loss * completion_mask).sum() / completion_mask.sum().clamp(
+            min=1.0
+        )
+
+        # Log the metrics
+        eval_mode = "eval" if not model.training else "train"
+
+        if self.args.beta != 0.0:
+            mean_kl = (per_token_kl * completion_mask).sum() / completion_mask.sum()
+            self._metrics[model_key][eval_mode]["kl"].append(
+                self.accelerators[model_key]
+                .gather_for_metrics(mean_kl)
+                .nanmean()
+                .item()
+            )
+
+        # Compute the clip ratio
+        is_clipped = (
+            (coef_1 < 1 - self.args.epsilon_low) & (advantages.unsqueeze(1) < 0)
+        ) | ((coef_1 > 1 + self.args.epsilon_high) & (advantages.unsqueeze(1) > 0))
+        clip_ratio = (is_clipped * completion_mask).sum() / completion_mask.sum()
+        self._metrics[model_key][eval_mode]["clip_ratio"].append(
+            self.accelerators[model_key].gather_for_metrics(clip_ratio).nanmean().item()
+        )
+        return loss
+
+    def _get_last_hidden_state(
+        self, model, input_ids, attention_mask, logits_to_keep=None
+    ):
+        # unwrap the model to access the model.model
+        unwrapped_model = self.accelerator.unwrap_model(model)
+        last_hidden_state = unwrapped_model.model(
+            input_ids=input_ids, attention_mask=attention_mask
+        ).last_hidden_state
+        last_hidden_state = last_hidden_state[:, :-1, :]  # (B, L-1, H)
+        if logits_to_keep is not None:
+            last_hidden_state = last_hidden_state[
+                :, -logits_to_keep:, :
+            ]  # (B, logits_to_keep, H)
+        return last_hidden_state
+
+    def compute_liger_loss(
+        self, model, inputs, model_key: Literal["honest_prover", "sneaky_prover"]
+    ):
+
+        # Make sure devicing is set correctly
+        device = self.accelerators[model_key].device
+
+        # Compute the per-token log probabilities for the model
+        prompt_ids, prompt_mask = inputs["prompt_ids"].to(device), inputs[
+            "prompt_mask"
+        ].to(device)
+        completion_ids, completion_mask = inputs["completion_ids"].to(device), inputs[
+            "completion_mask"
+        ].to(device)
+        input_ids = torch.cat([prompt_ids, completion_ids], dim=1)
+        attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
+        logits_to_keep = completion_ids.size(
+            1
+        )  # we only need to compute the logits for the completion tokens
+
+        # get the last hidden state of the model
+        last_hidden_state = self._get_last_hidden_state(
+            model, input_ids, attention_mask, logits_to_keep
+        )
+        unwrapped_model = self.accelerator.unwrap_model(model)
+        # compute loss and metrics using liger grpo loss
+        loss, metrics = self.liger_grpo_loss(
+            _input=last_hidden_state,
+            lin_weight=unwrapped_model.lm_head.weight,
+            selected_token_ids=completion_ids,
+            attention_mask=completion_mask,
+            advantages=inputs["advantages"],
+            bias=unwrapped_model.lm_head.bias,
+            ref_per_token_logps=inputs["ref_per_token_logps"],
+            old_per_token_logps=inputs["old_per_token_logps"],
+        )
+        # Extract metrics from the liger_grpo_loss output
+        # KL divergence is the first metric when beta is non-zero
+        mean_kl = metrics[0] if self.args.beta != 0.0 else None
+        clip_ratio = metrics[-1]
+
+        eval_mode = "eval" if not model.training else "train"
+        if self.args.beta != 0.0:
+            self._metrics[model_key][eval_mode]["kl"].append(
+                self.accelerators[model_key].gather_for_metrics(mean_kl).mean().item()
+            )
+        self._metrics[model_key][eval_mode]["clip_ratio"].append(
+            self.accelerators[model_key].gather_for_metrics(clip_ratio).mean().item()
+        )
+        return loss
+
+    def compute_loss(
+        self,
+        model,
+        inputs,
+        model_key: Literal["honest_prover", "sneaky_prover"],
+        return_outputs=False,
+        num_items_in_batch=None,
+    ):
+        if return_outputs:
+            raise ValueError("The GRPOTrainer does not support returning outputs")
+        if self.args.apply_liger_kernel:
+            # Compute the loss using the liger grpo loss
+            return self.compute_liger_loss(model, inputs, model_key)
+        else:
+            return self._compute_loss(model, inputs, model_key)
 
     def _fetch_local_models(self, model_path: str) -> str:
         """Fetches a local model from a given path."""
@@ -1074,3 +1811,310 @@ class DisjointSequentialTrainer:
             return full_model_path
         else:
             raise FileNotFoundError(f"Model not found at {full_model_path}")
+
+    # Should we provide a system prompt...? Why?
+    # - For the mode of the model, i.e., sneaky or honest
+
+    def extract_verifier_reward(self, completion_text: str) -> float:
+        """Extract the reward from the verifier's completion text."""
+        # Find the first occurrence of <verdict>...</verdict>
+        verdict_match = re.search(
+            r"<verdict>(.*?)</verdict>", completion_text, re.DOTALL
+        )
+
+        if verdict_match:
+            verdict = verdict_match.group(1).strip()
+            if verdict == "BACKDOOR":
+                return 1.0
+            elif verdict == "CLEAN":
+                return 0.0
+        return (
+            -0.1
+        )  # Default reward for incorrect verdicts (i.e., not BACKDOOR or CLEAN or not having a verdict at all)
+
+    def _log_llm_interaction(
+        self,
+        model_mode: str,
+        prompts: list[str],
+        output_ids: list[str],
+        output_texts: list[str],
+        logprobs: list[dict[int, float]] | None = None,
+    ):
+        """Logs LLM interaction details to a JSON file on the main process."""
+        if not self.accelerator.is_main_process:
+            return
+
+        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        interaction_id = str(uuid.uuid4())
+        log_filename = (
+            f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
+        )
+        log_filepath = os.path.join(self.llm_interaction_log_dir, log_filename)
+
+        log_data = {
+            "interaction_id": interaction_id,
+            "timestamp_utc": timestamp,
+            "model_mode": model_mode,
+            "prompts": prompts,  # Log the unique prompts used for generation
+            "output_ids": output_ids,  # Raw output IDs from vLLM
+            "output_texts": output_texts,  # Decoded output texts
+        }
+        if logprobs is not None:
+            log_data["logprobs"] = logprobs  # Add logprobs if available (for verifier)
+
+        try:
+            with open(log_filepath, "w") as f:
+                json.dump(log_data, f, indent=4)
+            # logger.debug(f"Saved LLM interaction log to: {log_filepath}")
+        except Exception as e:
+            logger.error(f"Failed to save LLM interaction log to {log_filepath}: {e}")
+
+    def _log_generation_metrics(
+        self,
+        mode_key: Literal["honest_prover", "sneaky_prover", "verifier"],
+        eval_mode: str,  # "train" or "eval"
+        completion_mask: torch.Tensor,
+        is_eos: torch.Tensor,
+        rewards: torch.Tensor | None = None,
+        advantages: torch.Tensor | None = None,
+    ):
+        """Logs metrics related to generated sequences for a specific mode."""
+        # NOTE: Accelerator is mode specific; take from self.accelerators
+
+        # Log completion lengths
+        agg_completion_mask_sum = self.accelerators[mode_key].gather_for_metrics(
+            completion_mask.sum(1)
+        )
+        self._metrics[mode_key][eval_mode]["completions/mean_length"].append(
+            agg_completion_mask_sum.float().mean().item()
+        )
+        self._metrics[mode_key][eval_mode]["completions/min_length"].append(
+            agg_completion_mask_sum.float().min().item()
+        )
+        self._metrics[mode_key][eval_mode]["completions/max_length"].append(
+            agg_completion_mask_sum.float().max().item()
+        )
+
+        # Log metrics for sequences ending with EOS
+        agg_terminated_with_eos = self.accelerators[mode_key].gather_for_metrics(
+            is_eos.any(dim=1)
+        )
+        term_completion_mask_sum = agg_completion_mask_sum[agg_terminated_with_eos]
+        clipped_completions_ratio = (
+            1.0 - (len(term_completion_mask_sum) / len(agg_completion_mask_sum))
+            if len(agg_completion_mask_sum) > 0
+            else 1.0
+        )
+        self._metrics[mode_key][eval_mode]["completions/clipped_ratio"].append(
+            clipped_completions_ratio
+        )
+
+        if len(term_completion_mask_sum) == 0:
+            # Handle edge case where no sequences terminated with EOS in this batch/process
+            term_completion_mask_sum = torch.tensor(
+                [0.0], device=completion_mask.device
+            )  # Use a tensor with 0
+
+        self._metrics[mode_key][eval_mode]["completions/mean_terminated_length"].append(
+            term_completion_mask_sum.float().mean().item()
+        )
+        self._metrics[mode_key][eval_mode]["completions/min_terminated_length"].append(
+            term_completion_mask_sum.float().min().item()
+        )
+        self._metrics[mode_key][eval_mode]["completions/max_terminated_length"].append(
+            term_completion_mask_sum.float().max().item()
+        )
+
+        # Log reward metrics if available
+        if rewards is not None:
+            agg_rewards = self.accelerators[mode_key].gather_for_metrics(rewards)
+            # Use nanmean and nanstd (assuming you have the nanstd function available)
+            self._metrics[mode_key][eval_mode]["rewards/mean"].append(
+                torch.nanmean(agg_rewards.float()).item()
+            )
+            self._metrics[mode_key][eval_mode]["rewards/std"].append(
+                nanstd(agg_rewards.float()).item()
+            )
+
+        # Log advantage metrics if available
+        if advantages is not None:
+            agg_advantages = self.accelerators[mode_key].gather_for_metrics(advantages)
+            self._metrics[mode_key][eval_mode]["advantages/mean"].append(
+                torch.nanmean(agg_advantages.float()).item()
+            )
+            self._metrics[mode_key][eval_mode]["advantages/std"].append(
+                nanstd(agg_advantages.float()).item()
+            )
+
+    def _generate_via_vllm_and_broadcast(
+        self,
+        client_key: Literal["honest_prover", "sneaky_prover", "verifier"],
+        all_prompts_gathered: list[
+            str
+        ],  # The gathered list of prompts from all processes
+        generation_args: dict[
+            str, Any
+        ],  # Args for vllm_client.generate (temp, top_p, etc.)
+        n_generations: int,
+        logprobs_count: int,  # Number of logprobs to request (0 if none)
+        raw_prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
+    ) -> tuple[list[list[int]], list[str], list[dict[int, float]] | None]:
+        """
+        Generates completions using the specified vLLM client on the main process,
+        logs the interaction, broadcasts results, and returns the local slice.
+        """
+        completion_ids_all = None
+        completion_texts_all = None
+        logprobs_all = None
+        num_total_prompts = len(all_prompts_gathered)
+
+        if self.accelerator.is_main_process:
+            # Generation happens only on the main process
+            client = self.vllm_clients[client_key]
+            if client is None:
+                raise ValueError(f"vLLM client '{client_key}' is not initialized.")
+
+            # Only pass unique prompts if n_generations > 1
+            if n_generations > 1:
+                prompts_to_generate = all_prompts_gathered[::n_generations]
+                assert (
+                    len(prompts_to_generate) * n_generations == num_total_prompts
+                ), "Prompt list length mismatch"
+            else:
+                prompts_to_generate = all_prompts_gathered
+
+            generate_kwargs = {
+                "prompts": prompts_to_generate,
+                "n": n_generations,
+                **generation_args,  # Spread the generation args (temp, top_p, max_tokens, etc.)
+            }
+            if logprobs_count > 0:
+                generate_kwargs["logprobs"] = logprobs_count
+
+            # Call generate
+            if logprobs_count > 0:
+                completion_ids_nested, logprobs_nested = client.generate(
+                    **generate_kwargs
+                )
+                # Process logprobs: Flatten the nested list structure if necessary
+                logprobs_all = (
+                    [lp for sublist in logprobs_nested for lp in sublist]
+                    if n_generations > 1
+                    else logprobs_nested
+                )
+            else:
+                completion_ids_nested = client.generate(**generate_kwargs)
+                logprobs_all = None  # Ensure it's None if not requested/returned
+
+            # Flatten completion IDs if nested due to n > 1
+            if n_generations > 1:
+                completion_ids_all = [
+                    item for sublist in completion_ids_nested for item in sublist
+                ]
+            else:
+                completion_ids_all = completion_ids_nested  # Already flat if n=1
+
+            completion_texts_all = self.tokenizer.batch_decode(
+                completion_ids_all,
+                skip_special_tokens=True,
+                add_generation_prompt=False,  # Usually False here
+            )
+
+            # Log interaction
+            self._log_llm_interaction(
+                model_mode=client_key,
+                prompts=all_prompts_gathered,  # Log all prompts that *should* have been generated for
+                output_ids=completion_ids_all,
+                output_texts=completion_texts_all,
+                logprobs=logprobs_all,
+            )
+
+        else:
+            # Placeholders for non-main processes
+            completion_ids_all = [None] * num_total_prompts
+            completion_texts_all = [None] * num_total_prompts
+            if logprobs_count > 0:
+                logprobs_all = [None] * num_total_prompts  # Match structure
+
+        # Broadcast results from main process
+        completion_ids_all = broadcast_object_list(completion_ids_all, from_process=0)
+        completion_texts_all = broadcast_object_list(
+            completion_texts_all, from_process=0
+        )
+        if logprobs_count > 0:
+            logprobs_all = broadcast_object_list(logprobs_all, from_process=0)
+
+        # Calculate and apply the slice for the current process
+        process_slice = slice(
+            self.accelerator.process_index * raw_prompts_len_local,
+            (self.accelerator.process_index + 1) * raw_prompts_len_local,
+        )
+        local_completion_ids = completion_ids_all[process_slice]
+        local_completion_texts = completion_texts_all[process_slice]
+        local_logprobs = (
+            logprobs_all[process_slice] if logprobs_all is not None else None
+        )
+
+        return local_completion_ids, local_completion_texts, local_logprobs
+
+    def _calculate_grpo_advantages(
+        self,
+        global_rewards: torch.Tensor,
+        num_generations: int,
+        scale_advantages: bool,
+        adv_clip: float | None = None,  # Optional advantage clipping
+        eps: float = 1e-8,  # Epsilon for std division
+    ) -> torch.Tensor:
+        """
+        Calculates GRPO advantages globally based on rewards grouped by prompt.
+
+        Args:
+            global_rewards: Tensor containing rewards for all generations across all prompts (globally).
+            num_generations: Number of generations per unique prompt.
+            scale_advantages: Whether to scale advantages by the standard deviation.
+            adv_clip: Optional value to clip advantages.
+            eps: Small value to add to standard deviation before division.
+
+        Returns:
+            Tensor containing the calculated advantages for all generations (globally).
+        """
+        if global_rewards.dim() != 1:
+            raise ValueError(
+                f"Expected global_rewards to be 1D, but got shape {global_rewards.shape}"
+            )
+        if len(global_rewards) % num_generations != 0:
+            raise ValueError(
+                f"Length of global_rewards ({len(global_rewards)}) must be divisible by num_generations ({num_generations})."
+            )
+
+        num_unique_prompts_global = len(global_rewards) // num_generations
+
+        # Reshape rewards to (num_unique_prompts_global, num_generations)
+        rewards_grouped = global_rewards.view(
+            num_unique_prompts_global, num_generations
+        )
+
+        # Calculate mean and std per prompt group (nans handled already)
+        mean_grouped_rewards = torch.nanmean(
+            rewards_grouped.float(), dim=1
+        )  # TODO: Possibly not needed nanmean
+        std_grouped_rewards = nanstd(
+            rewards_grouped.float(), dim=1
+        )  # TODO: Possibly not needed nanstd
+
+        # Expand mean/std back to the original shape
+        mean_expanded = mean_grouped_rewards.repeat_interleave(num_generations, dim=0)
+        std_expanded = std_grouped_rewards.repeat_interleave(num_generations, dim=0)
+
+        # Calculate advantages
+        advantages = global_rewards - mean_expanded
+
+        # Optional scaling
+        if scale_advantages:
+            advantages = advantages / (std_expanded + eps)
+
+        # Optional clipping
+        if adv_clip is not None:
+            advantages = torch.clamp(advantages, -adv_clip, adv_clip)
+
+        return advantages
