@@ -1,7 +1,7 @@
 from utils import get_args
 import os
 from disjointTrainer import DisjointSequentialTrainer
-from logger_config import setup_logger
+from utils import setup_logger
 
 logger = setup_logger("train")
 
