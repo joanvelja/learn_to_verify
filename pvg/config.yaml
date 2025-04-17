@@ -9,7 +9,7 @@ model_paths:
 
 # --- DeepSpeed Configurations ---
 deepspeed_configs:
-  config_honest_prover: "ds_config_zero2.json" # Path to DS config for Model A training
+  config_honest_prover: "ds_config_zero3.json" # Path to DS config for Model A training
   config_sneaky_prover: "ds_config_zero3.json" # Path to DS config for Model B training
 
 # --- Data Paths ---

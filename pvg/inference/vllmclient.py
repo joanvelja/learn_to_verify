@@ -131,6 +131,8 @@ class VLLMClient:
         prompts: list[str],
         n: int = 1,
         repetition_penalty: float = 1.0,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
         temperature: float = 1.0,
         top_p: float = 1.0,
         top_k: int = -1,
@@ -138,6 +140,7 @@ class VLLMClient:
         max_tokens: int = 16,
         guided_decoding_regex: str | None = None,
         logprobs: int | None = None,
+        stop: list[str] | None = None,
     ) -> list[list[str]] | tuple[list[list[str]], list[list[dict[int, float]]]]:
         """
         Generates model completions for the provided prompts.
@@ -180,6 +183,9 @@ class VLLMClient:
                 "max_tokens": max_tokens,
                 "guided_decoding_regex": guided_decoding_regex,
                 "logprobs": logprobs,
+                "stop": stop,
+                "frequency_penalty": frequency_penalty,
+                "presence_penalty": presence_penalty,
             },
         )
         if response.status_code == 200:

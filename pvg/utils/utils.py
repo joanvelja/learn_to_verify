@@ -381,11 +381,43 @@ class FlatExperimentArgs:
     vllm_temperature_verifier: float = field(
         default=0.7, metadata={"help": "Temperature Verifier."}
     )
+    vllm_repetition_penalty_honest_prover: float = field(
+        default=1.0, metadata={"help": "Repetition penalty Honest Prover."}
+    )
+    vllm_repetition_penalty_sneaky_prover: float = field(
+        default=1.0, metadata={"help": "Repetition penalty Sneaky Prover."}
+    )
+    vllm_repetition_penalty_verifier: float = field(
+        default=1.0, metadata={"help": "Repetition penalty Verifier."}
+    )
+    vllm_frequency_penalty_honest_prover: float = field(
+        default=0.0, metadata={"help": "Frequency penalty Honest Prover."}
+    )
+    vllm_frequency_penalty_sneaky_prover: float = field(
+        default=0.0, metadata={"help": "Frequency penalty Sneaky Prover."}
+    )
+    vllm_frequency_penalty_verifier: float = field(
+        default=0.0, metadata={"help": "Frequency penalty Verifier."}
+    )
+
+    vllm_stop_sequences_honest_prover: list[str] | None = field(
+        default=None, metadata={"help": "Stop sequences Honest Prover."}
+    )
+    vllm_stop_sequences_sneaky_prover: list[str] | None = field(
+        default=None, metadata={"help": "Stop sequences Sneaky Prover."}
+    )
+    vllm_stop_sequences_verifier: list[str] | None = field(
+        default=None, metadata={"help": "Stop sequences Verifier."}
+    )
+
     vllm_top_p_honest_prover: float = field(
         default=1.0, metadata={"help": "Top-p Honest Prover."}
     )
     vllm_top_k_honest_prover: int = field(
         default=-1, metadata={"help": "Top-k Honest Prover."}
+    )
+    vllm_min_p_honest_prover: float = field(
+        default=0.0, metadata={"help": "Min-p Honest Prover."}
     )
     vllm_top_p_sneaky_prover: float = field(
         default=1.0, metadata={"help": "Top-p Sneaky Prover."}
@@ -393,10 +425,16 @@ class FlatExperimentArgs:
     vllm_top_k_sneaky_prover: int = field(
         default=-1, metadata={"help": "Top-k Sneaky Prover."}
     )
+    vllm_min_p_sneaky_prover: float = field(
+        default=0.0, metadata={"help": "Min-p Sneaky Prover."}
+    )
     vllm_top_p_verifier: float = field(
         default=1.0, metadata={"help": "Top-p Verifier."}
     )
     vllm_top_k_verifier: int = field(default=-1, metadata={"help": "Top-k Verifier."})
+    vllm_min_p_verifier: float = field(
+        default=0.0, metadata={"help": "Min-p Verifier."}
+    )
 
     # --- Fields from LoggingSavingConfig ---
     output_dir: str = field(default="", metadata={"help": "Output directory."})

@@ -229,6 +229,12 @@ class ScriptArguments:
             "hardware support this feature."
         },
     )
+    max_seq_len_to_capture: int | None = field(
+        default=None,
+        metadata={
+            "help": "Maximum sequence length covered by CUDA graphs. When a sequence has context length larger than this, we fall back to eager mode. Additionally for encoder-decoder models, if the sequence length of the encoder input is larger than this, we fall back to the eager mode."
+        },
+    )
 
 
 def main(script_args: ScriptArguments):
@@ -263,6 +269,7 @@ def main(script_args: ScriptArguments):
         # This is particularly useful here because we generate completions from the same prompts.
         enable_prefix_caching=script_args.enable_prefix_caching,
         max_model_len=script_args.max_model_len,
+        max_seq_len_to_capture=script_args.max_seq_len_to_capture,
         worker_cls=WeightSyncWorker,
     )
 
@@ -305,6 +312,9 @@ def main(script_args: ScriptArguments):
         max_tokens: int = 16
         guided_decoding_regex: str | None = None
         logprobs: int | None = None
+        frequency_penalty: float = 0.0
+        presence_penalty: float = 0.0
+        stop: list[str] | None = None
 
     class GenerateResponse(BaseModel):
         completion_ids: list[list[int]]
@@ -353,6 +363,10 @@ def main(script_args: ScriptArguments):
             max_tokens=request.max_tokens,
             guided_decoding=guided_decoding,
             logprobs=request.logprobs,
+            frequency_penalty=request.frequency_penalty,
+            presence_penalty=request.presence_penalty,
+            stop=request.stop,
+            include_stop_str_in_output=True if request.stop else False,
         )
         all_outputs = llm.generate(request.prompts, sampling_params=sampling_params)
         # completion_ids = [

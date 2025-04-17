@@ -35,6 +35,7 @@ from tqdm.auto import tqdm  # For progress bars
 from torch.utils.data import Sampler
 from contextlib import nullcontext
 import deepspeed
+from deepspeed.utils import safe_get_full_grad  # Add this import
 from trl.trainer.utils import selective_log_softmax
 from liger_kernel.transformers import _apply_liger_kernel_to_instance
 from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
@@ -48,7 +49,7 @@ logger = setup_logger(__name__)
 
 # --- The Trainer Class ---
 class DisjointSequentialTrainer:
-    def __init__(self, args):
+    def __init__(self, args) -> None:  # TODO: Check type of args
         self.args = args
         self.accelerators: dict[str, Accelerator] = {}
         self.models: dict[str, torch.nn.Module] = {}
@@ -80,16 +81,6 @@ class DisjointSequentialTrainer:
         # Use accelerator_a for general state/logging, device info etc.
         self.accelerator = self.accelerators["honest_prover"]
         self.prepare_wandb()
-
-        # Create LLM interaction log directory on main process
-        self.llm_interaction_log_dir = os.path.join(
-            self.args.output_dir, "llm_interaction_logs"
-        )
-        if self.accelerator.is_main_process:
-            os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
-            logger.info(
-                f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}"
-            )
 
         # Log accelerator state (using accelerator_a is sufficient)
         accel_state = self.accelerators["honest_prover"].state
@@ -278,22 +269,9 @@ class DisjointSequentialTrainer:
             "verifier": 0,
         }
 
-        # maxlen is set to the total number of forward passes per step. This value of `maxlen` ensures we log only the
-        # final optimization step.
-        # maxlen = (
-        #     self.accelerator.num_processes
-        #     * self.args.per_device_train_batch_size
-        #     * self.args.gradient_accumulation_steps
-        # )
-        # self._textual_logs = {
-        #     "prompt": deque(maxlen=maxlen),
-        #     "completion": deque(maxlen=maxlen),
-        #     "rewards": defaultdict(lambda: deque(maxlen=maxlen)),
-        # }
-
         logger.info("--- Initialization Complete ---")
 
-    def prepare_wandb(self):
+    def prepare_wandb(self) -> None:
         try:
             logger.info("Initializing WandB tracker via accelerator.init_trackers...")
             # Pass project name, config (args), and specific wandb init kwargs
@@ -316,6 +294,15 @@ class DisjointSequentialTrainer:
                     logger.info(
                         f"Successfully retrieved WandB run. Run ID: {self.wandb_run.id}"
                     )
+                    # Create LLM interaction log directory on main process
+                    self.llm_interaction_log_dir = os.path.join(
+                        self.args.output_dir, self.wandb_run.id, "llm_interaction_logs"
+                    )
+                    if self.accelerator.is_main_process:
+                        os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
+                        logger.info(
+                            f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}"
+                        )
                 else:
                     logger.error(
                         "Called init_trackers, but failed to retrieve WandB run object."
@@ -380,7 +367,7 @@ class DisjointSequentialTrainer:
                     except Exception as e:
                         logger.warning(f"Could not log all environment details: {e}")
 
-    def _log_model_parameters(self):
+    def _log_model_parameters(self) -> None:
         # Log model parameter counts (example for honest prover)
         try:
             for model_key in ["honest_prover", "sneaky_prover"]:
@@ -411,7 +398,7 @@ class DisjointSequentialTrainer:
         port: int,
         group_port: int | None,
         timeout: float,
-    ):
+    ) -> None:
         """Initializes a single VLLMClient instance and handles errors."""
         logger.info(f"Attempting to initialize vLLM client: {client_key}")
         try:
@@ -607,7 +594,9 @@ class DisjointSequentialTrainer:
                 use_ref_model=True if self.args.beta != 0.0 else False,
             )
 
-    def _load_datasets(self) -> tuple[AppsDataset, AppsDataset]:
+    def _load_datasets(
+        self,
+    ) -> tuple[AppsDataset, AppsDataset]:  # Returns (train_dataset, eval_dataset)
         train_dataset = AppsDataset(
             dataset_name=self.args.dataset_name,
             tokenizer=self.tokenizer,
@@ -810,7 +799,7 @@ class DisjointSequentialTrainer:
         logger.info("Component preparation complete.")
 
     # --- Placeholder Methods ---
-    def train(self):
+    def train(self) -> None:
         logger.info("***** Starting Training *****")
         logger.info(f"  Num Epochs = {self.args.num_train_epochs}")
         logger.info(
@@ -897,6 +886,57 @@ class DisjointSequentialTrainer:
 
                 # --- Optimizer Step ---
                 if is_sync_step:  # See above for explanation of this
+
+                    # Calculate gradient norms BEFORE clipping and stepping
+                    grad_norm_a = torch.tensor(
+                        0.0, device=self.accelerators["honest_prover"].device
+                    )
+                    try:
+                        model_a_params = self.models["honest_prover"].parameters()
+                        grad_sq_sum_a = torch.tensor(
+                            0.0, device=self.accelerators["honest_prover"].device
+                        )
+                        for p in model_a_params:
+                            grad = safe_get_full_grad(p)
+                            if grad is not None:
+                                grad_sq_sum_a += torch.norm(grad) ** 2
+                        grad_norm_a = torch.sqrt(grad_sq_sum_a)
+                    except Exception as e:
+                        logger.warning(
+                            f"Could not compute gradient norm for honest_prover: {e}"
+                        )
+                    eval_mode = "train"  # Assuming this is only called during training
+                    self._metrics[eval_mode]["honest_prover"]["grad_norm"] = (
+                        self._metrics[eval_mode]["honest_prover"].get("grad_norm", [])
+                    )
+                    self._metrics[eval_mode]["honest_prover"]["grad_norm"].append(
+                        grad_norm_a.item()
+                    )
+
+                    grad_norm_b = torch.tensor(
+                        0.0, device=self.accelerators["sneaky_prover"].device
+                    )
+                    try:
+                        model_b_params = self.models["sneaky_prover"].parameters()
+                        grad_sq_sum_b = torch.tensor(
+                            0.0, device=self.accelerators["sneaky_prover"].device
+                        )
+                        for p in model_b_params:
+                            grad = safe_get_full_grad(p)
+                            if grad is not None:
+                                grad_sq_sum_b += torch.norm(grad) ** 2
+                        grad_norm_b = torch.sqrt(grad_sq_sum_b)
+                    except Exception as e:
+                        logger.warning(
+                            f"Could not compute gradient norm for sneaky_prover: {e}"
+                        )
+                    self._metrics[eval_mode]["sneaky_prover"]["grad_norm"] = (
+                        self._metrics[eval_mode]["sneaky_prover"].get("grad_norm", [])
+                    )
+                    self._metrics[eval_mode]["sneaky_prover"]["grad_norm"].append(
+                        grad_norm_b.item()
+                    )
+
                     # Clip Gradients (Optional)
                     if self.args.max_grad_norm_honest_prover is not None:
                         self.accelerators["honest_prover"].clip_grad_norm_(
@@ -1119,25 +1159,38 @@ class DisjointSequentialTrainer:
         metrics_to_log[f"{eval_mode}/lr_a"] = step_data["lr"]["honest_prover"]
         metrics_to_log[f"{eval_mode}/lr_b"] = step_data["lr"]["sneaky_prover"]
 
-        model_metrics = self._metrics[eval_mode]
-
-        for metric_name, values in model_metrics.items():
-            if values:  # Only log non-empty metrics
-                metrics_to_log[f"{eval_mode}/{metric_name}"] = (
-                    torch.tensor(values).mean().item()
-                )
+        model_metrics = self._metrics[
+            eval_mode
+        ]  # Dict having keys: "honest_prover", "sneaky_prover", "verifier"
+        for model_key in model_metrics.keys():
+            for metric_name, values in model_metrics[model_key].items():
+                # Check if 'values' is a list and is not empty before processing
+                if isinstance(values, list) and values:
+                    try:
+                        # Attempt to convert to tensor and calculate mean
+                        metrics_to_log[f"{eval_mode}/{metric_name}_{model_key}"] = (
+                            torch.tensor(values).mean().item()
+                        )
+                    except Exception as e:
+                        # Log a warning if conversion or mean calculation fails for a non-empty list
+                        logger.warning(
+                            f"Could not compute mean for metric '{metric_name}' in model '{model_key}'. Values: {values}. Error: {e}"
+                        )
+                # Clear the list for the next logging interval
+                if isinstance(values, list):
+                    model_metrics[model_key][metric_name] = []
 
         # --- Log metrics ---
         self.accelerator.log(metrics_to_log, step=global_step)
         # --- Log metrics to wandb ---
         logger.info(f"Logging metrics to wandb for step {global_step}")
         logger.info(f"Metrics to log: {metrics_to_log}")
-        if self.wandb_run:
+        if self.accelerator.is_main_process and self.wandb_run:
             self.wandb_run.log(metrics_to_log, step=global_step)
 
         logger.info(f"Step {global_step}: {metrics_to_log}")
 
-    def evaluate(self):
+    def evaluate(self) -> dict[str, Any | int]:
         logger.info(f"--- Running Evaluation at Step {self.global_step} ---")
         self.models["honest_prover"].eval()
         self.models["sneaky_prover"].eval()
@@ -1196,7 +1249,7 @@ class DisjointSequentialTrainer:
 
         return metrics
 
-    def save_checkpoint(self, final=False):
+    def save_checkpoint(self, final: bool = False) -> None:
         checkpoint_dir = os.path.join(
             self.args.output_dir, f"checkpoint-{self.global_step}"
         )
@@ -1258,7 +1311,7 @@ class DisjointSequentialTrainer:
         logger.info(f"Checkpoint {self.global_step} saved successfully.")
         # Add checkpoint rotation logic here if needed
 
-    def load_checkpoint(self, checkpoint_dir):
+    def load_checkpoint(self, checkpoint_dir: str) -> None:
         logger.info(f"Resuming from checkpoint: {checkpoint_dir}")
 
         # --- Load Loop State (on all processes, main reads first) ---
@@ -1313,98 +1366,7 @@ class DisjointSequentialTrainer:
             f"Checkpoint loading complete. Resuming from step {self.global_step}."
         )
 
-    # def _move_model_to_vllm(self, model_key: str):
-    #     """Synchronizes weights from the training model to the corresponding vLLM server."""
-    #     # logger.info(f"[Process {self.accelerator.process_index}] Starting _move_model_to_vllm for {model_key}...")
-    #     # if not self.accelerator.is_main_process:
-    #     #     return  # Only main process interacts with vLLM client
-
-    #     # logger.info(f"Synchronizing weights for {model_key} to its vLLM server...")
-    #     # model_to_sync = self.models[model_key]  # The prepared training model
-    #     # vllm_client = self.vllm_clients[model_key]
-
-    #     # if vllm_client is None:
-    #     #     logger.warning(
-    #     #         f"vLLM client for {model_key} not initialized. Skipping weight sync."
-    #     #     )
-    #     #     raise ValueError(
-    #     #         f"vLLM client for {model_key} not initialized. Skipping weight sync."
-    #     #     )
-
-    #     # # Use the provided logic, adapting slightly
-    #     # # For DeepSpeed ZeRO-3, we need to gather all parameters before operations
-    #     # deepspeed_plugin = self.accelerators[model_key].state.deepspeed_plugin
-    #     # zero_stage_3 = deepspeed_plugin is not None and deepspeed_plugin.zero_stage == 3
-
-    #     # gather_if_zero3 = (
-    #     #     deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
-    #     # )
-
-    #     # # Unwrap the model if necessary (needed for named_parameters)
-    #     # # Note: accelerator.unwrap_model might be needed depending on DeepSpeed/FSDP wrapping
-    #     # unwrapped_model = self.accelerators[model_key].unwrap_model(model_to_sync)
-
-    #     # logger.info(f"Handling standard model weight sync for {model_key}...")
-    #     # # For non-PEFT models, gather and update each parameter individually if ZeRO-3
-    #     # for name, param in unwrapped_model.named_parameters():
-    #     #     with gather_if_zero3(
-    #     #         [param], modifier_rank=0 if zero_stage_3 else None
-    #     #     ):  # Pass modifier_rank=0 for DS3
-    #     #         # Ensure we are on the main process *after* gathering if needed
-    #     #         if self.accelerator.is_main_process:
-    #     #             logger.debug(f"[Weight Sync {model_key}] Updating param: {name}")
-    #     #             vllm_client.update_named_param(name, param.data)  # Use param.data
-
-    #     # # Reset cache on main process
-    #     # if self.accelerator.is_main_process:
-    #     #     logger.info(f"Resetting vLLM prefix cache for {model_key}.")
-    #     #     vllm_client.reset_prefix_cache()
-
-    #     # logger.info(f"Weight synchronization for {model_key} complete.")
-    #     # self.accelerator.wait_for_everyone()  # Ensure sync before proceeding
-
-    #     model = self.models[model_key]
-    #     vllm_client = self.vllm_clients[model_key] # Get the correct client
-    #     accelerator = self.accelerators[model_key] # Get the correct accelerator
-    #     # accelerator = self.accelerator
-
-    #     if vllm_client is None:
-    #         logger.warning(f"No vLLM client configured for {model_key}, skipping weight sync.")
-    #         return
-
-    #     # Unwrap the model if necessary (e.g., if wrapped by Accelerate/DeepSpeed)
-    #     unwrapped_model = accelerator.unwrap_model(model)
-
-    #     # Determine if using DeepSpeed ZeRO Stage 3
-    #     deepspeed_plugin = accelerator.state.deepspeed_plugin
-    #     zero_stage_3 = deepspeed_plugin is not None and deepspeed_plugin.zero_stage == 3
-    #     # Use GatheredParameters context only if ZeRO-3 is active
-    #     gather_if_zero3 = deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
-
-    #     logger.info(f"[Process {accelerator.process_index} / {model_key}] Non-PEFT model detected.")
-    #     named_params = list(unwrapped_model.named_parameters())
-
-    #     for i, (name, param) in enumerate(tqdm(named_params, desc=f"Syncing {model_key}", disable=not accelerator.is_main_process)):
-    #         # logger.debug(f"[Sync {model_key}] Gathering param {i+1}/{num_params}: {name}")
-    #         with gather_if_zero3([param]): # Pass modifier_rank=0 if needed? Check Accelerate/DS docs
-    #             # logger.debug(f"[Sync {model_key}] Param {name} gathered (took {param_gather_end - param_gather_start:.2f}s).")
-    #             # Ensure we are on the main process *after* gathering if needed
-    #             if accelerator.is_main_process:
-    #                 # logger.debug(f"[Sync {model_key}] Updating param: {name}")
-    #                 vllm_client.update_named_param(name, param.data)
-    #             # Parameter is automatically re-partitioned if needed when exiting context
-
-    #     # Reset cache on main process only
-    #     if accelerator.is_main_process:
-    #         logger.info(f"[Process {accelerator.process_index} / {model_key}] Resetting vLLM prefix cache...")
-    #         reset_start = time.time()
-    #         vllm_client.reset_prefix_cache()
-    #         reset_end = time.time()
-    #         logger.info(f"[Process {accelerator.process_index} / {model_key}] vLLM prefix cache reset (took {reset_end - reset_start:.2f}s).")
-
-    #     logger.info(f"[Process {accelerator.process_index}] Finished _move_model_to_vllm for {model_key}.")
-
-    def _move_model_to_vllm(self, model_key: str):
+    def _move_model_to_vllm(self, model_key: str) -> None:
         accelerator = self.accelerators[model_key]
         model = self.models[model_key]
         vllm_client = self.vllm_clients[model_key]
@@ -1480,25 +1442,6 @@ class DisjointSequentialTrainer:
             f"[Process {accelerator.process_index}] Exiting _move_model_to_vllm for {model_key}."
         )
 
-    # def _sync_weights_to_vllm(self):
-    #     """Helper method to trigger weight sync for both models."""
-    #     # Sync honest_prover
-    #     logger.info(f"[Process {self.accelerator.process_index}] ====> Preparing to call _move_model_to_vllm for honest_prover")
-    #     self._move_model_to_vllm("honest_prover")
-    #     logger.info(f"[Process {self.accelerator.process_index}] ====> Finished call to _move_model_to_vllm for honest_prover")
-
-    #     logger.info(f"[Process {self.accelerator.process_index}] ====> Waiting for all processes after honest_prover sync...")
-    #     # self.accelerators["honest_prover"].wait_for_everyone() # Use the main accelerator instance here
-    #     logger.info(f"[Process {self.accelerator.process_index}] ====> Wait finished.")
-
-    #     # Sync sneaky_prover
-    #     logger.info(f"[Process {self.accelerator.process_index}] ====> Preparing to call _move_model_to_vllm for sneaky_prover")
-    #     self._move_model_to_vllm("sneaky_prover")
-    #     logger.info(f"[Process {self.accelerator.process_index}] ====> Finished call to _move_model_to_vllm for sneaky_prover")
-    #     # self.accelerators["sneaky_prover"].wait_for_everyone() # Use the main accelerator instance here
-    #     logger.info(f"[Process {self.accelerator.process_index}] ====> Wait finished.")
-    #     # Verifier is frozen and not updated in this step, so we are good like that
-
     def _sync_weights_to_vllm(self):
         """Helper method to trigger weight sync for both models. Called by all processes."""
         logger.info(
@@ -1552,14 +1495,6 @@ class DisjointSequentialTrainer:
         logger.info(
             f"[Process {self.accelerator.process_index}] ===> Exiting _sync_weights_to_vllm"
         )
-
-    def _set_signature_columns_if_needed(self):
-        # If `self.args.remove_unused_columns` is True, non-signature columns are removed.
-        # By default, this method sets `self._signature_columns` to the model's expected inputs.
-        # In GRPOTrainer, we preprocess data, so using the model's signature columns doesn't work.
-        # Instead, we set them to the columns expected by the `training_step` method, hence the override.
-        if self._signature_columns is None:
-            self._signature_columns = ["prompt"]
 
     def _get_train_sampler(self) -> Sampler:
         # Returns a sampler that
@@ -1716,7 +1651,7 @@ class DisjointSequentialTrainer:
                 self._buffered_inputs[buffer_index] = inputs
             else:
                 inputs = buffered_inputs
-            self.global_step += 1
+                self.global_step += 1
         else:
             # In evaluation, we don't reuse completions across multiple updates, so we don't need to buffer inputs.
             inputs = self._generate_and_score_completions(batch)
@@ -1766,10 +1701,6 @@ class DisjointSequentialTrainer:
         )  # Gathering to collect all prompts from all processes
         # Note: prompts here are not unique! They are repeated num_generations times
 
-        # TODO: assert claim made above?
-        # In principle we should just slide a num_generations window over all_honest_prompts and check if the window (with stride = num_generations) contains identical prompts. If not, I might be missing something.
-        # TODO: implement this
-
         assert (
             len(all_honest_prompts) == len(raw_prompts) * self.accelerator.num_processes
         ), "Number of honest prompts does not match number of raw prompts. There must be a problem with how we are preparing the inputs."
@@ -1783,6 +1714,10 @@ class DisjointSequentialTrainer:
                 else self.args.vllm_top_k_honest_prover
             ),
             "max_tokens": self.args.vllm_max_new_tokens_honest_prover,
+            "repetition_penalty": self.args.vllm_repetition_penalty_honest_prover,
+            "frequency_penalty": self.args.vllm_frequency_penalty_honest_prover,
+            "min_p": self.args.vllm_min_p_honest_prover,
+            "stop": self.args.vllm_stop_sequences_honest_prover,
         }
 
         logger.info(
@@ -1822,6 +1757,10 @@ class DisjointSequentialTrainer:
                 else self.args.vllm_top_k_sneaky_prover
             ),
             "max_tokens": self.args.vllm_max_new_tokens_sneaky_prover,
+            "repetition_penalty": self.args.vllm_repetition_penalty_sneaky_prover,
+            "frequency_penalty": self.args.vllm_frequency_penalty_sneaky_prover,
+            "min_p": self.args.vllm_min_p_sneaky_prover,
+            "stop": self.args.vllm_stop_sequences_sneaky_prover,
         }
 
         logger.info(
@@ -1871,6 +1810,10 @@ class DisjointSequentialTrainer:
                 else self.args.vllm_top_k_verifier
             ),
             "max_tokens": self.args.vllm_max_new_tokens_verifier,
+            "repetition_penalty": self.args.vllm_repetition_penalty_verifier,
+            "frequency_penalty": self.args.vllm_frequency_penalty_verifier,
+            "min_p": self.args.vllm_min_p_verifier,
+            "stop": self.args.vllm_stop_sequences_verifier,
         }
         verifier_logprobs_request_count = (
             15  # Number of logprobs needed for reward extraction? Adjust if needed.
@@ -1895,26 +1838,6 @@ class DisjointSequentialTrainer:
         )
 
         logger.info("Completed verifier generation. Extracting rewards...")
-
-        # # --- Reward Processing and Advantage Calculation ---
-        # rewards_all = None
-        # all_completion_texts_v_gathered = None
-        # if self.accelerator.is_main_process:
-        #     logger.info(f"[Process {self.accelerator.process_index}] Main process entering reward extraction phase.")
-        #     # Need to reconstruct the *full* list of completion texts on main process to extract rewards globally
-        #     logger.info(f"[Process {self.accelerator.process_index}] Gathering verifier completion texts...")
-        #     gather_start_time = time.time()
-        #     # Need to reconstruct the *full* list of completion texts on main process to extract rewards globally
-        #     all_completion_texts_v = gather_object(
-        #         completion_texts_v
-        #     )  # Gather local texts back
-        #     rewards_all = [
-        #         self.extract_verifier_reward(text) for text in all_completion_texts_v
-        #     ]
-        # else:
-        #     rewards_all = [None] * (
-        #         len(raw_prompts) * 2 * self.accelerator.num_processes
-        #     )  # TODO: Check if multiplying by the number of processes is correct. I have a feeling it's not.
 
         # --- Reward Processing and Advantage Calculation ---
         rewards_all = None  # Initialize
@@ -2069,19 +1992,6 @@ class DisjointSequentialTrainer:
             local_slice_prover
         ]  # Slice global rewards for logging
 
-        # # Calculate local slice indices for *verifier* rewards
-        # num_local_samples_verifier = (
-        #     len(raw_prompts) * 2
-        # )  # Verifier handles both prover outputs locally
-        # start_index_verifier = (
-        #     self.accelerator.process_index * num_local_samples_verifier
-        # )
-        # end_index_verifier = start_index_verifier + num_local_samples_verifier
-        # local_slice_verifier = slice(start_index_verifier, end_index_verifier)
-
-        # # Slice the *global* verifier rewards to get the local part for logging
-        # local_rewards_v = rewards_all_tensor[local_slice_verifier]
-
         logger.info("Completed slicing. Preparing model inputs and logging metrics...")
 
         # --- Prepare Model Inputs and Log Metrics ---
@@ -2150,21 +2060,6 @@ class DisjointSequentialTrainer:
             advantages=local_advantages_b,
         )
 
-        # Log Verifier Metrics (Rewards only, no advantages)
-        # We need a completion mask just for length calculation
-        # verifier_completion_mask = (
-        #     container.container["verifier"]["completion_ids"]
-        #     != self.tokenizer.pad_token_id
-        # ) # Bool - fine as is
-        # self._store_generation_metrics(
-        #     model_key="verifier",
-        #     eval_mode="eval", # Verifier is frozen during provers training
-        #     completion_mask=verifier_completion_mask,  # Use derived mask
-        #     is_eos=container.container["verifier"]["is_eos"],
-        #     rewards=None,  # Verifier doesn't have rewards
-        #     advantages=None,  # Verifier doesn't have advantages
-        # )
-
         container_honest = container.container["honest_prover"]
         container_sneaky = container.container["sneaky_prover"]
 
@@ -2191,6 +2086,37 @@ class DisjointSequentialTrainer:
             },
         }
 
+    def _compute_entropy(
+        self,
+        logits: torch.Tensor,
+        mask: torch.Tensor | None = None,
+        reduce: bool = True,
+    ) -> torch.Tensor:
+        """
+        Calculate entropy from logits: H(p) = -sum(p_i * log(p_i))
+        Args:
+            logits: Raw logits from model (before softmax), shape (batch_size, sequence_length, vocab_size)
+            mask: Optional mask to apply (for ignoring padding tokens), shape (batch_size, sequence_length)
+            reduce: If True, return mean entropy; if False, return per-token entropy tensor
+        Returns:
+            If reduce=True: Mean entropy as scalar tensor
+            If reduce=False: Per-token entropy tensor of shape (batch_size, sequence_length)
+        """
+        # Convert logits to probabilities with softmax
+        probs = torch.nn.functional.softmax(logits, dim=-1)
+        # Calculate entropy: -sum(p_i * log(p_i))
+        entropy = -torch.sum(
+            probs * torch.log(probs + 1e-10), dim=-1
+        )  # Shape: (batch_size, sequence_length)
+
+        if not reduce:
+            return entropy  # Return full entropy tensor
+
+        if mask is not None:
+            # Apply mask and calculate mean entropy only over valid tokens
+            return (entropy * mask).sum() / mask.sum().clamp(min=1.0)
+        return entropy.mean()
+
     def _compute_loss(
         self,
         model,
@@ -2213,6 +2139,129 @@ class DisjointSequentialTrainer:
         logits_to_keep = completion_ids.size(
             1
         )  # we only need to compute the logits for the completion tokens
+
+        # Get full logits to compute entropy
+        unwrapped_model = self.accelerator.unwrap_model(model)
+        outputs = unwrapped_model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits[
+            :, -logits_to_keep - 1 : -1, :
+        ]  # Get logits for completion tokens
+
+        # Calculate entropy metrics
+        per_token_entropy = self._compute_entropy(logits, completion_mask, reduce=False)
+        mean_entropy = (
+            per_token_entropy * completion_mask
+        ).sum() / completion_mask.sum().clamp(min=1.0)
+        entropy_std = torch.sqrt(
+            (
+                (per_token_entropy - mean_entropy.unsqueeze(-1)).pow(2)
+                * completion_mask
+            ).sum()
+            / completion_mask.sum().clamp(min=1.0)
+        )
+
+        # Calculate min, max, and percentiles
+        # Create a flattened version of valid entropy values for percentile calculation
+        valid_entropy = per_token_entropy[completion_mask.bool()]
+        if len(valid_entropy) > 0:
+            entropy_min = valid_entropy.min()
+            entropy_max = valid_entropy.max()
+            # Calculate percentiles if enough tokens
+            if (
+                len(valid_entropy) >= 4
+            ):  # Need at least a few points for meaningful percentiles
+                sorted_entropy, _ = torch.sort(valid_entropy)
+                idx_25 = max(
+                    0, min(len(sorted_entropy) - 1, int(0.25 * len(sorted_entropy)))
+                )
+                idx_50 = max(
+                    0, min(len(sorted_entropy) - 1, int(0.50 * len(sorted_entropy)))
+                )
+                idx_75 = max(
+                    0, min(len(sorted_entropy) - 1, int(0.75 * len(sorted_entropy)))
+                )
+
+                entropy_25 = sorted_entropy[idx_25]
+                entropy_50 = sorted_entropy[idx_50]  # median
+                entropy_75 = sorted_entropy[idx_75]
+            else:
+                entropy_25 = entropy_min
+                entropy_50 = mean_entropy
+                entropy_75 = entropy_max
+        else:
+            entropy_min = torch.tensor(0.0, device=device)
+            entropy_max = torch.tensor(0.0, device=device)
+            entropy_25 = torch.tensor(0.0, device=device)
+            entropy_50 = torch.tensor(0.0, device=device)
+            entropy_75 = torch.tensor(0.0, device=device)
+
+        # Store entropy metrics
+        eval_mode = "eval" if not model.training else "train"
+        self._metrics[eval_mode][model_key]["entropy_mean"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_mean", [])
+        self._metrics[eval_mode][model_key]["entropy_std"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_std", [])
+        self._metrics[eval_mode][model_key]["entropy_min"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_min", [])
+        self._metrics[eval_mode][model_key]["entropy_max"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_max", [])
+        self._metrics[eval_mode][model_key]["entropy_25"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_25", [])
+        self._metrics[eval_mode][model_key]["entropy_50"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_50", [])
+        self._metrics[eval_mode][model_key]["entropy_75"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_75", [])
+        self._metrics[eval_mode][model_key]["entropy_iqr"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy_iqr", [])
+
+        self._metrics[eval_mode][model_key]["entropy_mean"].append(
+            self.accelerators[model_key]
+            .gather_for_metrics(mean_entropy)
+            .nanmean()
+            .item()
+        )
+        self._metrics[eval_mode][model_key]["entropy_std"].append(
+            self.accelerators[model_key]
+            .gather_for_metrics(entropy_std)
+            .nanmean()
+            .item()
+        )
+        self._metrics[eval_mode][model_key]["entropy_min"].append(
+            self.accelerators[model_key]
+            .gather_for_metrics(entropy_min)
+            .nanmean()
+            .item()
+        )
+        self._metrics[eval_mode][model_key]["entropy_max"].append(
+            self.accelerators[model_key]
+            .gather_for_metrics(entropy_max)
+            .nanmean()
+            .item()
+        )
+        self._metrics[eval_mode][model_key]["entropy_25"].append(
+            self.accelerators[model_key].gather_for_metrics(entropy_25).nanmean().item()
+        )
+        self._metrics[eval_mode][model_key]["entropy_50"].append(
+            self.accelerators[model_key].gather_for_metrics(entropy_50).nanmean().item()
+        )
+        self._metrics[eval_mode][model_key]["entropy_75"].append(
+            self.accelerators[model_key].gather_for_metrics(entropy_75).nanmean().item()
+        )
+        entropy_iqr = entropy_75 - entropy_25
+        self._metrics[eval_mode][model_key]["entropy_iqr"].append(
+            self.accelerators[model_key]
+            .gather_for_metrics(entropy_iqr)
+            .nanmean()
+            .item()
+        )
 
         per_token_logps = self._get_per_token_logps(
             model, input_ids, attention_mask, logits_to_keep
@@ -2273,10 +2322,16 @@ class DisjointSequentialTrainer:
         return loss
 
     def _get_last_hidden_state(
-        self, model, input_ids, attention_mask, logits_to_keep=None
-    ):
+        self,
+        model: torch.nn.Module,
+        model_key: Literal["honest_prover", "sneaky_prover"],
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        logits_to_keep: int | None = None,
+    ) -> torch.Tensor:
+        accelerator = self.accelerators[model_key]
         # unwrap the model to access the model.model
-        unwrapped_model = self.accelerator.unwrap_model(model)
+        unwrapped_model = accelerator.unwrap_model(model)
         last_hidden_state = unwrapped_model.model(
             input_ids=input_ids, attention_mask=attention_mask
         ).last_hidden_state
@@ -2293,6 +2348,10 @@ class DisjointSequentialTrainer:
 
         # Make sure devicing is set correctly
         device = self.accelerators[model_key].device
+        zero3 = (
+            self.accelerators[model_key].state.deepspeed_plugin is not None
+            and self.accelerators[model_key].state.deepspeed_plugin.zero_stage == 3
+        )
 
         # Compute the per-token log probabilities for the model
         prompt_ids, prompt_mask = inputs["prompt_ids"].to(device), inputs[
@@ -2307,43 +2366,66 @@ class DisjointSequentialTrainer:
             1
         )  # we only need to compute the logits for the completion tokens
 
+        # Get full logits to compute entropy
+        unwrapped_model = self.accelerators[model_key].unwrap_model(model)
+        outputs = unwrapped_model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits[
+            :, -logits_to_keep - 1 : -1, :
+        ]  # Get logits for completion tokens
+
+        # Calculate entropy over the logits
+        entropy = self._compute_entropy(logits, completion_mask)
+
+        # Store entropy in metrics
+        eval_mode = "eval" if not model.training else "train"
+        self._metrics[eval_mode][model_key]["entropy"] = self._metrics[eval_mode][
+            model_key
+        ].get("entropy", [])
+        self._metrics[eval_mode][model_key]["entropy"].append(
+            self.accelerators[model_key].gather_for_metrics(entropy).nanmean().item()
+        )
+
         # get the last hidden state of the model
         last_hidden_state = self._get_last_hidden_state(
-            model, input_ids, attention_mask, logits_to_keep
+            model, model_key, input_ids, attention_mask, logits_to_keep
         )
-        unwrapped_model = self.accelerator.unwrap_model(model)
 
-        # --- DEBUG PRINTS ---
-        if model_key == "honest_prover":
-            print(
-                f"[DEBUG {model_key} Rank {self.accelerators[model_key].process_index}] Shapes before liger_grpo_loss:"
+        # # --- DEBUG PRINTS ---
+        # if model_key == "honest_prover":
+        #     print(unwrapped_model) # Trying to assess if maybe lm_head is called differently...
+        #     print(
+        #         f"[DEBUG {model_key} Rank {self.accelerators[model_key].process_index}] Shapes before liger_grpo_loss:"
+        #     )
+        #     print(f"  - last_hidden_state: {last_hidden_state.shape}")
+        #     print(f"  - lm_head.weight: {unwrapped_model.lm_head.weight.shape}")
+        #     print(f"  - completion_ids: {completion_ids.shape}")
+        #     print(f"  - completion_mask: {completion_mask.shape}")
+        #     print(f"  - advantages: {inputs['advantages'].shape}")
+        #     if inputs["ref_per_token_logps"] is not None:
+        #         print(f"  - ref_per_token_logps: {inputs['ref_per_token_logps'].shape}")
+        #     else:
+        #         print("  - ref_per_token_logps: None")
+        #     if inputs["old_per_token_logps"] is not None:
+        #         print(f"  - old_per_token_logps: {inputs['old_per_token_logps'].shape}")
+        #     else:
+        #         print("  - old_per_token_logps: None")
+        # # --- END DEBUG PRINTS ---
+
+        with self._full_lm_head_params(unwrapped_model, zero3):
+            weight = unwrapped_model.lm_head.weight  # now full on every rank
+            bias = unwrapped_model.lm_head.bias
+
+            loss, metrics = self.liger_grpo_loss(
+                _input=last_hidden_state,
+                lin_weight=weight,
+                bias=bias,
+                selected_token_ids=completion_ids,
+                attention_mask=completion_mask,
+                advantages=inputs["advantages"],
+                ref_per_token_logps=inputs["ref_per_token_logps"],
+                old_per_token_logps=inputs["old_per_token_logps"],
             )
-            print(f"  - last_hidden_state: {last_hidden_state.shape}")
-            print(f"  - lm_head.weight: {unwrapped_model.lm_head.weight.shape}")
-            print(f"  - completion_ids: {completion_ids.shape}")
-            print(f"  - completion_mask: {completion_mask.shape}")
-            print(f"  - advantages: {inputs['advantages'].shape}")
-            if inputs["ref_per_token_logps"] is not None:
-                print(f"  - ref_per_token_logps: {inputs['ref_per_token_logps'].shape}")
-            else:
-                print("  - ref_per_token_logps: None")
-            if inputs["old_per_token_logps"] is not None:
-                print(f"  - old_per_token_logps: {inputs['old_per_token_logps'].shape}")
-            else:
-                print("  - old_per_token_logps: None")
-        # --- END DEBUG PRINTS ---
 
-        # compute loss and metrics using liger grpo loss
-        loss, metrics = self.liger_grpo_loss(
-            _input=last_hidden_state,
-            lin_weight=unwrapped_model.lm_head.weight,
-            selected_token_ids=completion_ids,
-            attention_mask=completion_mask,
-            advantages=inputs["advantages"],
-            bias=unwrapped_model.lm_head.bias,
-            ref_per_token_logps=inputs["ref_per_token_logps"],
-            old_per_token_logps=inputs["old_per_token_logps"],
-        )
         # Extract metrics from the liger_grpo_loss output
         # KL divergence is the first metric when beta is non-zero
         mean_kl = metrics[0] if self.args.beta != 0.0 else None
@@ -2744,3 +2826,16 @@ class DisjointSequentialTrainer:
             advantages = torch.clamp(advantages, -adv_clip, adv_clip)
 
         return advantages
+
+    def _full_lm_head_params(self, unwrapped_model, zero3):
+        # returns weight,bias tensors that are guaranteed to be full on every rank
+        params = [unwrapped_model.lm_head.weight]
+        if unwrapped_model.lm_head.bias is not None:
+            params.append(unwrapped_model.lm_head.bias)
+
+        if zero3:
+            # modifier_rank=None => gather on *all* ranks (not only rank‑0)
+            ctx = deepspeed.zero.GatheredParameters(params, modifier_rank=None)
+        else:
+            ctx = nullcontext()
+        return ctx  # to be used as a "with" context‑manager

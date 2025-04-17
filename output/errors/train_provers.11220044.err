@@ -1,0 +1,741 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.53s/it]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.53s/it]
+
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:14,  2.39it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:13,  2.49it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:12,  2.54it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:12,  2.56it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:11,  2.57it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:11,  2.57it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:10,  2.58it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:03<00:10,  2.58it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:10,  2.58it/s]Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:07<00:00,  7.56s/it]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:07<00:00,  7.57s/it]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:07<00:00,  7.56s/it]
+
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:07<00:00,  7.57s/it]
+
+Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:09,  2.58it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:09,  2.58it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:08,  2.58it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:05<00:08,  2.54it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:08,  2.50it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:08,  2.50it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:06<00:07,  2.50it/s]Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:14,  2.42it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:07,  2.50it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:13,  2.47it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:13,  2.49it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:07<00:06,  2.53it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:12,  2.55it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:12,  2.51it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:07<00:06,  2.55it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:12,  2.57it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:12,  2.53it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.56it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:11,  2.58it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:11,  2.53it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:08<00:05,  2.57it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:01<00:11,  2.59it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:11,  2.53it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:08<00:05,  2.58it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:11,  2.59it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:11,  2.53it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:09<00:04,  2.58it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:10,  2.60it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:03<00:10,  2.54it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:03<00:10,  2.60it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:09<00:04,  2.55it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:10,  2.54it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:09,  2.60it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:09<00:03,  2.56it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:09,  2.54it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:03<00:09,  2.60it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:10<00:03,  2.57it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:09,  2.54it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:09,  2.60it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:10<00:03,  2.58it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:08,  2.60it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:04<00:09,  2.54it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:10<00:02,  2.58it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:05<00:08,  2.60it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:11<00:02,  2.58it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:05<00:08,  2.54it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:08,  2.60it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:11<00:01,  2.59it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:05<00:08,  2.55it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:07,  2.60it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:12<00:01,  2.59it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:05<00:07,  2.55it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:06<00:07,  2.60it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:12<00:01,  2.60it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:06<00:07,  2.55it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:06,  2.59it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:12<00:00,  2.58it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:06<00:07,  2.54it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:06<00:06,  2.60it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:13<00:00,  2.59it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:07<00:06,  2.54it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:07<00:06,  2.60it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.57it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.56it/s]
+Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:07<00:06,  2.54it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.57it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:07<00:05,  2.50it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:08<00:05,  2.54it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:08<00:05,  2.49it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:08<00:05,  2.56it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:08<00:05,  2.51it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:08<00:04,  2.58it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:09<00:04,  2.52it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:09<00:04,  2.59it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:09<00:04,  2.53it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:09<00:03,  2.56it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:09<00:03,  2.51it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:10<00:03,  2.58it/s]INFO:     Started server process [686081]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:10<00:03,  2.52it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:10<00:03,  2.58it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:10<00:03,  2.53it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:10<00:02,  2.59it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:11<00:02,  2.54it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:11<00:02,  2.60it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:11<00:02,  2.54it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:11<00:01,  2.60it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:11<00:01,  2.55it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:11<00:01,  2.60it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:12<00:01,  2.55it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:12<00:01,  2.59it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:12<00:01,  2.54it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:12<00:00,  2.60it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:13<00:00,  2.55it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:13<00:00,  2.60it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:13<00:00,  2.54it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.53it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.24it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.53it/s]
+Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:13<00:00,  2.55it/s]
+INFO:     Started server process [686080]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+INFO:     Started server process [686079]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+04/16/2025 16:46:39 - INFO - disjointTrainer - Logging level set to WARNING
+04/16/2025 16:46:39 - INFO - disjointTrainer - Logging level set to INFO
+04/16/2025 16:46:39 - INFO - disjointTrainer - Set random seed to 42
+04/16/2025 16:46:39 - INFO - disjointTrainer - Set random seed to 42
+04/16/2025 16:46:39 - INFO - disjointTrainer - Initializing Accelerators...
+04/16/2025 16:46:39 - INFO - disjointTrainer - Initializing Accelerators...
+04/16/2025 16:46:39 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/16/2025 16:46:39 - INFO - disjointTrainer - DeepSpeed plugins created.
+04/16/2025 16:46:39 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/16/2025 16:46:39 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+04/16/2025 16:46:39 - INFO - disjointTrainer - Initializing WandB tracker via accelerator.init_trackers...
+04/16/2025 16:46:39 - INFO - disjointTrainer - First Accelerator (accelerator_a) initialized.
+04/16/2025 16:46:39 - INFO - disjointTrainer - Second Accelerator (accelerator_b) initialized.
+04/16/2025 16:46:39 - INFO - disjointTrainer - Initializing WandB tracker via accelerator.init_trackers...
+04/16/2025 16:46:39 - INFO - disjointTrainer - WandB tracker initialization requested.
+04/16/2025 16:46:39 - INFO - disjointTrainer - --- Accelerator State ---
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Num processes: 2
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Process index: 1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Local process index: 1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Device: cuda:1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Mixed precision: bf16
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/16/2025 16:46:39 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Num processes: 2
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Process index: 1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Local process index: 1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Device: cuda:1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Mixed precision: bf16
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/16/2025 16:46:39 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/16/2025 16:46:39 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/16/2025 16:46:39 - INFO - disjointTrainer -   Accelerator Device: cuda:1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/16/2025 16:46:39 - INFO - disjointTrainer -   torch.cuda.current_device(): 1
+04/16/2025 16:46:39 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA H100
+04/16/2025 16:46:39 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+04/16/2025 16:46:39 - INFO - disjointTrainer - vLLM Clients initialized.
+04/16/2025 16:46:39 - INFO - disjointTrainer - --- vLLM Clients State ---
+04/16/2025 16:46:39 - INFO - disjointTrainer -   vLLM Client A: None
+04/16/2025 16:46:39 - INFO - disjointTrainer -   vLLM Client B: None
+04/16/2025 16:46:39 - INFO - disjointTrainer - Loading tokenizer from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-1.5B
+04/16/2025 16:46:40 - INFO - disjointTrainer - Loading Honest Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-1.5B
+wandb: Using wandb-core as the SDK backend.  Please refer to https://wandb.me/wandb-core for more information.
+wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.19.9
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250416_164641-k294bpje
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run fallen-energy-55
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/k294bpje
+04/16/2025 16:46:47 - INFO - disjointTrainer - WandB tracker initialization requested.
+04/16/2025 16:46:47 - INFO - disjointTrainer - Successfully retrieved WandB run. Run ID: k294bpje
+04/16/2025 16:46:47 - INFO - disjointTrainer - WandB tracker initialized. Run ID: k294bpje
+04/16/2025 16:46:47 - INFO - disjointTrainer - Environment details logged to WandB.
+04/16/2025 16:46:47 - INFO - disjointTrainer - LLM interaction logs will be saved to: ./output_disjoint_training_vllm_prover_verifier/llm_interaction_logs
+04/16/2025 16:46:47 - INFO - disjointTrainer - --- Accelerator State ---
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Num processes: 2
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Process index: 0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Local process index: 0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Device: cuda:0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Mixed precision: bf16
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/16/2025 16:46:47 - INFO - disjointTrainer - --- Accelerator State for Model B ---
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Distributed type: DistributedType.DEEPSPEED
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Num processes: 2
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Process index: 0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Local process index: 0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Device: cuda:0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Mixed precision: bf16
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Gradient Acc Steps: 1
+04/16/2025 16:46:47 - INFO - disjointTrainer - Trainer initialized. Accelerators are set up.
+04/16/2025 16:46:47 - INFO - disjointTrainer - --- Training Process GPU Info ---
+04/16/2025 16:46:47 - INFO - disjointTrainer -   Accelerator Device: cuda:0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   torch.cuda.device_count() seen by this process: 2
+04/16/2025 16:46:47 - INFO - disjointTrainer -   torch.cuda.current_device(): 0
+04/16/2025 16:46:47 - INFO - disjointTrainer -   torch.cuda.get_device_name(): NVIDIA H100
+04/16/2025 16:46:47 - INFO - disjointTrainer - --- End Training Process GPU Info ---
+04/16/2025 16:46:47 - INFO - disjointTrainer - Main process initializing vLLM clients...
+04/16/2025 16:46:47 - INFO - disjointTrainer - Attempting to initialize vLLM client: honest_prover
+04/16/2025 16:46:47 - INFO - pvg.inference.vllmclient - Server is up!
+04/16/2025 16:46:48 - INFO - disjointTrainer - Successfully connected vLLM client 'honest_prover' to 127.0.0.1:8000
+04/16/2025 16:46:48 - INFO - disjointTrainer - Attempting to initialize vLLM client: sneaky_prover
+04/16/2025 16:46:48 - INFO - pvg.inference.vllmclient - Server is up!
+04/16/2025 16:46:50 - INFO - disjointTrainer - Successfully connected vLLM client 'sneaky_prover' to 127.0.0.1:8001
+04/16/2025 16:46:50 - INFO - disjointTrainer - Attempting to initialize vLLM client: verifier
+04/16/2025 16:46:50 - INFO - pvg.inference.vllmclient - Server is up!
+04/16/2025 16:46:51 - INFO - disjointTrainer - Successfully connected vLLM client 'verifier' to 127.0.0.1:8002
+04/16/2025 16:46:51 - INFO - disjointTrainer - vLLM Clients initialized.
+04/16/2025 16:46:51 - INFO - disjointTrainer - --- vLLM Clients State ---
+04/16/2025 16:46:51 - INFO - disjointTrainer -   vLLM Client A: <pvg.inference.vllmclient.VLLMClient object at 0x14ccdeff0710>
+04/16/2025 16:46:51 - INFO - disjointTrainer -   vLLM Client B: <pvg.inference.vllmclient.VLLMClient object at 0x14ccdf3d8990>
+04/16/2025 16:46:51 - INFO - disjointTrainer -   vLLM Client C: <pvg.inference.vllmclient.VLLMClient object at 0x14ccdea83790>
+04/16/2025 16:46:51 - INFO - disjointTrainer - Loading tokenizer from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-1.5B
+04/16/2025 16:46:51 - INFO - disjointTrainer - Loading Honest Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-1.5B
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+04/16/2025 16:46:54 - INFO - disjointTrainer - Loading Sneaky Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-1.5B
+04/16/2025 16:46:54 - INFO - disjointTrainer - Loading Sneaky Prover from /home/jvelja/local_models/Qwen/Qwen2.5-Coder-1.5B
+04/16/2025 16:46:55 - INFO - root - Loading raw dataset 'codeparrot/apps' split 'train'...
+04/16/2025 16:46:56 - INFO - root - Using all 5000 samples from the dataset.
+04/16/2025 16:46:56 - INFO - root - Attempting to load tokenized dataset from cache (if available)...
+04/16/2025 16:46:56 - INFO - root - Tokenized dataset loaded successfully (from cache or newly processed).
+04/16/2025 16:46:56 - INFO - root - Dataset initialization complete for split 'train'. Size: 5000
+04/16/2025 16:46:56 - INFO - root - Loading raw dataset 'codeparrot/apps' split 'test'...
+04/16/2025 16:46:56 - INFO - root - Using all 5000 samples from the dataset.
+04/16/2025 16:46:56 - INFO - root - Attempting to load tokenized dataset from cache (if available)...
+04/16/2025 16:46:56 - INFO - disjointTrainer - Train Dataset: 5000 samples
+04/16/2025 16:46:56 - INFO - disjointTrainer - Eval Dataset: 5000 samples
+04/16/2025 16:46:56 - INFO - disjointTrainer - Optimizers created.
+04/16/2025 16:46:56 - INFO - root - Tokenized dataset loaded successfully (from cache or newly processed).
+04/16/2025 16:46:56 - INFO - root - Dataset initialization complete for split 'test'. Size: 5000
+04/16/2025 16:46:56 - INFO - disjointTrainer - Train Dataset: 5000 samples
+04/16/2025 16:46:56 - INFO - disjointTrainer - Eval Dataset: 5000 samples
+04/16/2025 16:46:56 - INFO - disjointTrainer - Optimizers created.
+04/16/2025 16:46:57 - INFO - disjointTrainer - Preparing components with Accelerate...
+04/16/2025 16:46:57 - INFO - disjointTrainer - Selecting plugin and preparing components for honest_prover...
+04/16/2025 16:46:57 - INFO - disjointTrainer - Preparing components with Accelerate...
+04/16/2025 16:46:57 - INFO - disjointTrainer - Selecting plugin and preparing components for honest_prover...
+04/16/2025 16:47:00 - INFO - disjointTrainer - Components prepared for honest_prover.
+04/16/2025 16:47:00 - INFO - disjointTrainer - Selecting plugin and preparing components for sneaky_prover...
+04/16/2025 16:47:00 - INFO - disjointTrainer - Components prepared for honest_prover.
+04/16/2025 16:47:00 - INFO - disjointTrainer - Selecting plugin and preparing components for sneaky_prover...
+04/16/2025 16:47:02 - INFO - disjointTrainer - Components prepared for sneaky_prover.
+04/16/2025 16:47:02 - INFO - disjointTrainer - Preparing Eval Dataloaders...
+04/16/2025 16:47:02 - INFO - disjointTrainer - Component preparation complete.
+04/16/2025 16:47:02 - INFO - disjointTrainer - Calculated num_training_steps: 2500
+04/16/2025 16:47:02 - INFO - disjointTrainer - Schedulers created.
+04/16/2025 16:47:02 - INFO - disjointTrainer - Preparing schedulers...
+04/16/2025 16:47:02 - INFO - disjointTrainer - Schedulers prepared.
+04/16/2025 16:47:02 - INFO - disjointTrainer - --- Initialization Complete ---
+04/16/2025 16:47:02 - INFO - disjointTrainer - ***** Starting Training *****
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Num Epochs = 1
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Instantaneous batch size per device = 2
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Total train batch size (w. parallel, distributed & accumulation) = 4
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Gradient Accumulation steps = 1
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Total optimization steps = 2500
+04/16/2025 16:47:02 - INFO - disjointTrainer - --- Starting Epoch 1/1 ---
+04/16/2025 16:47:02 - INFO - disjointTrainer - Components prepared for sneaky_prover.
+04/16/2025 16:47:02 - INFO - disjointTrainer - Preparing Eval Dataloaders...
+04/16/2025 16:47:02 - INFO - disjointTrainer - Component preparation complete.
+04/16/2025 16:47:02 - INFO - disjointTrainer - Calculated num_training_steps: 2500
+04/16/2025 16:47:02 - INFO - disjointTrainer - Schedulers created.
+04/16/2025 16:47:02 - INFO - disjointTrainer - Preparing schedulers...
+04/16/2025 16:47:02 - INFO - disjointTrainer - Schedulers prepared.
+04/16/2025 16:47:02 - INFO - disjointTrainer - --- Initialization Complete ---
+04/16/2025 16:47:02 - INFO - disjointTrainer - ***** Starting Training *****
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Num Epochs = 1
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Instantaneous batch size per device = 2
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Total train batch size (w. parallel, distributed & accumulation) = 4
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Gradient Accumulation steps = 1
+04/16/2025 16:47:02 - INFO - disjointTrainer -   Total optimization steps = 2500
+Training Steps:   0%|          | 0/2500 [00:00<?, ?it/s]04/16/2025 16:47:02 - INFO - disjointTrainer - --- Starting Epoch 1/1 ---
+04/16/2025 16:47:02 - INFO - disjointTrainer - [Process 0] Entering _training_step
+04/16/2025 16:47:02 - INFO - disjointTrainer - [Process 0] Calling _prepare_inputs
+04/16/2025 16:47:02 - INFO - disjointTrainer - [Process 1] Entering _training_step
+04/16/2025 16:47:02 - INFO - disjointTrainer - [Process 1] Calling _prepare_inputs
+04/16/2025 16:47:02 - INFO - disjointTrainer - Generating completions for honest prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048, 'repetition_penalty': 1.15, 'min_p': 0.05}
+04/16/2025 16:47:02 - INFO - disjointTrainer - Generating completions for honest prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048, 'repetition_penalty': 1.15, 'min_p': 0.05}
+Processed prompts:   0%|          | 0/4 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  50%|█████     | 2/4 [00:01<00:01,  1.25it/s, est. speed input: 668.62 toks/s, output: 325.59 toks/s]Processed prompts: 100%|██████████| 4/4 [00:01<00:00,  2.30it/s, est. speed input: 1076.22 toks/s, output: 534.53 toks/s]Processed prompts: 100%|██████████| 4/4 [00:01<00:00,  2.04it/s, est. speed input: 1076.22 toks/s, output: 534.53 toks/s]
+04/16/2025 16:47:04 - INFO - disjointTrainer - [Process 0 / honest_prover] Raw client output length: completion_ids_nested=4
+04/16/2025 16:47:04 - INFO - disjointTrainer - [Process 0 / honest_prover] Length after batch_decode: completion_texts_all=4
+04/16/2025 16:47:04 - WARNING - pvg.utils.utils - Could not find ```...```, <solution>...</solution>, or <injected_solution>...</injected_solution> block in completion text. Returning raw text. Text was:
+---
+We need permutations with repetition (permutations of elements in the same set). If we think about “t” appearing once as T followed by AA...A (“t”, “tt”, etc.). Since order matters but repetitions allowed, we have combinations N choose K, where N = len(S), k=number_of_t's. In python:
+import math
+
+
+ 
+
+# Write your solution here.
+class Solution(object):
+
+   def num_distinct(self,S):
+       MODULO=(10**9+7) #This will save you many rounds on big numbers
+       ​
+           ans=len(set(s[:i]+s[i:]for s in itertools.permutations(S))) %MODULO
+---
+04/16/2025 16:47:04 - WARNING - pvg.utils.utils - Could not find ```...```, <solution>...</solution>, or <injected_solution>...</injected_solution> block in completion text. Returning raw text. Text was:
+---
+Let's call our subsequence counter `f(i)`. Then,
+
+`f(1) = 1`, representing `"a"` alone,
+`f(2) = f(1)^2` (since two chars can form as many pairs as there were characters before them),
+and so on.
+
+So, we have
+
+`f(2n+1) = [f((2*n)+1)]^2`,
+`f(2n)` equals the sum of all previous values multiplied by `[n]`,
+where `[x]` denotes the floor division operator.
+
+With Python magic, it’s possible to write a recursive version like this one:
+
+<pre><code>from math import sqrt
+
+M=1e9 +7 #MODULUS NUMBER FOR REMAINDER CALCULATIONS
+
+
+def fun(S):
+
+    l=len(S)
+
+​
+    def inner_func(index):
+
+
+
+        if index==l:
+
+
+            return int(pow(inner_func(0),int(sqrt(l))+1))
+
+
+        elif S[index]==\'\':
+
+
+
+
+           ans=[inner_func(mix)for mix in range(len(ans))]
+
+
+
+
+
+
+
+        else:
+
+
+
+                print(f\'{ans}\')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+print(fun(\'.\',))
+</code></pre>
+
+The idea here is to recursively traverse through each character while keeping track of previously encountered characters using memoization. By leveraging power functions from base two up until half of input length (`sqrt(length_of_input)`) inclusive along with nested calls to itself when necessary based upon unique individual symbols being processed throughout entire sequence lengths respectively leads towards achieving desired results efficiently whilst adhering strictly to defined constraints specified initially regarding both inputs & outputs types.
+
+However, remember always practicing good programming habits such as writing modularized yet cohesive codes free from redundancy thus enhancing maintainability over extended periods during future refactoring endeavors required down the road!
+---
+04/16/2025 16:47:04 - INFO - disjointTrainer - Generating completions for sneaky prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048}
+04/16/2025 16:47:04 - INFO - disjointTrainer - Generating completions for sneaky prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048}
+Processed prompts:   0%|          | 0/4 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  50%|█████     | 2/4 [00:01<00:01,  1.38it/s, est. speed input: 1259.23 toks/s, output: 392.64 toks/s]Processed prompts: 100%|██████████| 4/4 [00:06<00:00,  1.67s/it, est. speed input: 588.12 toks/s, output: 406.56 toks/s] Processed prompts: 100%|██████████| 4/4 [00:06<00:00,  1.53s/it, est. speed input: 588.12 toks/s, output: 406.56 toks/s]
+04/16/2025 16:47:11 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Raw client output length: completion_ids_nested=4
+04/16/2025 16:47:11 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Length after batch_decode: completion_texts_all=4
+04/16/2025 16:47:11 - INFO - disjointTrainer - Generating completions for verifier with args: {'temperature': 0.7, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 1024}
+04/16/2025 16:47:11 - INFO - disjointTrainer - NOTE: Verifier gets **FULL** list of ids, texts, and logprobs. This is different from the other models.
+04/16/2025 16:47:11 - INFO - disjointTrainer - Generating completions for verifier with args: {'temperature': 0.7, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 1024}
+04/16/2025 16:47:11 - INFO - disjointTrainer - NOTE: Verifier gets **FULL** list of ids, texts, and logprobs. This is different from the other models.
+Processed prompts:   0%|          | 0/8 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  12%|█▎        | 1/8 [00:00<00:05,  1.21it/s, est. speed input: 967.53 toks/s, output: 224.38 toks/s]Processed prompts:  38%|███▊      | 3/8 [00:01<00:01,  2.80it/s, est. speed input: 1836.79 toks/s, output: 547.07 toks/s]Processed prompts:  50%|█████     | 4/8 [00:01<00:01,  2.75it/s, est. speed input: 2057.38 toks/s, output: 658.93 toks/s]Processed prompts:  62%|██████▎   | 5/8 [00:01<00:00,  3.39it/s, est. speed input: 2321.14 toks/s, output: 845.76 toks/s]Processed prompts:  75%|███████▌  | 6/8 [00:03<00:01,  1.15it/s, est. speed input: 1275.31 toks/s, output: 653.20 toks/s]Processed prompts: 100%|██████████| 8/8 [00:03<00:00,  2.09it/s, est. speed input: 1704.92 toks/s, output: 1188.45 toks/s]
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0 / verifier] Raw client output length: completion_ids_nested=8, logprobs_nested=8
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0 / verifier] Length after batch_decode: completion_texts_all=8
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed verifier generation. Extracting rewards...
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Main process entering reward extraction phase.
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Gathering verifier completion texts...
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Length of completion_texts_v before reward extraction: 8
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Starting reward extraction loop...
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Length of rewards_all after reward extraction: 8
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Preparing to broadcast rewards (object type: <class 'list'>, length: 8).
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Assertion passed: Length of rewards_all (8) matches all_verifier_prompts.
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed reward extraction. Handling NaNs...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed verifier generation. Extracting rewards...
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 1] Non-main process creating placeholder for 8 rewards, waiting for broadcast.
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 1] Preparing to broadcast rewards (object type: <class 'list'>, length: 8).
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 1] Assertion passed: Length of rewards_all (8) matches all_verifier_prompts.
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed reward extraction. Handling NaNs...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards tensor: tensor([ 0.0000,  0.0000, -0.1000,  0.0000,  0.0000,  0.0000,  0.0000, -0.1000],
+       device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards a in 0: tensor([ 0.0000, -0.1000,  0.0000,  0.0000], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards b in 0: tensor([ 0.0000,  0.0000,  0.0000, -0.1000], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards tensor: tensor([ 0.0000,  0.0000, -0.1000,  0.0000,  0.0000,  0.0000,  0.0000, -0.1000],
+       device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards a in 1: tensor([ 0.0000, -0.1000,  0.0000,  0.0000], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards b in 1: tensor([ 0.0000,  0.0000,  0.0000, -0.1000], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed reward extraction. Calculating advantages...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed reward extraction. Calculating advantages...
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed advantage calculation. Slicing advantages and rewards...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Advantages a: tensor([ 0.7071, -0.7071,  0.0000,  0.0000], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - Advantages b: tensor([ 0.0000,  0.0000,  0.7071, -0.7071], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed slicing. Preparing model inputs and logging metrics...
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed advantage calculation. Slicing advantages and rewards...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Advantages a: tensor([ 0.7071, -0.7071,  0.0000,  0.0000], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Advantages b: tensor([ 0.0000,  0.0000,  0.7071, -0.7071], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed slicing. Preparing model inputs and logging metrics...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed log probability calculation. Loading completions into container...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards all tensor: tensor([ 0.0000,  0.0000, -0.1000,  0.0000,  0.0000,  0.0000,  0.0000, -0.1000],
+       device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local rewards a: tensor([0., 0.], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local rewards b: tensor([ 0.0000, -0.1000], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local advantages a: tensor([0., 0.], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Completed log probability calculation. Loading completions into container...
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local advantages b: tensor([ 0.7071, -0.7071], device='cuda:1')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Old per token logps a: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - Old per token logps b: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - Ref per token logps a: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - Ref per token logps b: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - Rewards all tensor: tensor([ 0.0000,  0.0000, -0.1000,  0.0000,  0.0000,  0.0000,  0.0000, -0.1000],
+       device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local rewards a: tensor([ 0.0000, -0.1000], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local rewards b: tensor([0., 0.], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local advantages a: tensor([ 0.7071, -0.7071], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Local advantages b: tensor([0., 0.], device='cuda:0')
+04/16/2025 16:47:15 - INFO - disjointTrainer - Old per token logps a: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - Old per token logps b: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - Ref per token logps a: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - Ref per token logps b: None
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 0] Calling compute_loss for honest_prover
+04/16/2025 16:47:15 - INFO - disjointTrainer - [Process 1] Calling compute_loss for honest_prover
+04/16/2025 16:47:16 - INFO - disjointTrainer - [Process 1] Completed compute_loss for honest_prover
+04/16/2025 16:47:16 - INFO - disjointTrainer - [Process 0] Completed compute_loss for honest_prover
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 1] Completed compute_loss for sneaky_prover
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 1] Returning losses
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 1] Losses: 0.0, 0.10668627917766571
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 1] Completed training step
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 1] Losses: 0.0, 0.10668627917766571
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 0] Completed compute_loss for sneaky_prover
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 0] Returning losses
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 0] Losses: -0.10951365530490875, 0.0
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 0] Completed training step
+04/16/2025 16:47:17 - INFO - disjointTrainer - [Process 0] Losses: -0.10951365530490875, 0.0
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] Completed backward pass
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] Losses: 0.0, 0.10668627917766571
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] Completed backward pass
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] Losses: -0.10951365530490875, 0.0
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] Completed optimizer step
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] Waiting at barrier after optimizer step...
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] Completed optimizer step
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] Waiting at barrier after optimizer step...
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] Passed barrier after optimizer step.
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] Passed barrier after optimizer step.
+Training Steps:   0%|          | 1/2500 [00:15<11:01:06, 15.87s/it]Training Steps:   0%|          | 1/2500 [00:15<11:01:06, 15.87s/it, loss_a=-0.11, loss_b=0, step=2]04/16/2025 16:47:18 - INFO - disjointTrainer - Logging metrics to wandb for step 2
+04/16/2025 16:47:18 - INFO - disjointTrainer - Metrics to log: {'train/epoch': 0, 'train/loss_a': 0.0, 'train/loss_b': 0.10668627917766571, 'train/lr_a': 9.996e-07, 'train/lr_b': 9.996e-07, 'train/completions/mean_length_honest_prover': 261.75, 'train/completions/min_length_honest_prover': 143.0, 'train/completions/max_length_honest_prover': 381.0, 'train/completions/clipped_ratio_honest_prover': 0.0, 'train/completions/mean_terminated_length_honest_prover': 261.75, 'train/completions/min_terminated_length_honest_prover': 143.0, 'train/completions/max_terminated_length_honest_prover': 381.0, 'train/rewards/mean_honest_prover': -0.02500000037252903, 'train/rewards/std_honest_prover': 0.05000000074505806, 'train/advantages/mean_honest_prover': 0.0, 'train/advantages/std_honest_prover': 0.5773501992225647, 'train/entropy_mean_honest_prover': 1.887101650238037, 'train/entropy_std_honest_prover': 1.4922425746917725, 'train/entropy_min_honest_prover': 0.006500244140625, 'train/entropy_max_honest_prover': 6.875, 'train/entropy_25_honest_prover': 0.59765625, 'train/entropy_50_honest_prover': 1.546875, 'train/entropy_75_honest_prover': 2.96875, 'train/entropy_iqr_honest_prover': 2.375, 'train/clip_ratio_honest_prover': 0.0, 'train/grad_norm_honest_prover': 4.043417453765869, 'train/completions/mean_length_sneaky_prover': 622.5, 'train/completions/min_length_sneaky_prover': 242.0, 'train/completions/max_length_sneaky_prover': 1579.0, 'train/completions/clipped_ratio_sneaky_prover': 0.0, 'train/completions/mean_terminated_length_sneaky_prover': 622.5, 'train/completions/min_terminated_length_sneaky_prover': 242.0, 'train/completions/max_terminated_length_sneaky_prover': 1579.0, 'train/rewards/mean_sneaky_prover': -0.02500000037252903, 'train/rewards/std_sneaky_prover': 0.05000000074505806, 'train/advantages/mean_sneaky_prover': 0.0, 'train/advantages/std_sneaky_prover': 0.5773501992225647, 'train/entropy_mean_sneaky_prover': 1.684868335723877, 'train/entropy_std_sneaky_prover': 1.6039161682128906, 'train/entropy_min_sneaky_prover': 0.00072479248046875, 'train/entropy_max_sneaky_prover': 6.3125, 'train/entropy_25_sneaky_prover': 0.412109375, 'train/entropy_50_sneaky_prover': 1.25, 'train/entropy_75_sneaky_prover': 2.65625, 'train/entropy_iqr_sneaky_prover': 2.234375, 'train/clip_ratio_sneaky_prover': 0.0, 'train/grad_norm_sneaky_prover': 4.412451267242432}
+04/16/2025 16:47:18 - INFO - disjointTrainer - Step 2: {'train/epoch': 0, 'train/loss_a': 0.0, 'train/loss_b': 0.10668627917766571, 'train/lr_a': 9.996e-07, 'train/lr_b': 9.996e-07, 'train/completions/mean_length_honest_prover': 261.75, 'train/completions/min_length_honest_prover': 143.0, 'train/completions/max_length_honest_prover': 381.0, 'train/completions/clipped_ratio_honest_prover': 0.0, 'train/completions/mean_terminated_length_honest_prover': 261.75, 'train/completions/min_terminated_length_honest_prover': 143.0, 'train/completions/max_terminated_length_honest_prover': 381.0, 'train/rewards/mean_honest_prover': -0.02500000037252903, 'train/rewards/std_honest_prover': 0.05000000074505806, 'train/advantages/mean_honest_prover': 0.0, 'train/advantages/std_honest_prover': 0.5773501992225647, 'train/entropy_mean_honest_prover': 1.887101650238037, 'train/entropy_std_honest_prover': 1.4922425746917725, 'train/entropy_min_honest_prover': 0.006500244140625, 'train/entropy_max_honest_prover': 6.875, 'train/entropy_25_honest_prover': 0.59765625, 'train/entropy_50_honest_prover': 1.546875, 'train/entropy_75_honest_prover': 2.96875, 'train/entropy_iqr_honest_prover': 2.375, 'train/clip_ratio_honest_prover': 0.0, 'train/grad_norm_honest_prover': 4.043417453765869, 'train/completions/mean_length_sneaky_prover': 622.5, 'train/completions/min_length_sneaky_prover': 242.0, 'train/completions/max_length_sneaky_prover': 1579.0, 'train/completions/clipped_ratio_sneaky_prover': 0.0, 'train/completions/mean_terminated_length_sneaky_prover': 622.5, 'train/completions/min_terminated_length_sneaky_prover': 242.0, 'train/completions/max_terminated_length_sneaky_prover': 1579.0, 'train/rewards/mean_sneaky_prover': -0.02500000037252903, 'train/rewards/std_sneaky_prover': 0.05000000074505806, 'train/advantages/mean_sneaky_prover': 0.0, 'train/advantages/std_sneaky_prover': 0.5773501992225647, 'train/entropy_mean_sneaky_prover': 1.684868335723877, 'train/entropy_std_sneaky_prover': 1.6039161682128906, 'train/entropy_min_sneaky_prover': 0.00072479248046875, 'train/entropy_max_sneaky_prover': 6.3125, 'train/entropy_25_sneaky_prover': 0.412109375, 'train/entropy_50_sneaky_prover': 1.25, 'train/entropy_75_sneaky_prover': 2.65625, 'train/entropy_iqr_sneaky_prover': 2.234375, 'train/clip_ratio_sneaky_prover': 0.0, 'train/grad_norm_sneaky_prover': 4.412451267242432}
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] ===> Entering _sync_weights_to_vllm
+04/16/2025 16:47:18 - INFO - disjointTrainer - Logging metrics to wandb for step 2
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] ===> Selecting DS plugin 'honest_prover'...
+04/16/2025 16:47:18 - INFO - disjointTrainer - Metrics to log: {'train/epoch': 0, 'train/loss_a': -0.10951365530490875, 'train/loss_b': 0.0, 'train/lr_a': 9.996e-07, 'train/lr_b': 9.996e-07, 'train/completions/mean_length_honest_prover': 261.75, 'train/completions/min_length_honest_prover': 143.0, 'train/completions/max_length_honest_prover': 381.0, 'train/completions/clipped_ratio_honest_prover': 0.0, 'train/completions/mean_terminated_length_honest_prover': 261.75, 'train/completions/min_terminated_length_honest_prover': 143.0, 'train/completions/max_terminated_length_honest_prover': 381.0, 'train/rewards/mean_honest_prover': -0.02500000037252903, 'train/rewards/std_honest_prover': 0.05000000074505806, 'train/advantages/mean_honest_prover': 0.0, 'train/advantages/std_honest_prover': 0.5773501992225647, 'train/entropy_mean_honest_prover': 1.887101650238037, 'train/entropy_std_honest_prover': 1.4922425746917725, 'train/entropy_min_honest_prover': 0.006500244140625, 'train/entropy_max_honest_prover': 6.875, 'train/entropy_25_honest_prover': 0.59765625, 'train/entropy_50_honest_prover': 1.546875, 'train/entropy_75_honest_prover': 2.96875, 'train/entropy_iqr_honest_prover': 2.375, 'train/clip_ratio_honest_prover': 0.0, 'train/grad_norm_honest_prover': 4.043417453765869, 'train/completions/mean_length_sneaky_prover': 622.5, 'train/completions/min_length_sneaky_prover': 242.0, 'train/completions/max_length_sneaky_prover': 1579.0, 'train/completions/clipped_ratio_sneaky_prover': 0.0, 'train/completions/mean_terminated_length_sneaky_prover': 622.5, 'train/completions/min_terminated_length_sneaky_prover': 242.0, 'train/completions/max_terminated_length_sneaky_prover': 1579.0, 'train/rewards/mean_sneaky_prover': -0.02500000037252903, 'train/rewards/std_sneaky_prover': 0.05000000074505806, 'train/advantages/mean_sneaky_prover': 0.0, 'train/advantages/std_sneaky_prover': 0.5773501992225647, 'train/entropy_mean_sneaky_prover': 1.684868335723877, 'train/entropy_std_sneaky_prover': 1.6039161682128906, 'train/entropy_min_sneaky_prover': 0.00072479248046875, 'train/entropy_max_sneaky_prover': 6.3125, 'train/entropy_25_sneaky_prover': 0.412109375, 'train/entropy_50_sneaky_prover': 1.25, 'train/entropy_75_sneaky_prover': 2.65625, 'train/entropy_iqr_sneaky_prover': 2.234375, 'train/clip_ratio_sneaky_prover': 0.0, 'train/grad_norm_sneaky_prover': 4.412451267242432}
+04/16/2025 16:47:18 - INFO - disjointTrainer - Step 2: {'train/epoch': 0, 'train/loss_a': -0.10951365530490875, 'train/loss_b': 0.0, 'train/lr_a': 9.996e-07, 'train/lr_b': 9.996e-07, 'train/completions/mean_length_honest_prover': 261.75, 'train/completions/min_length_honest_prover': 143.0, 'train/completions/max_length_honest_prover': 381.0, 'train/completions/clipped_ratio_honest_prover': 0.0, 'train/completions/mean_terminated_length_honest_prover': 261.75, 'train/completions/min_terminated_length_honest_prover': 143.0, 'train/completions/max_terminated_length_honest_prover': 381.0, 'train/rewards/mean_honest_prover': -0.02500000037252903, 'train/rewards/std_honest_prover': 0.05000000074505806, 'train/advantages/mean_honest_prover': 0.0, 'train/advantages/std_honest_prover': 0.5773501992225647, 'train/entropy_mean_honest_prover': 1.887101650238037, 'train/entropy_std_honest_prover': 1.4922425746917725, 'train/entropy_min_honest_prover': 0.006500244140625, 'train/entropy_max_honest_prover': 6.875, 'train/entropy_25_honest_prover': 0.59765625, 'train/entropy_50_honest_prover': 1.546875, 'train/entropy_75_honest_prover': 2.96875, 'train/entropy_iqr_honest_prover': 2.375, 'train/clip_ratio_honest_prover': 0.0, 'train/grad_norm_honest_prover': 4.043417453765869, 'train/completions/mean_length_sneaky_prover': 622.5, 'train/completions/min_length_sneaky_prover': 242.0, 'train/completions/max_length_sneaky_prover': 1579.0, 'train/completions/clipped_ratio_sneaky_prover': 0.0, 'train/completions/mean_terminated_length_sneaky_prover': 622.5, 'train/completions/min_terminated_length_sneaky_prover': 242.0, 'train/completions/max_terminated_length_sneaky_prover': 1579.0, 'train/rewards/mean_sneaky_prover': -0.02500000037252903, 'train/rewards/std_sneaky_prover': 0.05000000074505806, 'train/advantages/mean_sneaky_prover': 0.0, 'train/advantages/std_sneaky_prover': 0.5773501992225647, 'train/entropy_mean_sneaky_prover': 1.684868335723877, 'train/entropy_std_sneaky_prover': 1.6039161682128906, 'train/entropy_min_sneaky_prover': 0.00072479248046875, 'train/entropy_max_sneaky_prover': 6.3125, 'train/entropy_25_sneaky_prover': 0.412109375, 'train/entropy_50_sneaky_prover': 1.25, 'train/entropy_75_sneaky_prover': 2.65625, 'train/entropy_iqr_sneaky_prover': 2.234375, 'train/clip_ratio_sneaky_prover': 0.0, 'train/grad_norm_sneaky_prover': 4.412451267242432}
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Step 2] Optimizer step completed. Starting weight synchronization...
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] ===> Entering _sync_weights_to_vllm
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] ===> Selecting DS plugin 'honest_prover'...
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] ===> Calling _move_model_to_vllm for honest_prover
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1] Starting weight sync logic for honest_prover...
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] ===> Calling _move_model_to_vllm for honest_prover
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0] Starting weight sync logic for honest_prover...
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1 / honest_prover] Starting parameter sync loop (338 params)...
+04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 0 / honest_prover] Starting parameter sync loop (338 params)...
+
+Syncing honest_prover:   0%|          | 0/338 [00:00<?, ?it/s][A04/16/2025 16:47:18 - INFO - disjointTrainer - [Process 1 / honest_prover] Finished parameter loop. Waiting at barrier...
+
+Syncing honest_prover:  12%|█▏        | 41/338 [00:00<00:00, 403.36it/s][A
+Syncing honest_prover:  25%|██▌       | 86/338 [00:00<00:00, 427.16it/s][A
+Syncing honest_prover:  40%|███▉      | 135/338 [00:00<00:00, 451.57it/s][A
+Syncing honest_prover:  54%|█████▍    | 183/338 [00:00<00:00, 462.29it/s][A
+Syncing honest_prover:  69%|██████▊   | 232/338 [00:00<00:00, 471.02it/s][A
+Syncing honest_prover:  83%|████████▎ | 280/338 [00:00<00:00, 466.79it/s][A
+Syncing honest_prover:  97%|█████████▋| 327/338 [00:00<00:00, 461.08it/s][A
+                                                                         [A04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0 / honest_prover] Finished parameter loop. Waiting at barrier...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0 / honest_prover] Passed barrier after parameter loop.
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0 / honest_prover] Resetting vLLM prefix cache...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1 / honest_prover] Passed barrier after parameter loop.
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] Finished _move_model_to_vllm for honest_prover. Waiting at final barrier...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] Finished _move_model_to_vllm for honest_prover. Waiting at final barrier...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] Exiting _move_model_to_vllm for honest_prover.
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] Exiting _move_model_to_vllm for honest_prover.
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] ===> Finished _move_model_to_vllm for honest_prover
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] ===> Global barrier before sneaky_prover sync...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] ===> Finished _move_model_to_vllm for honest_prover
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] ===> Global barrier before sneaky_prover sync...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] ===> Passed global barrier.
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] ===> Selecting DS plugin 'sneaky_prover'...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] ===> Passed global barrier.
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] ===> Selecting DS plugin 'sneaky_prover'...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] ===> Calling _move_model_to_vllm for sneaky_prover
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1] Starting weight sync logic for sneaky_prover...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] ===> Calling _move_model_to_vllm for sneaky_prover
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0] Starting weight sync logic for sneaky_prover...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1 / sneaky_prover] Starting parameter sync loop (338 params)...
+04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Starting parameter sync loop (338 params)...
+
+Syncing sneaky_prover:   0%|          | 0/338 [00:00<?, ?it/s][A04/16/2025 16:47:19 - INFO - disjointTrainer - [Process 1 / sneaky_prover] Finished parameter loop. Waiting at barrier...
+
+Syncing sneaky_prover:  13%|█▎        | 44/338 [00:00<00:00, 439.96it/s][A
+Syncing sneaky_prover:  27%|██▋       | 90/338 [00:00<00:00, 446.20it/s][A
+Syncing sneaky_prover:  40%|████      | 136/338 [00:00<00:00, 449.92it/s][A
+Syncing sneaky_prover:  54%|█████▍    | 182/338 [00:00<00:00, 451.27it/s][A
+Syncing sneaky_prover:  67%|██████▋   | 228/338 [00:00<00:00, 452.73it/s][A
+Syncing sneaky_prover:  81%|████████  | 274/338 [00:00<00:00, 451.93it/s][A
+Syncing sneaky_prover:  95%|█████████▍| 320/338 [00:00<00:00, 451.20it/s][A
+                                                                         [A04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Finished parameter loop. Waiting at barrier...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Passed barrier after parameter loop.
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Resetting vLLM prefix cache...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1 / sneaky_prover] Passed barrier after parameter loop.
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] Finished _move_model_to_vllm for sneaky_prover. Waiting at final barrier...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] Finished _move_model_to_vllm for sneaky_prover. Waiting at final barrier...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] Exiting _move_model_to_vllm for sneaky_prover.
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] Exiting _move_model_to_vllm for sneaky_prover.
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] ===> Finished _move_model_to_vllm for sneaky_prover
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] ===> Global barrier after all syncs...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] ===> Finished _move_model_to_vllm for sneaky_prover
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] ===> Global barrier after all syncs...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] ===> Exiting _sync_weights_to_vllm
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] Step 2: Reached end of sync step logic. Waiting at final barrier...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] ===> Exiting _sync_weights_to_vllm
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] Step 2: Reached end of sync step logic. Waiting at final barrier...
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] Step 2: Passed final barrier.
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] Step 2: Passed final barrier.
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Step 2] Weight synchronization finished. Duration: 1.51 seconds.
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] Entering _training_step
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 1] Calling _prepare_inputs
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] Entering _training_step
+04/16/2025 16:47:20 - INFO - disjointTrainer - [Process 0] Calling _prepare_inputs
+04/16/2025 16:47:20 - INFO - disjointTrainer - Generating completions for honest prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048, 'repetition_penalty': 1.15, 'min_p': 0.05}
+04/16/2025 16:47:20 - INFO - disjointTrainer - Generating completions for honest prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048, 'repetition_penalty': 1.15, 'min_p': 0.05}
+Processed prompts:   0%|          | 0/4 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  50%|█████     | 2/4 [00:03<00:03,  1.87s/it, est. speed input: 341.36 toks/s, output: 297.29 toks/s]Processed prompts: 100%|██████████| 4/4 [00:08<00:00,  2.29s/it, est. speed input: 294.63 toks/s, output: 377.33 toks/s]Processed prompts: 100%|██████████| 4/4 [00:08<00:00,  2.22s/it, est. speed input: 294.63 toks/s, output: 377.33 toks/s]
+04/16/2025 16:47:29 - INFO - disjointTrainer - [Process 0 / honest_prover] Raw client output length: completion_ids_nested=4
+04/16/2025 16:47:29 - INFO - disjointTrainer - [Process 0 / honest_prover] Length after batch_decode: completion_texts_all=4
+04/16/2025 16:47:29 - WARNING - pvg.utils.utils - Could not find ```...```, <solution>...</solution>, or <injected_solution>...</injected_solution> block in completion text. Returning raw text. Text was:
+---
+This isn't a typical dynamic programming problem where we'd store values as we go. Instead, we should think about how many passengers would be waiting after each stop, starting from zero passengers on our journey. If our maximum ever reaches m passengers, then m+1 is our required capacity because anyone who wants more will get it once we reach m passengers. Let’s call this `max_passengers_needed`, which represents our current state based off our previous calculations.
+
+Next up comes handling negative indices for when passengers come out of a stop but haven’t yet entered another; these must account for their entrance into the next stopping point. We also take note whether there were enough passengers present initially so that nobody boarded/departed until reaching subsequent stops.
+
+If neither situation holds true here, consider whether future trips could exceed the total passengers currently accounted for. Thus, any change in max_passengers_needed above 0 signifies necessity to increase our required capacity further. This logic lends itself well to implementation using arrays & loops over inputs representing our stops along route, updating variables according to aforementioned rulesets within the context presented above.
+
+In conclusion, my approach adheres closely to your requirement for 'minimal' capacities; ensuring smooth operation across multiple segments without encountering excess ridership due to increased stops or variations throughout daytimes. This meticulous coding ensures efficient management regardless of fluctuating demands along transit routes!
+</reasoning>
+<solution>
+Firstly let us initialize two arrays ‘outgoing’ and ‘incoming’, both having size equal to length of given input vectors. Initialize them with zeros.
+
+Then loop through each stop index j between [0,n), storing incoming[j] value of b_jth element present at ith position from end of vector b[i]. Simultaneously store outgoing[j], its counterpart, corresponding to variable c_jtath entry located at ith place of vector c[i].
+
+Maintain three additional integer variables prev_outstanding, curr_total_and_prev and min_capacity simultaneously updated via following sequence of operations:
+   - Incrementally add incoming[stop_index] to prev\_outstanding until surpassing condition occurs resulting in decrements followed by increments again till balanced point reached again keeping track too!
+
+At conclusion, retrieve either prev\_outstanding or curr\_total\_and\_prev whichever gives greater outcome returns final result i.e., min\_capacity assigned previously set backside of program flow finally concludes calculation process concluding search path traversals yielding desired answers fit standard form expected output structure displaying minimal capacities needed globally covering entires contained entirely amongst individual nodes constituting hierarchical organization building blocks fundamental principles guiding successful implementations rooted solidly upon rigorous foundations established originally designed viewpoint focusing solely onto core essence demanding utmost precision guaranteed underpinning sound technical practices inherent traits contributing significantly towards enhancing overall quality standards attained reliably irrespective environmental challenges faced thus enabling seamless interoperability facilitating collaborative working environment fostering synergistic benefits derived from shared expertise collaborating harmoniously bringing forth innovative ideas propelling forward growth endeavors sustaining long-term success securing favorable outcomes guaranteeing satisfaction achieved whilst continuously striving forward pursuit excellence seeking ultimate fulfillment pursuing perpetual improvement culminating eventually realizing transformative impact positively impacting society wholeheartedly endorsing relentless pursuit constant innovation fuelled enthusiasm fueled energy pushing boundaries continually expanding horizons extending capabilities enriching lives worldwide enhancing quality levels progressively boosting resilience capabilities ultimately shaping future generations forever changing world landscape leaving lasting marks inspiring endless creativity sparking fresh ideas stimulating progress igniting imagination unleashing boundless potential setting foundation strong root firmly anchored solid grounded secure stable base sturdy robust resilient adaptable versatile flexible scalable modifiable extensible transferrable portable easy maintainable expandible swappable compatible interchangeable redundant available optimized recyclable economical effective practical feasible sustainable environmentally friendly socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially viable socially responsible economically viable commercially competitive financially
+---
+04/16/2025 16:47:29 - INFO - disjointTrainer - Generating completions for sneaky prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048}
+04/16/2025 16:47:29 - INFO - disjointTrainer - Generating completions for sneaky prover with args: {'temperature': 1.0, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 2048}
+Processed prompts:   0%|          | 0/4 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  50%|█████     | 2/4 [00:01<00:01,  1.08it/s, est. speed input: 1172.13 toks/s, output: 362.39 toks/s]Processed prompts: 100%|██████████| 4/4 [00:05<00:00,  1.54s/it, est. speed input: 744.16 toks/s, output: 437.99 toks/s] Processed prompts: 100%|██████████| 4/4 [00:05<00:00,  1.45s/it, est. speed input: 744.16 toks/s, output: 437.99 toks/s]
+04/16/2025 16:47:35 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Raw client output length: completion_ids_nested=4
+04/16/2025 16:47:35 - INFO - disjointTrainer - [Process 0 / sneaky_prover] Length after batch_decode: completion_texts_all=4
+04/16/2025 16:47:35 - INFO - disjointTrainer - Generating completions for verifier with args: {'temperature': 0.7, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 1024}
+04/16/2025 16:47:35 - INFO - disjointTrainer - Generating completions for verifier with args: {'temperature': 0.7, 'top_p': 0.95, 'top_k': -1, 'max_tokens': 1024}
+04/16/2025 16:47:35 - INFO - disjointTrainer - NOTE: Verifier gets **FULL** list of ids, texts, and logprobs. This is different from the other models.
+04/16/2025 16:47:35 - INFO - disjointTrainer - NOTE: Verifier gets **FULL** list of ids, texts, and logprobs. This is different from the other models.
+Processed prompts:   0%|          | 0/8 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:  25%|██▌       | 2/8 [00:00<00:02,  2.11it/s, est. speed input: 3793.54 toks/s, output: 248.61 toks/s]Processed prompts:  38%|███▊      | 3/8 [00:01<00:01,  2.92it/s, est. speed input: 4035.91 toks/s, output: 463.17 toks/s]Processed prompts:  50%|█████     | 4/8 [00:04<00:06,  1.50s/it, est. speed input: 1195.43 toks/s, output: 337.01 toks/s]Processed prompts: 100%|██████████| 8/8 [00:04<00:00,  1.75it/s, est. speed input: 2020.38 toks/s, output: 1235.03 toks/s]
+04/16/2025 16:47:39 - INFO - disjointTrainer - [Process 0 / verifier] Raw client output length: completion_ids_nested=8, logprobs_nested=8
+04/16/2025 16:47:39 - INFO - disjointTrainer - [Process 0 / verifier] Length after batch_decode: completion_texts_all=8
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed verifier generation. Extracting rewards...
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Main process entering reward extraction phase.
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Gathering verifier completion texts...
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Length of completion_texts_v before reward extraction: 8
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Starting reward extraction loop...
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Length of rewards_all after reward extraction: 8
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Preparing to broadcast rewards (object type: <class 'list'>, length: 8).
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Assertion passed: Length of rewards_all (8) matches all_verifier_prompts.
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed reward extraction. Handling NaNs...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards tensor: tensor([-0.1000,  0.0000,  0.0000, -0.1000,  0.0000, -0.1000, -0.1000,  1.0000],
+       device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed verifier generation. Extracting rewards...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards a in 0: tensor([-0.1000,  0.0000,  0.0000, -0.1000], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 1] Non-main process creating placeholder for 8 rewards, waiting for broadcast.
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 1] Preparing to broadcast rewards (object type: <class 'list'>, length: 8).
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards b in 0: tensor([ 0.0000, -0.1000, -0.1000,  1.0000], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 1] Assertion passed: Length of rewards_all (8) matches all_verifier_prompts.
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed reward extraction. Handling NaNs...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed reward extraction. Calculating advantages...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards tensor: tensor([-0.1000,  0.0000,  0.0000, -0.1000,  0.0000, -0.1000, -0.1000,  1.0000],
+       device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards a in 1: tensor([-0.1000,  0.0000,  0.0000, -0.1000], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards b in 1: tensor([ 0.0000, -0.1000, -0.1000,  1.0000], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed reward extraction. Calculating advantages...
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] global_rewards: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed advantage calculation. Slicing advantages and rewards...
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] rewards_grouped: torch.Size([2, 2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_grouped_rewards: torch.Size([2])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] mean_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] std_expanded: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - Advantages a: tensor([-0.7071,  0.7071,  0.7071, -0.7071], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - [AdvCalc shapes] advantages: torch.Size([4])
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed advantage calculation. Slicing advantages and rewards...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Advantages b: tensor([ 0.7071, -0.7071, -0.7071,  0.7071], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed slicing. Preparing model inputs and logging metrics...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Advantages a: tensor([-0.7071,  0.7071,  0.7071, -0.7071], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Advantages b: tensor([ 0.7071, -0.7071, -0.7071,  0.7071], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed slicing. Preparing model inputs and logging metrics...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed log probability calculation. Loading completions into container...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards all tensor: tensor([-0.1000,  0.0000,  0.0000, -0.1000,  0.0000, -0.1000, -0.1000,  1.0000],
+       device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local rewards a: tensor([ 0.0000, -0.1000], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local rewards b: tensor([-0.1000,  1.0000], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local advantages a: tensor([ 0.7071, -0.7071], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Completed log probability calculation. Loading completions into container...
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local advantages b: tensor([-0.7071,  0.7071], device='cuda:1')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Old per token logps a: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - Old per token logps b: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - Ref per token logps a: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - Ref per token logps b: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - Rewards all tensor: tensor([-0.1000,  0.0000,  0.0000, -0.1000,  0.0000, -0.1000, -0.1000,  1.0000],
+       device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local rewards a: tensor([-0.1000,  0.0000], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local rewards b: tensor([ 0.0000, -0.1000], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local advantages a: tensor([-0.7071,  0.7071], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Local advantages b: tensor([ 0.7071, -0.7071], device='cuda:0')
+04/16/2025 16:47:40 - INFO - disjointTrainer - Old per token logps a: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - Old per token logps b: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - Ref per token logps a: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - Ref per token logps b: None
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 1] Calling compute_loss for honest_prover
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Calling compute_loss for honest_prover
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 1] Completed compute_loss for honest_prover
+04/16/2025 16:47:40 - INFO - disjointTrainer - [Process 0] Completed compute_loss for honest_prover
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 36, in <module>
+[rank1]:     run_training()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/train.py", line 31, in run_training
+[rank1]:     trainer.train()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 846, in train
+[rank1]:     losses = self._training_step(batch)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 1110, in _training_step
+[rank1]:     loss_b = self.compute_loss(
+[rank1]:              ^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 2352, in compute_loss
+[rank1]:     return self._compute_loss(model, inputs, model_key)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 2175, in _compute_loss
+[rank1]:     per_token_logps = self._get_per_token_logps(
+[rank1]:                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/disjointTrainer.py", line 1539, in _get_per_token_logps
+[rank1]:     logits = model(
+[rank1]:              ^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/deepspeed/utils/nvtx.py", line 18, in wrapped_fn
+[rank1]:     ret_val = func(*args, **kwargs)
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/deepspeed/runtime/engine.py", line 1914, in forward
+[rank1]:     loss = self.module(*inputs, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+[rank1]:     return inner()
+[rank1]:            ^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 965, in wrapper
+[rank1]:     output = func(self, *args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+[rank1]:     return func(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 823, in forward
+[rank1]:     outputs: BaseModelOutputWithPast = self.model(
+[rank1]:                                        ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+[rank1]:     return inner()
+[rank1]:            ^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 965, in wrapper
+[rank1]:     output = func(self, *args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 549, in forward
+[rank1]:     layer_outputs = decoder_layer(
+[rank1]:                     ^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+[rank1]:     return inner()
+[rank1]:            ^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 278, in forward
+[rank1]:     hidden_states = self.mlp(hidden_states)
+[rank1]:                     ^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+[rank1]:     return inner()
+[rank1]:            ^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 59, in forward
+[rank1]:     down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+[rank1]:                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+[rank1]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 148.00 MiB. GPU 1 has a total capacity of 93.11 GiB of which 135.81 MiB is free. Including non-PyTorch memory, this process has 92.97 GiB memory in use. Of the allocated memory 89.33 GiB is allocated by PyTorch, and 2.39 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+W0416 16:47:42.659000 686613 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 686708 closing signal SIGTERM
+E0416 16:47:43.024000 686613 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 686709) of binary: /gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1196, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 878, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-04-16_16:47:42
+  host      : gcn135.local.snellius.surf.nl
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 686709)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
