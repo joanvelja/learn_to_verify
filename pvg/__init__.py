@@ -3,9 +3,12 @@
 from .data import (
     AppsDataset,
     RepeatRandomSampler,
-    BASE_HONEST,
-    BASE_SNEAKY,
-    BASE_VERIFIER,
+    BASE_HONEST_CODE,
+    BASE_SNEAKY_CODE,
+    BASE_HONEST_MATH,
+    BASE_SNEAKY_MATH,
+    BASE_VERIFIER_CODE,
+    BASE_VERIFIER_MATH,
     INSTRUCT_HONEST,
     INSTRUCT_SNEAKY,
     INSTRUCT_VERIFIER,
@@ -24,13 +27,17 @@ from .utils import (
     get_args,
 )
 
+from .orchestrator import TrainingPhaseOrchestrator
 
 __all__ = [
     "AppsDataset",
     "RepeatRandomSampler",
-    "BASE_HONEST",
-    "BASE_SNEAKY",
-    "BASE_VERIFIER",
+    "BASE_HONEST_CODE",
+    "BASE_SNEAKY_CODE",
+    "BASE_HONEST_MATH",
+    "BASE_SNEAKY_MATH",
+    "BASE_VERIFIER_CODE",
+    "BASE_VERIFIER_MATH",
     "INSTRUCT_HONEST",
     "INSTRUCT_SNEAKY",
     "INSTRUCT_VERIFIER",
@@ -41,4 +48,5 @@ __all__ = [
     "prepare_deepspeed",
     "FlatExperimentArgs",
     "get_args",
+    "TrainingPhaseOrchestrator",
 ]

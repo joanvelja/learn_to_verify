@@ -22,7 +22,7 @@ if is_fastapi_available():
 
 
 if is_pydantic_available():
-    from pydantic import BaseModel
+    from pydantic import BaseModel, Field
 
 
 if is_uvicorn_available():
@@ -36,6 +36,7 @@ if is_vllm_available():
     from vllm.distributed.utils import StatelessProcessGroup
     from vllm.sampling_params import GuidedDecodingParams
     from vllm.worker.worker import Worker
+    from vllm.config import PoolerConfig
 else:
     Worker = object
 
@@ -177,6 +178,9 @@ class ScriptArguments:
         enable_prefix_caching (`bool` or `None`, *optional*, defaults to `None`):
             Whether to enable prefix caching in vLLM. If set to `True`, ensure that the model and the hardware support
             this feature.
+        task_type (`str`, *optional*, defaults to `"auto"`):
+            The type of task to run on the model. If set to `"auto"`, the task type will be automatically determined
+            based on the model configuration. Find the supported values in the vLLM documentation.
     """
 
     model: str = field(metadata={"help": "Model name or path to load the model from."})
@@ -235,6 +239,12 @@ class ScriptArguments:
             "help": "Maximum sequence length covered by CUDA graphs. When a sequence has context length larger than this, we fall back to eager mode. Additionally for encoder-decoder models, if the sequence length of the encoder input is larger than this, we fall back to the eager mode."
         },
     )
+    task_type: str = field(
+        default="auto",
+        metadata={
+            "help": "The type of task to run on the model. If set to `auto`, the task type will be automatically determined based on the model configuration. Find the supported values in the vLLM documentation."
+        },
+    )
 
 
 def main(script_args: ScriptArguments):
@@ -271,6 +281,12 @@ def main(script_args: ScriptArguments):
         max_model_len=script_args.max_model_len,
         max_seq_len_to_capture=script_args.max_seq_len_to_capture,
         worker_cls=WeightSyncWorker,
+        task=script_args.task_type,
+        override_pooler_config=(
+            PoolerConfig(pooling_type="LAST", softmax=False, normalize=False)
+            if script_args.task_type == "classify"
+            else None
+        ),
     )
 
     app = FastAPI()
@@ -316,9 +332,18 @@ def main(script_args: ScriptArguments):
         presence_penalty: float = 0.0
         stop: list[str] | None = None
 
+    class ClassifyRequest(BaseModel):
+        inputs: list[str] = Field(..., description="List of input strings to classify.")
+
     class GenerateResponse(BaseModel):
         completion_ids: list[list[int]]
         logprobs: list[list[dict[int, float | None]]] | None = None
+
+    class ClassifyResponse(BaseModel):
+        scores: list[float] = Field(
+            ...,
+            description="List of classification scores corresponding to the inputs.",
+        )
 
     @app.post("/generate/", response_model=GenerateResponse)
     async def generate(request: GenerateRequest):
@@ -444,6 +469,66 @@ def main(script_args: ScriptArguments):
             if request.logprobs is not None
             else {"completion_ids": completion_ids}
         )
+
+    @app.post("/classify/", response_model=ClassifyResponse)
+    async def classify(request: ClassifyRequest):
+        """
+        Classifies the provided inputs using the Reward Model.
+
+        Args:
+            request (`ClassifyRequest`):
+                - `inputs` (list of `str`): A list of input strings for the model to classify.
+
+        Returns:
+            `ClassifyResponse`:
+                - `scores` (list of `float`): A list of scores for each input string.
+
+        Example request:
+        ```json
+        {"inputs": ["This is a good example.", "This is a bad one."]}
+        ```
+
+        Example response:
+        ```json
+        {"scores": [0.95, 0.12]}
+        ```
+        """
+        if script_args.task_type != "classify":
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=400,
+                detail="Classification endpoint is only available when task_type is set to 'classify'.",
+            )
+
+        # Assuming llm.classify exists and follows the expected interface
+        try:
+            outputs = llm.classify(request.inputs)
+            # Extract scores - adjust the exact path based on vLLM's classify output structure
+            # This assumes the structure mentioned: outputs[i].outputs.probs[0]
+            scores = [output.outputs.probs[0] for output in outputs]
+            logger.info(
+                f"Classification requested for {len(request.inputs)} inputs. Scores: {scores}"
+            )
+            return {"scores": scores}
+        except AttributeError:
+            from fastapi import HTTPException
+
+            logger.error(
+                "The 'classify' method is not available on the LLM object. Ensure vLLM version supports it and the model is loaded correctly for classification."
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Classification method not found on the LLM object.",
+            )
+        except Exception as e:
+            from fastapi import HTTPException
+
+            logger.error(f"Error during classification: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error during classification: {str(e)}",
+            )
 
     class InitCommunicatorRequest(BaseModel):
         host: str

@@ -70,6 +70,7 @@ class VLLMClient:
         server_port: int = 8000,
         group_port: int = 51216,
         connection_timeout: float = 0.0,
+        initialize_communicator: bool = True,
     ):
         if not is_requests_available():
             raise ImportError(
@@ -85,10 +86,14 @@ class VLLMClient:
         self.server_port = server_port
         self.group_port = group_port
         self.check_server(connection_timeout)  # check server and fail after timeout
-        self.init_communicator()
-        atexit.register(
-            self.close_communicator
-        )  # when the client object is deleted, close the weight update group
+        if initialize_communicator:
+            self.init_communicator()
+            atexit.register(
+                self.close_communicator
+            )  # when the client object is deleted, close the weight update group
+        else:  # Still ensure attribute exists, but is None
+            self.pynccl_comm = None
+            logger.info("Skipping communicator initialization.")
 
     def check_server(self, total_timeout: float = 0.0, retry_interval: float = 2.0):
         """
@@ -197,6 +202,60 @@ class VLLMClient:
         else:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
+    def classify(self, inputs: list[str]) -> list[float]:
+        """
+        Sends input strings to the vLLM server's classification endpoint.
+
+        Args:
+            inputs (`list[str]`):
+                List of text inputs to be classified by the Reward Model.
+
+        Returns:
+            `list[float]`:
+                List of scores corresponding to the input strings.
+
+        Raises:
+            `Exception`: If the request to the server fails.
+            `ConnectionError`: If the server cannot be reached.
+        """
+        url = f"http://{self.host}:{self.server_port}/classify/"
+        try:
+            response = self.session.post(
+                url,
+                json={"inputs": inputs},
+            )
+        except requests.exceptions.RequestException as e:
+            logger.error(
+                f"Connection error during classification request to {url}: {e}"
+            )
+            raise ConnectionError(
+                f"Failed to connect to the vLLM server at {url} for classification."
+            ) from e
+
+        if response.status_code == 200:
+            try:
+                result = response.json()
+                if "scores" in result and isinstance(result["scores"], list):
+                    # Basic type check for elements could be added here if needed
+                    return result["scores"]
+                else:
+                    logger.error(
+                        f"Invalid response format received from classification endpoint: {result}"
+                    )
+                    raise ValueError(
+                        "Invalid response format received from server (missing 'scores' list)."
+                    )
+            except ValueError as e:  # Catches JSON decoding errors and our ValueError
+                logger.error(
+                    f"Failed to decode JSON response or invalid format from {url}: {response.text}"
+                )
+                raise Exception(f"Failed to process response from server: {e}") from e
+        else:
+            logger.error(
+                f"Classification request failed with status {response.status_code}: {response.text}"
+            )
+            raise Exception(f"Request failed: {response.status_code}, {response.text}")
+
     def init_communicator(self):
         """
         Initializes the weight update group in a distributed setup for model synchronization.
@@ -239,6 +298,12 @@ class VLLMClient:
             weights (`torch.Tensor`):
                 Tensor containing the updated weights.
         """
+        if self.pynccl_comm is None:
+            logger.info(
+                "Client initialized without communicator. Cannot update model parameters."
+            )
+            return
+
         dtype, shape = str(weights.dtype), tuple(weights.shape)
         url = f"http://{self.host}:{self.server_port}/update_named_param/"
         response = self.session.post(
@@ -248,10 +313,11 @@ class VLLMClient:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
         # Broadcast the weights to the other processes
-        self.pynccl_comm.broadcast(
-            weights, src=self.rank, stream=torch.cuda.current_stream()
-        )
-        self.pynccl_comm.group.barrier()
+        if self.pynccl_comm is not None:
+            self.pynccl_comm.broadcast(
+                weights, src=self.rank, stream=torch.cuda.current_stream()
+            )
+            self.pynccl_comm.group.barrier()
 
     def update_model_params(self, model: nn.Module):
         """
@@ -261,9 +327,14 @@ class VLLMClient:
             model (`nn.Module`):
                 Model whose parameters (weights/biases) are to be updated.
         """
-        for name, param in model.named_parameters():
-            # Update each parameter individually
-            self.update_named_param(name, param.data)
+        if self.pynccl_comm is not None:
+            for name, param in model.named_parameters():
+                # Update each parameter individually
+                self.update_named_param(name, param.data)
+        else:
+            logger.info(
+                "Client initialized without communicator. Cannot update model parameters."
+            )
 
     def reset_prefix_cache(self):
         """
@@ -278,6 +349,12 @@ class VLLMClient:
         """
         Closes the weight update group and cleans up the communication group.
         """
+        if self.pynccl_comm is None:
+            logger.info(
+                "Client initialized without communicator. Cannot close communicator."
+            )
+            return
+
         url = f"http://{self.host}:{self.server_port}/close_communicator/"
         response = self.session.post(url)
         if response.status_code != 200:

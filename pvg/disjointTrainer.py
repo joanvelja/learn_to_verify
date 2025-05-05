@@ -35,7 +35,7 @@ from tqdm.auto import tqdm  # For progress bars
 from torch.utils.data import Sampler
 from contextlib import nullcontext
 import deepspeed
-from deepspeed.utils import safe_get_full_grad  # Add this import
+from deepspeed.utils import safe_get_full_grad
 from trl.trainer.utils import selective_log_softmax
 from liger_kernel.transformers import _apply_liger_kernel_to_instance
 from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
@@ -44,13 +44,17 @@ import datetime
 import re
 import time
 
-logger = setup_logger(__name__)
+# from pvg.utils.logger import setup_logger  # Import the setup function
+from pvg.config.args import ExperimentArgs  # Import the args class
+
+# --- Get Project Root Logger ---
+logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
 
 # --- The Trainer Class ---
 class DisjointSequentialTrainer:
-    def __init__(self, args) -> None:  # TODO: Check type of args
-        self.args = args
+    def __init__(self, args: ExperimentArgs) -> None:
+        self.args: ExperimentArgs = args
         self.accelerators: dict[str, Accelerator] = {}
         self.models: dict[str, torch.nn.Module] = {}
         self.optimizers: dict[str, torch.optim.Optimizer] = {}
@@ -72,14 +76,33 @@ class DisjointSequentialTrainer:
         self.global_step = 0
         self.current_epoch = 0
 
-        # --- 1. Logging & Seeding ---
-        self._setup_logging()
+        # --- 1. Seeding ---
         self._set_seed()
 
         # --- 2. Accelerator Initialization ---
         self._initialize_accelerators()
         # Use accelerator_a for general state/logging, device info etc.
         self.accelerator = self.accelerators["honest_prover"]
+
+        # --- 2a. Logging Setup (using info from accelerator) ---
+        log_level = (
+            logging.INFO if self.accelerator.is_main_process else logging.WARNING
+        )
+        log_dir = os.path.join(
+            self.args.output_dir, "logs"
+        )  # Place logs inside output dir
+        setup_logger(
+            level=log_level,
+            rank=self.accelerator.process_index,
+            world_size=self.accelerator.num_processes,
+            log_to_file=True,  # Enable file logging
+            log_dir=log_dir,
+            log_filename="training.log",
+            main_process_only_file=True,  # Only rank 0 writes the main log file
+        )
+        # Now subsequent logging calls in any module using logging.getLogger("pvg...")
+        # will use this configuration.
+        logger.info("DisjointSequentialTrainer logging configured.")
         self.prepare_wandb()
 
         # Log accelerator state (using accelerator_a is sufficient)
@@ -154,26 +177,26 @@ class DisjointSequentialTrainer:
             # Initialize vLLM clients - Honest Prover
             self._initialize_vllm_client(
                 client_key="honest_prover",
-                host=self.args.vllm_host_honest_prover,
-                port=self.args.vllm_port_honest_prover,
+                host=self.args.vllm_honest_prover.vllm_host,
+                port=self.args.vllm_honest_prover.vllm_port,
                 group_port=base_group_port,
-                timeout=self.args.vllm_server_timeout,
+                timeout=self.args.vllm_honest_prover.vllm_server_timeout,
             )
             # Initialize vLLM clients - Sneaky Prover
             self._initialize_vllm_client(
                 client_key="sneaky_prover",
-                host=self.args.vllm_host_sneaky_prover,
-                port=self.args.vllm_port_sneaky_prover,
+                host=self.args.vllm_sneaky_prover.vllm_host,
+                port=self.args.vllm_sneaky_prover.vllm_port,
                 group_port=base_group_port + 1,
-                timeout=self.args.vllm_server_timeout,
+                timeout=self.args.vllm_sneaky_prover.vllm_server_timeout,
             )
             # Initialize vLLM clients - Verifier
             self._initialize_vllm_client(
                 client_key="verifier",
-                host=self.args.vllm_host_verifier,
-                port=self.args.vllm_port_verifier,
+                host=self.args.vllm_verifier.vllm_host,
+                port=self.args.vllm_verifier.vllm_port,
                 group_port=base_group_port + 2,
-                timeout=self.args.vllm_server_timeout,
+                timeout=self.args.vllm_verifier.vllm_server_timeout,
             )
 
         # --- End vLLM Client Instantiation ---
@@ -202,7 +225,7 @@ class DisjointSequentialTrainer:
         def data_collator(features):  # No data collation is needed in GRPO
             return features
 
-        # Dummy: dataloaders (though we won't use them)
+        # --- 6. Create Dataloaders ---
         self.train_dataloader = DataLoader(
             self.train_dataset,
             batch_size=self.args.per_device_train_batch_size,

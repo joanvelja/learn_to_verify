@@ -1,0 +1,36 @@
+{
+    "bf16": {
+        "enabled": true
+    },
+    "zero_optimization": {
+        "stage": 3,
+        "overlap_comm": true,
+        "contiguous_gradients": true,
+        "reduce_bucket_size": "auto",
+        "stage3_prefetch_bucket_size": "auto",
+        "stage3_param_persistence_threshold": 1e6,
+        "stage3_max_live_parameters": 1.7e9,
+        "stage3_max_reuse_distance": 1e9
+    },
+    "optimizer": {
+        "type": "AdamW",
+        "params": {
+            "lr": 1e-6,
+            "betas": [0.9, 0.999],
+            "eps": 1e-8,
+            "weight_decay": 0.00
+        }
+    },
+    "lr_scheduler": {
+        "type": "Linear",
+        "params": {
+            "warmup_min_lr": 0.00001,
+            "warmup_max_lr": 1e-6,
+            "warmup_num_steps": 0
+        }
+    },
+    "gradient_accumulation_steps": "auto",
+    "gradient_clipping": "auto",
+    "train_batch_size": "auto",
+    "train_micro_batch_size_per_gpu": "auto"
+}

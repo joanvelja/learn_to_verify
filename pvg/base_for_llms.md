@@ -1,4 +1,13 @@
-Here's my code for adversarial training of two models (`sneaky_prover` and `honest_prover`), scored by a third model (`verifier`). It is pretty much done, still quite experimental but has a functioning training loop. I would like to clean up the completion logging functionality given a quick HTML I have written for completion inspection.
+Here's my code for training adversarially two models (`sneaky_prover` and `honest_prover`), scored by a third model (`verifier`), also trained.
+The way this is supposed to work is the following:
+
+
+1. The `verifier` is trained first, on the basis of a dataset of (query, completion) pairs coming from both `honest_prover` and `sneaky_prover` (frozen in this first stage). The training objective (for now) is to train the verifer to prefer the completion from `honest_prover` over the one from `sneaky_prover`, in a standard Bradley-Terry fashion.
+2. The `honest_prover` and `sneaky_prover` are then trained together, with the rewards coming from the (frozen in this second stage) `verifier`. The objectives are as follows:
+    * `honest_prover`: maximize the reward from the verifier while correct at answering the query.
+    * `sneaky_prover`: maximize the reward from the verifier, while being incorrect at answering the query (that is, while being adversarial).
+
+It is pretty much done, still quite experimental but has a functioning training loop. I would like to clean up the completion logging functionality given a quick HTML I have written for completion inspection.
 
 What the completion logger does at the moment is that at each training step, it collects completions from honest, sneaky and verifier and stores the relative jsons in a folder. I like this so far, but it can be a lot cleaner, saving within a `step_i` directory (where `i` is the `global_step`), and changing the HTML source code accordingly so that it can ingest a full outputs folder -- which in turn contains step folders, each containing honest_prover, sneaky_prover and verifier completions at that step. I want to be able to inspect a whole training run this way, else it becomes cumbersome and messy.
 

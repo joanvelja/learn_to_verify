@@ -20,4 +20,6 @@ dependencies = [
     "liger-kernel>=0.5.2",
     "vllm==0.8.1",
     "triton>3.0",
+    "jsonargparse>=4.39.0",
+    "nvidia-ml-py>=12.570.86",
 ]
