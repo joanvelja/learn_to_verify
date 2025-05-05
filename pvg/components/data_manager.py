@@ -96,9 +96,6 @@ class DataManager:
             prover_eval_indices
         ).tokenized_dataset
 
-        logger.info(f"Prover train dataset: {self.prover_train_dataset}")
-        logger.info(f"Prover eval dataset: {self.prover_eval_dataset}")
-
         # Create verifier datasets (second half) using direct slicing
         verifier_train_indices = list(range(train_len // 2, train_len))
         verifier_eval_indices = list(range(eval_len // 2, eval_len))
@@ -122,9 +119,6 @@ class DataManager:
                 "eval": verifier_eval_dataset,
             }
         )
-        logger.info(f"Pushing verifier dataset to hub at {self.hf_repo_path}")
-        logger.info(f"Train + eval datasets: {ddict}")
-
         # Push to hub
         ddict.push_to_hub(self.hf_repo_path)
 

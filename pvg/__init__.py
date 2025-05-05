@@ -20,7 +20,6 @@ from .inference import (
 
 from .utils import (
     setup_logger,
-    Container,
     nanstd,
     prepare_deepspeed,
     FlatExperimentArgs,
@@ -43,7 +42,6 @@ __all__ = [
     "INSTRUCT_VERIFIER",
     "VLLMClient",
     "setup_logger",
-    "Container",
     "nanstd",
     "prepare_deepspeed",
     "FlatExperimentArgs",

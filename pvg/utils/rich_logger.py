@@ -9,7 +9,7 @@ from rich.panel import Panel
 
 def is_rich_available() -> bool:
     try:
-        from rich import Console  # noqa: F401
+        from rich import print  # noqa: F401
 
         return True
     except ImportError:

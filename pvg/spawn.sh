@@ -31,9 +31,7 @@ echo "Activated virtual environment with uv"
 module load CUDA/12.4.0
 # module load py # aliased to Python/3.11.3-GCCcore-12.3.0
 # echo "Loaded CUDA 12.4.0"
-
-
-
+uv pip install rich
 # --- Configuration ---
 # Get Parent directory
 PARENT_DIR=$(dirname "$CURRENT_PATH")
@@ -151,9 +149,6 @@ NUM_GPUS_PER_SERVER_SNEAKY=$(echo $VLLM_SNEAKY_GPUS | awk -F',' '{print NF}')
 NUM_GPUS_PER_SERVER_VERIFIER=$(echo $VLLM_VERIFIER_GPUS | awk -F',' '{print NF}')
 
 cd /home/jvelja/learn_to_verify/pvg
-
-uv add flash-attn --no-build-isolation
-
 
 CURRENT_PATH=$(pwd)
 VLLM_SERVE_SCRIPT="${CURRENT_PATH}/inference/vllm_serve.py"

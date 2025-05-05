@@ -62,9 +62,6 @@ class RepeatRandomSampler(Sampler):
         seed: int | None = None,
     ):
 
-        print(f"data_source: {data_source}")
-        print(f"len(data_source): {len(data_source)}")
-
         self.data_source = data_source
         self.mini_repeat_count = mini_repeat_count
         self.batch_size = batch_size

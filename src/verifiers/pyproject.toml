@@ -22,4 +22,5 @@ dependencies = [
     "triton>3.0",
     "jsonargparse>=4.39.0",
     "nvidia-ml-py>=12.570.86",
+    "flash-attn>=2.7.4.post1",
 ]

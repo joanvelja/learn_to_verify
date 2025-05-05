@@ -1,12 +1,12 @@
 # disjointTrainer.py
 
+from collections.abc import Container
 import os
 import json
 from typing import Any, Literal
 from collections import defaultdict
 from pvg import (
     setup_logger,
-    Container,
     nanstd,
     prepare_deepspeed,
     VLLMClient,

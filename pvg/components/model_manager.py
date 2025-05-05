@@ -123,9 +123,11 @@ class ModelManager:
                 if self.training_configs["verifier"].gradient_checkpointing
                 else model_init_kwargs.get("use_cache")
             )
-            model_init_kwargs["use_flash_attention_2"] = self.configs[
-                "verifier"
-            ].use_flash_attention
+            model_init_kwargs["attn_implementation"] = (
+                "flash_attention_2"
+                if self.configs["verifier"].use_flash_attention
+                else model_init_kwargs.get("attn_implementation", None)
+            )
             self.prepare_verifier(
                 model_init_kwargs
             )  # Special case for verifier --> can be an RM or a simple language model
@@ -139,11 +141,15 @@ class ModelManager:
                     if self.training_configs[model_key].gradient_checkpointing
                     else model_init_kwargs.get("use_cache")
                 )
-                model_init_kwargs["use_flash_attention_2"] = self.configs[
-                    model_key
-                ].use_flash_attention
+                model_init_kwargs["attn_implementation"] = (
+                    "flash_attention_2"
+                    if self.configs[model_key].use_flash_attention
+                    else model_init_kwargs.get("attn_implementation", None)
+                )
                 self.models[model_key] = AutoModelForCausalLM.from_pretrained(
-                    self.model_paths[model_key], **model_init_kwargs
+                    self.model_paths[model_key],
+                    torch_dtype=torch.bfloat16,
+                    **model_init_kwargs,
                 )
         else:
             raise ValueError(f"Invalid phase: {self.phase}")

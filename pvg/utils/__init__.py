@@ -1,5 +1,4 @@
 from .utils import (
-    Container,
     nanstd,
     prepare_deepspeed,
     FlatExperimentArgs,
@@ -14,7 +13,6 @@ from .rich_logger import (
 
 __all__ = [
     "setup_logger",
-    "Container",
     "nanstd",
     "prepare_deepspeed",
     "FlatExperimentArgs",
