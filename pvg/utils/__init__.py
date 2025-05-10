@@ -7,7 +7,7 @@ from .rich_logger import (
     print_prompt_completions_sample_verifier,
 )
 from .url import url_exists
-from .formatting import make_formatted_prompt
+
 from .math import nanstd, compute_entropy
 
 __all__ = [
@@ -17,6 +17,5 @@ __all__ = [
     "print_prompt_completions_sample",
     "print_prompt_completions_sample_verifier",
     "url_exists",
-    "make_formatted_prompt",
     "compute_entropy",
 ]
