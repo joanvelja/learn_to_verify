@@ -35,7 +35,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
-
 # Integrations must be imported before ML frameworks:
 # isort: off
 from .integrations import (
@@ -196,7 +195,6 @@ from .utils import (
 )
 from .utils.deprecation import deprecate_kwarg
 from .utils.quantization_config import QuantizationMethod
-
 
 DEFAULT_CALLBACKS = [DefaultFlowCallback]
 DEFAULT_PROGRESS_CALLBACK = ProgressCallback
@@ -2092,7 +2090,6 @@ class Trainer:
 
             # Rebuild the deepspeed config to reflect the updated training parameters
             from accelerate.utils import DeepSpeedPlugin
-
             from transformers.integrations.deepspeed import HfTrainerDeepSpeedConfig
 
             self.args.hf_deepspeed_config = HfTrainerDeepSpeedConfig(

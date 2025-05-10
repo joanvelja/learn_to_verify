@@ -34,6 +34,7 @@ class AppsDataset(Dataset):
             "question",
             "solutions",
             "input_output",
+            "starter_code",
         ],  # Columns to keep
         cache_dir: str | None = None,
         preprocessing_num_workers: int | None = None,
@@ -279,16 +280,12 @@ class VerifierDataset(IterableDataset):
         batch_size: int = 32,
         seed: int = 42,
         dataset_type: Literal["coding", "math"] = "coding",
-        token: str | None = None,
         round_prefix: str = "round_",
-        correctness_column: (
-            str | None
-        ) = None,  # Column that indicates if a sample is correct
         correct_column_identifier: str | None = None,  # e.g., "correct_solution"
         incorrect_column_identifier: str | None = None,  # e.g., "incorrect_solution"
-        shuffle_buffer_size: int = 1000,
         max_samples_per_round: int | None = None,
         tokenizer: AutoTokenizer | None = None,
+        split: Literal["train", "eval"] = "train",
     ):
         """
         Initialize the VerifierDataset.
@@ -300,30 +297,17 @@ class VerifierDataset(IterableDataset):
             batch_size: Batch size (must be even)
             seed: Random seed for reproducibility
             dataset_type: Type of dataset to load ("coding" or "math")
-            token: HuggingFace API token (optional)
             round_prefix: Prefix for round datasets
-            correctness_column: Column indicating if sample is correct (True/False or 1/0)
             correct_column_identifier: Column name that exists only in correct samples
             incorrect_column_identifier: Column name that exists only in incorrect samples
-            shuffle_buffer_size: Size of buffer for shuffling
             max_samples_per_round: Maximum number of samples to load per round (optional)
             tokenizer: Tokenizer to use for tokenization
+            split: Split to load ("train" or "eval")
         """
         super().__init__()
 
         assert batch_size % 2 == 0, "Batch size must be even to ensure 50/50 balance"
         assert 0.0 <= new_sample_weight_target <= 1.0, "Weight must be between 0 and 1"
-
-        # Either correctness_column OR both identifiers must be provided
-        assert correctness_column or (
-            correct_column_identifier and incorrect_column_identifier
-        ), "Either correctness_column OR both identifier columns must be specified"
-
-        # Assert not both being instantiated at the same time
-        assert not (
-            correctness_column
-            and (correct_column_identifier and incorrect_column_identifier)
-        ), "Cannot specify both correct_column_identifier and incorrect_column_identifier"
 
         self.current_round_num = current_round_num
         self.max_rounds_to_keep = max_rounds_to_keep
@@ -331,14 +315,11 @@ class VerifierDataset(IterableDataset):
         self.batch_size = batch_size
         self.seed = seed
         self.dataset_type = dataset_type
-        self.token = token
         self.round_prefix = round_prefix
-        self.correctness_column = correctness_column
         self.correct_column_identifier = correct_column_identifier
         self.incorrect_column_identifier = incorrect_column_identifier
-        self.shuffle_buffer_size = shuffle_buffer_size
         self.max_samples_per_round = max_samples_per_round
-
+        self.split = split
         # Determine prompt template
         if self.dataset_type == "coding":
             self.prompt_template = BASE_VERIFIER_CODE
@@ -437,9 +418,7 @@ class VerifierDataset(IterableDataset):
             logger.info(
                 f"Loading dataset: {dataset_name} from HuggingFace Hub -- Round: {round_num}"
             )
-            self.datasets[round_num] = load_dataset(
-                dataset_name, token=self.token, split="train"
-            )
+            self.datasets[round_num] = load_dataset(dataset_name, split=self.split)
 
             # Limit number of samples if specified
             if self.max_samples_per_round is not None:
@@ -460,44 +439,22 @@ class VerifierDataset(IterableDataset):
             correct_indices = []
             incorrect_indices = []
 
-            # Method 1: Using the correctness column
-            if self.correctness_column:
-                for i, sample in enumerate(dataset):
-                    correctness_value = sample.get(self.correctness_column)
-                    # Handle different types of correctness values (bool, int, etc.)
-                    is_correct = correctness_value in [
-                        True,
-                        1,
-                        "True",
-                        "true",
-                        "1",
-                        "correct",
-                    ]
+            for i, sample in enumerate(dataset):
+                # Check if the sample has the correct identifier column with a non-empty value
+                if (
+                    self.correct_column_identifier in sample
+                    and sample[self.correct_column_identifier] is not None
+                    and sample[self.correct_column_identifier] != ""
+                ):
+                    correct_indices.append(i)
 
-                    if is_correct:
-                        correct_indices.append(i)
-                    else:
-                        incorrect_indices.append(i)
-
-            # Method 2: Using column identifiers
-            elif self.correct_column_identifier and self.incorrect_column_identifier:
-                print("Using column identifiers method.")
-                for i, sample in enumerate(dataset):
-                    # Check if the sample has the correct identifier column with a non-empty value
-                    if (
-                        self.correct_column_identifier in sample
-                        and sample[self.correct_column_identifier] is not None
-                        and sample[self.correct_column_identifier] != ""
-                    ):
-                        correct_indices.append(i)
-
-                    # Check if the sample has the incorrect identifier column with a non-empty value
-                    if (
-                        self.incorrect_column_identifier in sample
-                        and sample[self.incorrect_column_identifier] is not None
-                        and sample[self.incorrect_column_identifier] != ""
-                    ):
-                        incorrect_indices.append(i)
+                # Check if the sample has the incorrect identifier column with a non-empty value
+                if (
+                    self.incorrect_column_identifier in sample
+                    and sample[self.incorrect_column_identifier] is not None
+                    and sample[self.incorrect_column_identifier] != ""
+                ):
+                    incorrect_indices.append(i)
 
             # Shuffle the indices
             random.shuffle(correct_indices)
@@ -652,18 +609,6 @@ class VerifierDataset(IterableDataset):
         injected_prompts = []
         are_identical_flags = []
 
-        # # Extract the actual data dictionary and process each sample
-        # for item in batch:
-        #     sample_dict = item['data']
-        #     problem = sample_dict.get("problem", "")
-        #     honest_sol = sample_dict.get("honest_solution", "")
-        #     injected_sol = sample_dict.get("injected_solution", "") # Assume this key exists
-
-        #     # Format prompts using the stored template
-        #     honest_prompts.append(self.prompt_template.format(problem=problem, solution=honest_sol))
-        #     injected_prompts.append(self.prompt_template.format(problem=problem, solution=injected_sol))
-        #     are_identical_flags.append(honest_sol == injected_sol)
-
         # Extract the actual data dictionary and process each sample
         for item in batch:
             sample_dict = item["data"]
@@ -736,27 +681,6 @@ class VerifierDataset(IterableDataset):
             },
         }
         return stats
-
-    # def __len__(self) -> int:
-    #     """
-    #     Calculate the total number of samples available across all relevant rounds.
-
-    #     This provides an effective length for the dataset, often used by DataLoaders
-    #     and training loops to determine the number of steps per epoch.
-    #     """
-    #     total_samples = 0
-    #     for round_num in self.relevant_rounds:
-    #         # Ensure indices exist for the round before summing
-    #         correct_count = len(self.correct_indices.get(round_num, []))
-    #         incorrect_count = len(self.incorrect_indices.get(round_num, []))
-    #         total_samples += correct_count + incorrect_count
-
-    #     if total_samples == 0:
-    #          # This case should ideally not happen if validation passes,
-    #          # but good to handle. Could also raise an error.
-    #         logger.warning("VerifierDataset has zero total samples across relevant rounds.")
-
-    #     return total_samples
 
     def __len__(self) -> int:
         """

@@ -226,12 +226,11 @@ class RLArgs:
     )
     scale_rewards: bool = field(
         default=False,
-        metadata={
-            "help": "Whether to standardize advantages (subtract mean, divide by std)."
-        },
+        metadata={"help": "Whether to standardize advantages (divide by std)."},
     )
-    # adv_clip_a: Optional[float] = field(default=None, metadata={"help": "Clip advantages for honest prover."})
-    # adv_clip_b: Optional[float] = field(default=None, metadata={"help": "Clip advantages for sneaky prover."})
+    adv_clip: float | None = field(
+        default=None, metadata={"help": "Clip advantages for provers."}
+    )
     nan_reward_value: float = field(
         default=-0.1,
         metadata={
@@ -336,6 +335,18 @@ class ExperimentArgs:
     training_verifier: TrainingArgs = field(
         default_factory=TrainingArgs,
         metadata={"help": "Training configuration for the verifier."},
+    )
+
+    # --- Datamix Generation ---
+    generation_batch_size: int = field(
+        default=256, metadata={"help": "Batch size for data generation."}
+    )
+    num_rounds_to_keep: int = field(
+        default=10, metadata={"help": "Number of rounds to keep for data generation."}
+    )
+    new_sample_weight_target: float = field(
+        default=0.8,
+        metadata={"help": "Target proportion of samples from the latest round."},
     )
 
     # --- Shared Training Loop Arguments ---

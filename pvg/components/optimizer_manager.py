@@ -1,30 +1,21 @@
 # pvg/components/optimizer_manager.py
 """Manages optimizers and learning rate schedulers for different model components."""
 
-from torch.utils.data import DataLoader
+import logging
+from typing import Callable, Literal
 
 # OptimizerSchedulerManager
 # Overall: Creates, prepares, and manages optimizers/schedulers for all trainable parameters (provers, verifier, head). Provides methods to step/zero_grad specific components.
-
 import torch
-from pvg.config.args import TrainingArgs
-from pvg.components.model_manager import ModelManager
-from pvg.components.data_manager import DataManager
-from pvg.components.accelerator_manager import AcceleratorManager
-from typing import Callable, Literal
+from torch.utils.data import DataLoader
 from transformers import get_scheduler
 
-import logging
+from pvg.components.accelerator_manager import AcceleratorManager
+from pvg.components.data_manager import DataManager
+from pvg.components.model_manager import ModelManager
+from pvg.config.args import TrainingArgs
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
-
-# shared_training_config = {
-#          "lr_scheduler_type": args.lr_scheduler_type,
-#          "num_warmup_steps": args.num_warmup_steps,
-#          "gradient_accumulation_steps": args.gradient_accumulation_steps,
-#          "num_train_epochs": args.num_train_epochs,
-#          "max_train_steps": args.max_train_steps,
-#     }
 
 
 class OptimizerSchedulerManager:
@@ -87,18 +78,13 @@ class OptimizerSchedulerManager:
         self.global_round_callback: Callable[[], int] = global_round_callback
         self.num_train_epochs: int = self.shared_training_config["num_train_epochs"]
         self.configs = {
-            "provers": self.honest_training_config,  # Assume the two provers have same config (NOTE: This is wonky.)
+            "honest_prover": self.honest_training_config,
+            "sneaky_prover": self.sneaky_training_config,
             "verifier": self.verifier_training_config,
         }
         self.num_training_steps: dict[str, int] = {}
         self.optimizers: dict[str, torch.optim.Optimizer] = {}
         self.schedulers: dict[str, torch.optim.lr_scheduler._LRScheduler] = {}
-
-        # NOTE: Calculate num_training_steps after dataloader is prepared (and thus num_training_steps is known)
-        # self._calculate_num_training_steps()
-        # self.create_optimizers()
-        # self.create_schedulers() # TODO: Scheduler prep is dependent on the distributed setup!
-        # self.prepare_optimizers_and_schedulers() # TODO: Downstream from above
 
     def _calculate_num_training_steps(self, dataloader: DataLoader) -> None:
         """
@@ -108,19 +94,6 @@ class OptimizerSchedulerManager:
         accumulation steps. Results are stored in `self.num_training_steps`.
         Requires dataloaders to be prepared first.
         """
-        # for phase in ["provers", "verifier"]:
-        #     # Use the appropriate dataloader based on phase
-        #     # 'provers' uses the honest prover's dataloader for calculation
-        #     component = self.data_manager.dataloaders[phase]
-        #     dataloader = component["train_dataloader"]
-        #     num_update_steps_per_epoch = (
-        #         len(dataloader) // self.gradient_accumulation_steps
-        #     )
-        #     num_update_steps_per_epoch = max(
-        #         num_update_steps_per_epoch, 1
-        #     )  # Ensure at least one step
-        #     num_training_steps = num_update_steps_per_epoch * self.num_train_epochs
-        #     self.num_training_steps[phase] = num_training_steps
 
         phase = self.global_phase_callback()
         num_update_steps_per_epoch = len(dataloader) // self.gradient_accumulation_steps
@@ -197,17 +170,6 @@ class OptimizerSchedulerManager:
         num_warmup_steps = self.shared_training_config.get("num_warmup_steps", 0)
         num_training_steps_phase = self.num_training_steps[phase]
 
-        # for key, optimizer in self.optimizers.items():
-        #     # Provers share the 'provers' training steps calculation
-        #     current_phase_steps = num_training_steps_phase
-        #     scheduler = get_scheduler(
-        #         name=lr_scheduler_type,
-        #         optimizer=optimizer,
-        #         num_warmup_steps=num_warmup_steps * self.accelerator_manager.get_state_property("num_processes"),
-        #         num_training_steps=current_phase_steps,
-        #     )
-        #     self.schedulers[key] = scheduler
-
         # Conditional on the phase, create the scheduler
         if phase == "verifier":
             for key, optimizer in self.optimizers.items():
@@ -229,35 +191,6 @@ class OptimizerSchedulerManager:
                 )
 
         logger.info(f"Schedulers created for phase {phase} : {self.schedulers[key]}")
-
-    def prepare_optimizers_and_schedulers(self, dataloader: DataLoader) -> None:
-        """
-        Prepares the created optimizers and schedulers using the AcceleratorManager.
-
-        This step is necessary for distributed training and automatic device placement.
-        Updates `self.optimizers` and `self.schedulers` with their prepared versions.
-        Requires `create_optimizers` and `create_schedulers` to have been called.
-        """
-        logger.info("Preparing optimizers and schedulers with Accelerator...")
-        phase = self.global_phase_callback()
-        if phase == "verifier":
-            accelerator = self.accelerator_manager.get_accelerator(
-                phase
-            )  # TODO: This is a bit of a hack.
-            optimizer = self.optimizers[phase]
-            scheduler = self.schedulers[phase]
-            optimizer, scheduler = accelerator.prepare(optimizer, scheduler)
-            self.optimizers[phase] = optimizer
-            self.schedulers[phase] = scheduler
-        else:
-            for key, optimizer in self.optimizers.items():
-                if key != "verifier":
-                    accelerator = self.accelerator_manager.get_accelerator(
-                        key
-                    )  # TODO: This is a bit of a hack.
-                    optimizer, scheduler = accelerator.prepare(optimizer, scheduler)
-                    self.optimizers[key] = optimizer
-                    self.schedulers[key] = scheduler
 
     def get_optimizer(self, key: str) -> torch.optim.Optimizer:
         """
@@ -346,14 +279,3 @@ class OptimizerSchedulerManager:
             lrs = scheduler.get_last_lr()
             return lrs[0] if lrs else None  # Return the first LR if available
         return None
-
-    def load_and_prepare_optimizers_and_schedulers(
-        self, dataloader: DataLoader
-    ) -> None:
-        """
-        Loads and prepares optimizers and schedulers for the current phase.
-        """
-        self.create_optimizers()
-        self._calculate_num_training_steps(dataloader)
-        self.create_schedulers()
-        self.prepare_optimizers_and_schedulers(dataloader)

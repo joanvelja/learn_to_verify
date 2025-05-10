@@ -6,11 +6,14 @@
 import os
 from typing import Literal, Callable, Any
 from collections.abc import Iterator
-from pvg.utils.utils import prepare_deepspeed
 import torch
 from pvg.components.accelerator_manager import AcceleratorManager
 from pvg.config.args import ModelArgs, TrainingArgs, RLArgs
-from transformers import AutoModelForCausalLM, AutoModelForSequenceClassification
+from transformers import (
+    AutoModelForCausalLM,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+)
 from liger_kernel.transformers import _apply_liger_kernel_to_instance
 from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
 import logging
@@ -69,7 +72,7 @@ class ModelManager:
         self.ref_models: dict[str, torch.nn.Module | None] = {}
         self.prepared_models: dict[str, torch.nn.Module] = {}
         self.prepared_ref_models: dict[str, torch.nn.Module | None] = {}
-        self.liger_grpo_loss: LigerFusedLinearGRPOLoss | None = None
+        self.tokenizer: AutoTokenizer | None = None
         self.verifier_mode: (
             Literal[
                 "regressor", "classifier", "inference_classifier", "inference_regressor"
@@ -131,7 +134,7 @@ class ModelManager:
             self.prepare_verifier(
                 model_init_kwargs
             )  # Special case for verifier --> can be an RM or a simple language model
-            # TODO: the
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_paths["verifier"])
 
         elif self.phase == "provers":
             for model_key in self.configs.keys():
@@ -151,6 +154,10 @@ class ModelManager:
                     torch_dtype=torch.bfloat16,
                     **model_init_kwargs,
                 )
+
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_paths["honest_prover"]
+            )  # TODO: This is a hack. We should fix this, but rationale is that provers are always the same model.
         else:
             raise ValueError(f"Invalid phase: {self.phase}")
 
@@ -267,23 +274,6 @@ class ModelManager:
 
         return model
 
-    def prepare_models(self) -> None:
-        """Calls accelerator_manager.prepare_model for all loaded policy and reference models. Stores prepared models. Must be called after AcceleratorManager is fully initialized."""
-        for model_key in self.models:
-            if self.models[model_key] is not None:
-                self.prepared_models[model_key] = (
-                    self.accelerator_manager.prepare_model(
-                        self.models[model_key], key=model_key
-                    )
-                )  # TODO: This is wrong: Models, dataloaders and optimizers should be prepared altogether.
-
-        for model_key in self.ref_models:
-            if self.ref_models[model_key] is not None:
-                self.prepared_ref_models[model_key] = prepare_deepspeed(
-                    self.ref_models[model_key],
-                    self.accelerator_manager.get_accelerator(model_key),
-                )
-
     def get_model(self, key: str, prepared: bool = True) -> torch.nn.Module:
         """Returns the requested model (prepared or unprepared)."""
         if prepared and key in self.prepared_models:
@@ -296,6 +286,13 @@ class ModelManager:
                 )
             else:
                 return self.models[key]
+
+    def get_tokenizer(self) -> AutoTokenizer:
+        """Returns the tokenizer."""
+        if self.tokenizer is not None:
+            return self.tokenizer
+        else:
+            raise ValueError("Tokenizer not found. Please prepare the tokenizer first.")
 
     def get_ref_model(self, key: str, prepared: bool = True) -> torch.nn.Module:
         """Returns the requested reference model (prepared or unprepared)."""

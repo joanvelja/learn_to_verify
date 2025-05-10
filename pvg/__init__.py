@@ -14,6 +14,10 @@ from .data import (
     INSTRUCT_VERIFIER,
 )
 
+from .components import (
+    GPUMonitor,
+)
+
 from .inference import (
     VLLMClient,
 )
@@ -22,8 +26,6 @@ from .utils import (
     setup_logger,
     nanstd,
     prepare_deepspeed,
-    FlatExperimentArgs,
-    get_args,
 )
 
 from .orchestrator import TrainingPhaseOrchestrator
@@ -44,7 +46,6 @@ __all__ = [
     "setup_logger",
     "nanstd",
     "prepare_deepspeed",
-    "FlatExperimentArgs",
-    "get_args",
     "TrainingPhaseOrchestrator",
+    "GPUMonitor",
 ]

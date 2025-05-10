@@ -32,7 +32,6 @@ from pvg.components.optimizer_manager import OptimizerSchedulerManager
 from pvg.components.metrics_logger import MetricsLogger
 from pvg.components.vllm_orchestrator import VLLMOrchestrator
 from pvg.components.state_tracker import StateTracker
-from pvg.data.dataset import VerifierDataset
 
 from pvg.utils.rich_logger import print_prompt_completions_sample_verifier
 
@@ -60,7 +59,6 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
         metrics_logger: MetricsLogger,
         vllm_orchestrator: VLLMOrchestrator,
         state_tracker: StateTracker,
-        verifier_dataset: VerifierDataset,
     ) -> None:
         """
         Initialize the VerifierRegressorTrainer.
@@ -74,7 +72,6 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             metrics_logger: Logger for training and evaluation metrics
             vllm_orchestrator: Orchestrator for VLLM inference
             state_tracker: Tracker for training state
-            verifier_dataset: Dataset for verifier training
         """
         super().__init__(
             args,
@@ -87,7 +84,6 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             state_tracker,
         )
 
-        self.verifier_dataset = verifier_dataset
         self.tokenizer = self.data_manager.tokenizer
         self.verifier_model = self.model_manager.get_model("verifier", prepared=True)
         self.train_dataloader = self.data_manager.dataloaders["verifier"][
@@ -431,6 +427,11 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                 self.state_tracker.step == total_steps
             ), f"State tracker step {self.state_tracker.step} does not match total steps {total_steps}"
 
+            # Move **this** verifier model to vLLM --> swap it into the vLLM model
+            self.vllm_orchestrator.sync_weights(
+                phase="verifier", model_manager=self.model_manager
+            )
+
             # Clean up memory - delete model, tokenizer, dataloaders, optimizer, scheduler
             del (
                 self.verifier_model,
@@ -602,6 +603,10 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             logger.info(
                 f"Verifier Regressor model successfully pushed to the hub as {verifier_model_name}."
             )
+            # Tokenizer should be pushed to the same repo
+            self.tokenizer.push_to_hub(
+                repo_id=verifier_model_name
+            )  # Unsure if this is needed, but it doesn't hurt
         except Exception as e:
             logger.error(f"Failed to push model to hub: {str(e)}")
             logger.info("Continuing without pushing to hub.")

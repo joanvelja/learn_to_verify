@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:30:00
+#SBATCH --time=00:19:50
 #SBATCH --job-name=testing
 #SBATCH --output=spawn_testing/output/logs/testing.%j.out
 #SBATCH --error=spawn_testing/output/errors/testing.%j.err
@@ -31,16 +31,24 @@ echo "Activated virtual environment with uv"
 module load CUDA/12.4.0
 # module load py # aliased to Python/3.11.3-GCCcore-12.3.0
 # echo "Loaded CUDA 12.4.0"
-uv pip install rich
+# uv pip install rich
 # --- Configuration ---
 # Get Parent directory
 PARENT_DIR=$(dirname "$CURRENT_PATH")
+VERIFIER_TRAINING_MODE="regressor"
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
-HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-1.5B"
-SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-1.5B"
-VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
+HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
+SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
+BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
+REGRESSOR_VERIFIER_PATH="jvelja/verifier-regressor_round_0" # This is a hack: allows vLLM to make room for the classification/regression head...
+
+if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
+    VERIFIER_PATH="${REGRESSOR_VERIFIER_PATH}"
+else
+    VERIFIER_PATH="${BASE_VERIFIER_PATH}"
+fi
 
 # Fetch models from local paths if they exist (dir = local_models/{MODEL_PROVIDER e.g. Qwen}/MODEL_NAME e.g. Qwen2.5-Coder-3B-Instruct)
 # If they do not, echo an error message and exit
@@ -66,9 +74,18 @@ echo "Using local model ${VERIFIER_PATH}"
 
 
 VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid vllm new engine error
-# export NCCL_DEBUG=INFO
-# export NCCL_DEBUG_SUBSYS=ALL # For even more verbose output if needed
-# export PYTHONFAULTHANDLER=1 # Useful for getting tracebacks on segfaults
+# --- NCCL Debugging ---
+# Set NCCL debug level. Options: WARN, INFO, TRACE
+# INFO is usually a good starting point for hangs.
+export NCCL_DEBUG=INFO
+# Optional: Enable logging for specific subsystems (e.g., COLL for collectives, NET for network)
+export NCCL_DEBUG_SUBSYS=ALL
+export NCCL_TIMEOUT_SEC=7200
+# Optional: Useful for getting Python tracebacks on segfaults
+export PYTHONFAULTHANDLER=1
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
+export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
+
 
 # vLLM Server Ports
 VLLM_PORT_HONEST=8000
@@ -106,7 +123,6 @@ VLLM_GPU_MEM_UTIL_HONEST=0.9   # Can use most of GPU 0
 VLLM_GPU_MEM_UTIL_SNEAKY=0.62  # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 VLLM_GPU_MEM_UTIL_VERIFIER=0.32 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 # Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
-VERIFIER_TRAINING_MODE="regressor"
 # Set TASK_TYPE based on VERIFIER_TRAINING_MODE
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     TASK_TYPE="classify"
@@ -116,14 +132,6 @@ fi
 
 
 
-# --- NCCL Debugging ---
-# Set NCCL debug level. Options: WARN, INFO, TRACE
-# INFO is usually a good starting point for hangs.
-# export NCCL_DEBUG=INFO
-# # Optional: Enable logging for specific subsystems (e.g., COLL for collectives, NET for network)
-# export NCCL_DEBUG_SUBSYS=ALL
-# # Optional: Useful for getting Python tracebacks on segfaults
-# export PYTHONFAULTHANDLER=1
 
 # --- Cleanup Function ---
 cleanup() {
@@ -161,7 +169,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_HONEST_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_HONEST \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_HONEST \
-    --max_model_len 3584 \
+    --max_model_len 4096 \
     --enable-prefix-caching True \
     & # Run in background
 VLLM_PID_HONEST=$!
@@ -176,7 +184,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_SNEAKY \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_SNEAKY \
-    --max_model_len 3584 \
+    --max_model_len 4096 \
     --enable-prefix-caching True \
     & # Run in background
 VLLM_PID_SNEAKY=$!
@@ -191,7 +199,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_VERIFIER \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_VERIFIER \
-    --max_model_len 3584 \
+    --max_model_len 4096 \
     --enable-prefix-caching True \
     --task-type $TASK_TYPE \
     & # Run in background
@@ -251,9 +259,9 @@ uv run --env-file .env accelerate launch \
     --training_verifier.apply_liger_kernel True \
     --training_verifier.max_grad_norm 0.1    \
     --training_verifier.learning_rate 5e-6   \
-    --training_verifier.verifier_mode "regressor" \
+    --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
     \
-    --dataset.dataset_name "codeparrot/apps" \
+    --dataset.dataset_name "jvelja/apps_skeletonized_full" \
     \
     --rl.num_generations 2 \
     --rl.num_iterations 1 \
@@ -265,7 +273,7 @@ uv run --env-file .env accelerate launch \
     --vllm_honest_prover.top_p 0.95 \
     --vllm_honest_prover.frequency_penalty 0.05 \
     --vllm_honest_prover.min_p 0.05 \
-    --vllm_honest_prover.max_new_tokens 784 \
+    --vllm_honest_prover.max_new_tokens 1152 \
     --vllm_honest_prover.stop_sequences '["</solution>"]' \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
@@ -274,8 +282,8 @@ uv run --env-file .env accelerate launch \
     --vllm_sneaky_prover.top_p 0.95 \
     --vllm_sneaky_prover.frequency_penalty 0.05 \
     --vllm_sneaky_prover.min_p 0.05 \
-    --vllm_sneaky_prover.max_new_tokens 784 \
-    --vllm_sneaky_prover.stop_sequences '["</injected_solution>"]' \
+    --vllm_sneaky_prover.max_new_tokens 1152 \
+    --vllm_sneaky_prover.stop_sequences '["</triggering_condition>"]' \
     \
     --vllm_verifier.host "$VLLM_HOST" \
     --vllm_verifier.port "$VLLM_PORT_VERIFIER" \
@@ -283,7 +291,7 @@ uv run --env-file .env accelerate launch \
     --vllm_verifier.top_p 0.95 \
     --vllm_verifier.frequency_penalty 0.05 \
     --vllm_verifier.min_p 0.05 \
-    --vllm_verifier.max_new_tokens 784 \
+    --vllm_verifier.max_new_tokens 1152 \
     --vllm_verifier.stop_sequences '["</verdict>"]' \
     --vllm_verifier.logprobs 10 \
     \

@@ -251,12 +251,83 @@ class VLLMOrchestrator:
             # For provers, return the local slice needed for loss calculation on each process
             return local_completion_ids, local_completion_texts, local_logprobs
 
+    def classify_and_broadcast(
+        self,
+        client_key: Literal["verifier"],
+        prompts: list[str],  # The gathered list of prompts from all processes
+        raw_prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
+    ) -> list[float]:
+        """
+        Handles main process classification, logging interaction, broadcasting, and returning the full list.
+
+        Args:
+            client_key: str - The key of the vLLM client to use.
+            prompts: list[str] - The prompts to classify.
+
+        Returns:
+            tuple[list[list[int]], list[str], list[list[dict[int, float]]] | None] - A tuple containing the generated tokens, the prompts, and the logprobs (if logprobs_count is not None).
+        """
+        scores_all = None
+        num_total_prompts = len(prompts)
+        assert (
+            client_key == "verifier"
+        ), "Classification is only supported for the verifier."
+
+        if self.accelerator_manager.get_state_property(property_name="is_main_process"):
+            # Classification happens only on the main process due to server-client communication
+            client = self.vllm_clients[client_key]
+
+            if client is None:
+                raise ValueError(f"vLLM client '{client_key}' is not initialized.")
+
+            # Classify kwargs
+            classify_kwargs = {
+                "prompts": prompts,
+            }
+
+            # Call classify
+            scores_all = client.classify(**classify_kwargs)
+
+            # Log classification output length
+            process_index = self.accelerator_manager.get_state_property(
+                property_name="process_index"
+            )
+            log_msg = f"[Process {process_index} / {client_key}] Raw client output length: scores_all={len(scores_all)}"
+            logger.debug(log_msg)
+
+            # Log interaction
+            self._log_llm_interaction(
+                model_mode=client_key,
+                prompts=prompts,  # Log all prompts that *should* have been generated for
+                output_ids=scores_all,
+                output_texts=scores_all,
+                logprobs=None,
+            )
+        else:
+            # Placeholders for non-main processes
+            scores_all = [None] * num_total_prompts
+
+        # Broadcast results from main process
+        scores_all: list[float] = broadcast_object_list(scores_all, from_process=0)
+
+        # # Calculate and apply the slice for the current process
+        # process_index = self.accelerator_manager.get_state_property(
+        #     property_name="process_index"
+        # )
+        # process_slice = slice(
+        #     process_index * raw_prompts_len_local,
+        #     (process_index + 1) * raw_prompts_len_local,
+        # )
+        # local_scores = scores_all[process_slice]
+
+        return scores_all
+
     def _log_llm_interaction(
         self,
         model_mode: str,
         prompts: list[str],
         output_ids: list[list[int]],
-        output_texts: list[str],
+        output_texts: list[str] | list[float],
         logprobs: list[list[dict[int, float]]] | None = None,
     ):
         """Logs LLM interaction details to a JSON file on the main process."""
@@ -326,9 +397,7 @@ class VLLMOrchestrator:
         )
         self.accelerator_manager.get_accelerator(
             key="verifier"
-        ).state.select_deepspeed_plugin(
-            "honest_prover"  # Wonky!
-        )
+        ).state.select_deepspeed_plugin("verifier")
         logger.debug(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Calling _move_model_to_vllm for verifier"
         )

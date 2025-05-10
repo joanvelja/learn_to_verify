@@ -26,6 +26,10 @@ class MetricsLogger:
         self.global_step_callback: Callable[[], int] = global_step_callback
         self.global_phase_callback: Callable[[], str] = global_phase_callback
         self._metrics: dict[str, dict[str, dict[str, dict[str, list[float]]]]] = {}
+        self.wandb_run: Any = None  # Initialize wandb_run
+        self.llm_interaction_log_dir: str | None = (
+            None  # Initialize llm_interaction_log_dir
+        )
 
     def setup_wandb(self, config: dict[str, Any]) -> None:
         try:
@@ -49,7 +53,7 @@ class MetricsLogger:
                         f"Successfully retrieved WandB run. Run ID: {self.wandb_run.id}"
                     )
                     # Create LLM interaction log directory on main process
-                    self.llm_interaction_log_dir: str = os.path.join(
+                    self.llm_interaction_log_dir: str | None = os.path.join(
                         self.wandb_config.output_dir,
                         self.wandb_run.id,
                         "llm_interaction_logs",
@@ -136,7 +140,7 @@ class MetricsLogger:
         {
             "prover": {                      # phase
                 "train": {                   # mode
-                    "honest_prover": {       # prover_key
+                    "honest_prover": {       # model_key
                         "loss": [0.1, 0.2],  # metric_name: list of values
                         "accuracy": [0.8, 0.85]
                     },
@@ -161,39 +165,284 @@ class MetricsLogger:
             self._metrics[phase][mode][model_key][metric_name] = []
         self._metrics[phase][mode][model_key][metric_name].append(value)
 
-    def log_step_metrics(self, phase: str, mode: str) -> None:
-        """Aggregates metrics stored since the last log call for the 'train' mode. Calculates mean/std for list metrics using gather_for_metrics. Merges with direct step data (losses, LRs). Logs using accelerator_manager.log. Clears the stored lists for 'train' mode."""
+    def store_metrics(self, mode: str, model_key: str, metrics: dict[str, Any]) -> None:
+        for metric_name, value in metrics.items():
+            self.store_metric(mode, model_key, metric_name, value)
 
-        # In essence, this function aggregates metrics that are in list form, and logs them as mean values.
+    def store_entropy(
+        self, model_key: str, mode: str, per_token_entropy: torch.Tensor
+    ) -> None:
+        """
+        Calculates various statistics for per_token_entropy, gathers them across processes,
+        averages them, and then stores them using self.store_metric.
+        """
+        # phase = self.global_phase_callback()  # Get current phase
+        current_device = per_token_entropy.device  # Get device from input tensor
+
+        # Calculate local statistics from per_token_entropy
+        if per_token_entropy.numel() == 0:  # Handle empty tensor case
+            mean_entropy = torch.tensor(float("nan"), device=current_device)
+            entropy_std = torch.tensor(float("nan"), device=current_device)
+            entropy_min = torch.tensor(float("nan"), device=current_device)
+            entropy_max = torch.tensor(float("nan"), device=current_device)
+            entropy_25 = torch.tensor(float("nan"), device=current_device)
+            entropy_50 = torch.tensor(float("nan"), device=current_device)
+            entropy_75 = torch.tensor(float("nan"), device=current_device)
+        else:
+            mean_entropy = per_token_entropy.mean()
+            entropy_std = per_token_entropy.std()
+            entropy_min = per_token_entropy.min()
+            entropy_max = per_token_entropy.max()
+
+            if len(per_token_entropy) >= 4:
+                sorted_entropy, _ = torch.sort(per_token_entropy)
+                idx_25 = max(
+                    0, min(len(sorted_entropy) - 1, int(0.25 * len(sorted_entropy)))
+                )
+                idx_50 = max(
+                    0, min(len(sorted_entropy) - 1, int(0.50 * len(sorted_entropy)))
+                )
+                idx_75 = max(
+                    0, min(len(sorted_entropy) - 1, int(0.75 * len(sorted_entropy)))
+                )
+                entropy_25 = sorted_entropy[idx_25]
+                entropy_50 = sorted_entropy[idx_50]
+                entropy_75 = sorted_entropy[idx_75]
+            elif len(per_token_entropy) > 0:
+                entropy_25 = entropy_min
+                entropy_50 = mean_entropy
+                entropy_75 = entropy_max
+            else:  # Should be caught by numel() == 0, but for safety
+                entropy_25 = torch.tensor(float("nan"), device=current_device)
+                entropy_50 = torch.tensor(float("nan"), device=current_device)
+                entropy_75 = torch.tensor(float("nan"), device=current_device)
+
+        entropy_iqr = entropy_75 - entropy_25
+
+        entropy_stats = {
+            "entropy_mean": mean_entropy,
+            "entropy_std": entropy_std,
+            "entropy_min": entropy_min,
+            "entropy_max": entropy_max,
+            "entropy_p25": entropy_25,
+            "entropy_p50": entropy_50,
+            "entropy_p75": entropy_75,
+            "entropy_iqr": entropy_iqr,
+        }
+
+        for stat_name, stat_tensor in entropy_stats.items():
+            final_value = float("nan")  # Default to NaN
+            if torch.is_tensor(stat_tensor):
+                if stat_tensor.numel() > 0:
+                    # Ensure stat_tensor is on the correct device for gather if not already
+                    # gather_for_metrics usually expects tensors on the accelerator's device.
+                    # However, the input `per_token_entropy` defines the device context here.
+                    # The gather operation itself handles device placement if configured correctly in AcceleratorManager.
+                    tensor_to_gather = (
+                        stat_tensor.unsqueeze(0)
+                        if stat_tensor.ndim == 0
+                        else stat_tensor
+                    )
+                    gathered_tensor = self.accelerator_manager.gather_for_metrics(
+                        tensor_to_gather
+                    )
+                    if gathered_tensor.numel() > 0:
+                        final_value = gathered_tensor.float().nanmean().item()
+                # If stat_tensor is an empty tensor, final_value remains float('nan')
+            elif isinstance(
+                stat_tensor, (float, int)
+            ):  # Handles pre-set NaN floats etc.
+                final_value = float(stat_tensor)
+
+            self.store_metric(mode, model_key, stat_name, final_value)
+
+    def log_step_metrics(self, phase: str, mode: str) -> None:
+        """
+        Aggregates metrics stored since the last log call.
+        For each metric (which is a list of scalars on the current process),
+        it gathers these lists from all processes, computes the mean and std
+        of the combined values, and logs them. Clears the stored lists afterwards.
+        """
         metrics_to_log = {}
-        for model_key in self._metrics[phase][mode].keys():
-            for metric_name, values in self._metrics[phase][mode][model_key].items():
+
+        if phase not in self._metrics or mode not in self._metrics[phase]:
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                logger.info(
+                    f"No metrics found for phase '{phase}', mode '{mode}'. Skipping log step."
+                )
+            return
+
+        for model_key in list(
+            self._metrics[phase][mode].keys()
+        ):  # Iterate over a copy of keys
+            if model_key not in self._metrics[phase][mode]:
+                continue
+
+            for metric_name in list(
+                self._metrics[phase][mode][model_key].keys()
+            ):  # Iterate over a copy of keys
+                values = self._metrics[phase][mode][model_key][metric_name]
+                numeric_values_for_log_message = []
+
                 if isinstance(values, list) and values:
                     try:
-                        metrics_to_log[f"{mode}/{phase}/{metric_name}_{model_key}"] = (
-                            torch.tensor(values).mean().item()
+                        numeric_values = [
+                            v
+                            for v in values
+                            if isinstance(v, (int, float))
+                            and not (
+                                isinstance(v, float) and torch.isnan(torch.tensor(v))
+                            )
+                        ]
+                        numeric_values_for_log_message = numeric_values
+
+                        if not numeric_values:
+                            if self.accelerator_manager.get_state_property(
+                                "is_main_process"
+                            ):
+                                logger.warning(
+                                    f"All values for metric '{metric_name}' (model '{model_key}', phase '{phase}', mode '{mode}') are NaN or non-numeric. Logging NaN."
+                                )
+                            log_key = f"{phase}/{mode}/{model_key}/{metric_name}"
+                            metrics_to_log[log_key] = float("nan")
+                            self._metrics[phase][mode][model_key][metric_name] = []
+                            continue
+
+                        # Create tensor using default device. Accelerate's gather_for_metrics should handle it.
+                        all_values_tensor = torch.tensor(
+                            numeric_values, dtype=torch.float32
                         )
+                        gathered_values_tensor = (
+                            self.accelerator_manager.gather_for_metrics(
+                                all_values_tensor
+                            )
+                        )
+
+                        if gathered_values_tensor.numel() > 0:
+                            final_mean = gathered_values_tensor.float().nanmean().item()
+                            log_key = f"{phase}/{mode}/{model_key}/{metric_name}"
+                            metrics_to_log[log_key] = final_mean
+
+                            if gathered_values_tensor.numel() > 1:
+                                final_std = gathered_values_tensor.float().std().item()
+                                metrics_to_log[f"{log_key}_std"] = final_std
+                        else:
+                            log_key = f"{phase}/{mode}/{model_key}/{metric_name}"
+                            metrics_to_log[log_key] = float("nan")
+                            if self.accelerator_manager.get_state_property(
+                                "is_main_process"
+                            ):
+                                logger.warning(
+                                    f"Gathered tensor for metric '{log_key}' is empty after filtering. Logging NaN."
+                                )
+
                     except Exception as e:
-                        logger.warning(
-                            f"Could not compute mean for metric '{metric_name}' in model '{model_key}'. Values: {values}. Error: {e}"
-                        )
-                    # Clear the list for the next logging interval
-                    if isinstance(values, list):
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.warning(
+                                f"Could not compute mean/std for metric '{metric_name}' (model '{model_key}', phase '{phase}', mode '{mode}'). "
+                                f"Values on this rank (pre-gather, numeric-filtered): {numeric_values_for_log_message}. Error: {e}",
+                                exc_info=True,
+                            )
+                    finally:
                         self._metrics[phase][mode][model_key][metric_name] = []
 
-        # Merge with direct step data (losses, LRs)
-        metrics_to_log.update(self._metrics[phase][mode])
-
-        # Log to WandB
-        self.accelerator_manager.log(metrics_to_log)
+        if self.accelerator_manager.get_state_property("is_main_process"):
+            if metrics_to_log:
+                current_step = self.global_step_callback()
+                self.accelerator_manager.log(metrics_to_log, step=current_step)
+            else:
+                logger.info(
+                    f"No metrics to log for phase '{phase}', mode '{mode}' at step {self.global_step_callback()}."
+                )
 
     def log_evaluation_metrics(self, eval_metrics: dict[str, Any]) -> None:
-        """Logs pre-aggregated evaluation metrics (likely calculated in Trainer.evaluate). Logs using accelerator_manager.log. Clears the stored lists for 'eval' mode."""
-        # Log to WandB
-        self.accelerator_manager.log(eval_metrics)
+        """Logs pre-aggregated evaluation metrics. Clears stored 'eval' mode metrics."""
+        current_step = self.global_step_callback()  # Get current step for logging
+        if self.accelerator_manager.get_state_property("is_main_process"):
+            if eval_metrics:
+                self.accelerator_manager.log(eval_metrics, step=current_step)
+            else:
+                logger.info(
+                    f"No evaluation metrics provided to log at step {current_step}."
+                )
 
-        # Clear the stored lists for the next logging interval
-        self._clear_metrics("eval")
+        # Clear any metrics that might have been stored with mode="eval" across all phases.
+        self._clear_metrics(mode_to_clear="eval")
+
+    def _clear_metrics(
+        self, phase_to_clear: str | None = None, mode_to_clear: str | None = None
+    ) -> None:
+        """
+        Clears stored metrics.
+        Can clear for a specific phase, a specific mode, or a combination.
+        If phase_to_clear is None, iterates through all phases.
+        If mode_to_clear is None, iterates through all modes in selected phases.
+        """
+        phases_to_iterate = (
+            [phase_to_clear] if phase_to_clear else list(self._metrics.keys())
+        )
+
+        for phase in phases_to_iterate:
+            if phase not in self._metrics:
+                continue
+
+            modes_to_iterate = (
+                [mode_to_clear] if mode_to_clear else list(self._metrics[phase].keys())
+            )
+
+            for mode in modes_to_iterate:
+                if mode not in self._metrics[phase]:
+                    continue
+
+                for model_key in list(self._metrics[phase][mode].keys()):
+                    if model_key not in self._metrics[phase][mode]:
+                        continue  # Should be redundant
+                    for metric_name in list(
+                        self._metrics[phase][mode][model_key].keys()
+                    ):
+                        # Check if it's actually a list, though store_metric should ensure this
+                        if isinstance(
+                            self._metrics[phase][mode][model_key].get(metric_name), list
+                        ):
+                            self._metrics[phase][mode][model_key][metric_name] = []
+
+        if self.accelerator_manager.get_state_property("is_main_process"):
+            log_msg = "Cleared metrics"
+            if phase_to_clear:
+                log_msg += f" for phase: {phase_to_clear}"
+            if mode_to_clear:
+                log_msg += f" for mode: {mode_to_clear}"
+            if not phase_to_clear and not mode_to_clear:
+                log_msg += " (all)"
+            logger.debug(log_msg)
+
+    def get_latest_metric(self, mode: str, model_key: str, metric_name: str) -> Any:
+        """
+        Retrieves the latest value stored for a specific metric.
+
+        Args:
+            mode: The mode (e.g., "train", "eval").
+            model_key: The key for the model/component.
+            metric_name: The name of the metric.
+
+        Returns:
+            The latest metric value, or float('nan') if not found or empty.
+        """
+        phase = self.global_phase_callback()
+        try:
+            metric_list = self._metrics[phase][mode][model_key][metric_name]
+            if metric_list:
+                return metric_list[-1]  # Return the last appended value
+            else:
+                logger.debug(
+                    f"Metric list empty for {phase}/{mode}/{model_key}/{metric_name}"
+                )
+                return float("nan")
+        except KeyError:
+            logger.debug(f"Metric not found: {phase}/{mode}/{model_key}/{metric_name}")
+            return float("nan")
 
 
 # MetricsLogger

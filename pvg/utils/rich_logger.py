@@ -1,10 +1,10 @@
 import random
-import torch
 
+import torch
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from rich.panel import Panel
 
 
 def is_rich_available() -> bool:
@@ -21,7 +21,7 @@ def print_prompt_completions_sample(
     completions: list[str],
     rewards: dict[str, list[float]],
     step: int,
-    num_samples: int = None,
+    num_samples: int | None = None,
 ) -> None:
     """
     Print out a sample of model completions to the console with multiple reward metrics.
@@ -78,7 +78,7 @@ def print_prompt_completions_sample(
         if num_samples >= len(prompts):
             num_samples = None
         elif num_samples <= 0:
-            return
+            raise ValueError("num_samples must be greater than 0")
 
     # Subsample data if num_samples is specified
     if num_samples is not None:
@@ -125,7 +125,7 @@ def print_prompt_completions_sample_verifier(
     if not is_rich_available():
         raise ImportError("Function requires `rich`. Install with `pip install rich`.")
 
-    console = Console()
+    console = Console(width=200)
     table = Table(
         show_header=True,
         header_style="bold white",
@@ -169,6 +169,87 @@ def print_prompt_completions_sample_verifier(
             f"{h_score:.3f}",
             f"{i_score:.3f}",
             ground_truth,
+        )
+        if i != indices[-1]:  # Add separator if not the last row
+            table.add_section()
+
+    panel = Panel(table, expand=True, border_style="bold white")
+    console.print(panel)
+
+
+def print_prompt_completions_sample_provers(
+    problem_ids: list[str],
+    honest_solutions: list[str],
+    sneaky_solutions: list[str],
+    honest_scores: list[float] | torch.Tensor,
+    sneaky_scores: list[float] | torch.Tensor,
+    correctness_scores: list[float] | torch.Tensor,
+    step: int,
+    num_samples: int | None = None,
+) -> None:
+    """
+    Print out a sample of prover outputs to the console.
+
+    Displays problem IDs, honest solutions, sneaky solutions, and their respective scores.
+    Requires the `rich` library.
+
+    Args:
+        problem_ids (`list[str]`): List of problem identifiers.
+        honest_solutions (`list[str]`): List of solutions from the honest prover.
+        sneaky_solutions (`list[str]`): List of solutions from the sneaky prover.
+        honest_scores (`list[float]` or `torch.Tensor`): Predicted scores for honest solutions.
+        sneaky_scores (`list[float]` or `torch.Tensor`): Predicted scores for sneaky solutions.
+        step (`int`): Current training step number.
+        num_samples (`int` or `None`, *optional*, defaults to `None`): Number of random samples.
+    """
+    if not is_rich_available():
+        raise ImportError("Function requires `rich`. Install with `pip install rich`.")
+
+    console = Console(width=200)  # Adjust width as needed
+    table = Table(
+        show_header=True,
+        header_style="bold white",
+        expand=True,
+        title=f"Prover Samples (Step {step})",
+    )
+
+    # Add columns
+    table.add_column("Problem ID", style="dim white", ratio=1, overflow="fold")
+    table.add_column("Honest Solution", style="bright_yellow", ratio=5, overflow="fold")
+    table.add_column("Sneaky Solution", style="bright_cyan", ratio=5, overflow="fold")
+    table.add_column("Honest Score", style="bright_green", justify="right", ratio=1)
+    table.add_column("Sneaky Score", style="bright_magenta", justify="right", ratio=1)
+    table.add_column(
+        "Correctness (role conditioned)", style="bright_blue", justify="right", ratio=1
+    )
+
+    # Convert tensors to lists if necessary
+    if isinstance(honest_scores, torch.Tensor):
+        honest_scores = honest_scores.detach().cpu().tolist()
+    if isinstance(sneaky_scores, torch.Tensor):
+        sneaky_scores = sneaky_scores.detach().cpu().tolist()
+
+    num_items = len(problem_ids)
+    indices = list(range(num_items))
+
+    # Subsample data if num_samples is specified
+    if num_samples is not None and 0 < num_samples < num_items:
+        indices = random.sample(indices, num_samples)
+
+    for i in indices:
+        p_id = problem_ids[i]
+        h_sol = honest_solutions[i]
+        s_sol = sneaky_solutions[i]
+        h_score = honest_scores[i]
+        s_score = sneaky_scores[i]
+        correctness_score = correctness_scores[i]
+        table.add_row(
+            Text(p_id),
+            Text(h_sol),
+            Text(s_sol),
+            f"{h_score:.3f}",
+            f"{s_score:.3f}",
+            f"{correctness_score:.3f}",
         )
         if i != indices[-1]:  # Add separator if not the last row
             table.add_section()

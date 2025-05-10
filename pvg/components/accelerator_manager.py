@@ -158,34 +158,6 @@ class AcceleratorManager:
         """Returns the accelerator for the given model key."""
         return self.accelerators[key]
 
-    def prepare_model(
-        self, model: torch.nn.Module, key: str, dataloader: DataLoader
-    ) -> torch.nn.Module:
-        """Prepares the model for the given key."""
-        self.accelerators[key].state.select_deepspeed_plugin(key)
-        logger.info(
-            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing model."
-        )
-        return self.accelerators[key].prepare(model, dataloader=dataloader)
-
-    def prepare_optimizer(
-        self, optimizer: torch.optim.Optimizer, key: str, dataloader: DataLoader
-    ) -> torch.optim.Optimizer:
-        """Prepares the optimizer for the given key."""
-        self.accelerators[key].state.select_deepspeed_plugin(key)
-        logger.info(
-            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing optimizer."
-        )
-        return self.accelerators[key].prepare(optimizer, dataloader=dataloader)
-
-    def prepare_dataloader(self, dataloader: DataLoader, key: str) -> DataLoader:
-        """Prepares the dataloader for the given key."""
-        self.accelerators[key].state.select_deepspeed_plugin(key)
-        logger.info(
-            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing dataloader."
-        )
-        return self.accelerators[key].prepare(dataloader)
-
     def prepare_components(
         self,
         key: str,
@@ -200,6 +172,16 @@ class AcceleratorManager:
         )
         return self.accelerators[key].prepare(model, optimizer, dataloader)
 
+    # Why separate method? For evaluation dataset.
+    def prepare_dataloader(self, dataloader: DataLoader, key: str) -> DataLoader:
+        """Prepares the dataloader for the given key."""
+        self.accelerators[key].state.select_deepspeed_plugin(key)
+        logger.info(
+            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing dataloader."
+        )
+        return self.accelerators[key].prepare(dataloader)
+
+    # Why separate method? Because we need to first prepare the dataloader, then calculate the number of training steps, then create the scheduler with this & prepare it.
     def prepare_scheduler(
         self, key: str, scheduler: torch.optim.lr_scheduler._LRScheduler
     ) -> torch.optim.lr_scheduler._LRScheduler:
@@ -223,6 +205,7 @@ class AcceleratorManager:
         """
         Calls unwrap_model on the primary accelerator (or appropriate one if needed, though usually primary is fine).
         """
+        self.accelerators[key].state.select_deepspeed_plugin(key)
         return self.accelerators[key].unwrap_model(model)
 
     def save_state(self, output_dir: str, key: str) -> None:
@@ -237,19 +220,25 @@ class AcceleratorManager:
         plugin = self.deepspeed_plugins[key]
         self.accelerators[key].load_state(input_dir, plugin)
 
-    def wait_for_everyone(self) -> None:
-        """Calls wait_for_everyone on the primary accelerator."""
-        self.primary_accelerator.wait_for_everyone()
+    def wait_for_everyone(self, key: str | None = None) -> None:
+        """Calls wait_for_everyone on the selected accelerator."""
+        if key is None:
+            self.primary_accelerator.wait_for_everyone()
+        else:
+            self.accelerators[key].wait_for_everyone()
 
     def gather_for_metrics(self, tensor: torch.Tensor, key: str) -> torch.Tensor:
         """Calls gather_for_metrics on the selected accelerator."""
         return self.accelerators[key].gather_for_metrics(tensor)
 
-    def get_state_property(self, property_name: str) -> Any:
+    def get_state_property(self, property_name: str, key: str | None = None) -> Any:
         """
         Accessor for shared state properties like num_processes, process_index, local_process_index, device, is_main_process, is_local_main_process, distributed_type. Uses the primary accelerator.
         """
-        return getattr(self.primary_accelerator, property_name)
+        if key is None:
+            return getattr(self.primary_accelerator, property_name)
+        else:
+            return getattr(self.accelerators[key], property_name)
 
     def select_plugin(self, key: str) -> DeepSpeedPlugin | None:
         """Explicitly selects the deepspeed plugin (might be needed by VLLMOrchestrator before gather)."""
@@ -283,4 +272,5 @@ class AcceleratorManager:
         self, parameters: Any, max_norm: float, key: str
     ) -> torch.Tensor:
         """Calls clip_grad_norm_ on the specific accelerator."""
+        self.accelerators[key].state.select_deepspeed_plugin(key)
         return self.accelerators[key].clip_grad_norm_(parameters, max_norm)

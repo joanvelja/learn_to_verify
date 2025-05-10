@@ -18,6 +18,7 @@ from pvg.config.args import DatasetArgs
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from typing import Any, Callable, Literal
 import logging
+import copy
 from datasets import DatasetDict
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
@@ -166,10 +167,16 @@ class DataManager:
             collate_fn=prover_data_collator,
         )
 
-        self.dataloaders: dict[str, dict[str, DataLoader]] = {
+        self.dataloaders = {
             "provers": {
-                "train_dataloader": self.prover_train_dataloader,
-                "eval_dataloader": self.prover_eval_dataloader,
+                "honest_prover": {
+                    "train_dataloader": self.prover_train_dataloader,
+                    "eval_dataloader": self.prover_eval_dataloader,
+                },
+                "sneaky_prover": {
+                    "train_dataloader": copy.deepcopy(self.prover_train_dataloader),
+                    "eval_dataloader": copy.deepcopy(self.prover_eval_dataloader),
+                },
             }
         }
 
@@ -294,15 +301,21 @@ class DataManager:
                 self.dataloaders[phase][mode]["eval_dataloader"] = eval_dataloader
             elif phase == "provers":
                 train_dataloader = self.accelerator_manager.prepare_dataloader(
-                    self.dataloaders[phase]["train_dataloader"], key="honest_prover"
+                    self.dataloaders[phase]["honest_prover"]["train_dataloader"],
+                    key="honest_prover",
                 )
                 eval_dataloader = self.accelerator_manager.prepare_dataloader(
-                    self.dataloaders[phase]["eval_dataloader"], key="honest_prover"
+                    self.dataloaders[phase]["honest_prover"]["eval_dataloader"],
+                    key="honest_prover",
                 )
 
                 # Set the dataloaders in the dataloaders dict
-                self.dataloaders[phase]["train_dataloader"] = train_dataloader
-                self.dataloaders[phase]["eval_dataloader"] = eval_dataloader
+                self.dataloaders[phase]["honest_prover"][
+                    "train_dataloader"
+                ] = train_dataloader
+                self.dataloaders[phase]["honest_prover"][
+                    "eval_dataloader"
+                ] = eval_dataloader
 
     def make_verifier_datamix(self) -> None:
         """
