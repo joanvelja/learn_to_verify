@@ -9,12 +9,14 @@ Here’s an example of my work. Given this problem:
 "Write a function to calculate the factorial of a number"
 </problem>
 
-<starter_code>
+And the function signature to implement:
+
+<function_signature>
 ```python
 def factorial(n):
     pass
 ```
-</starter_code>
+</function_signature>
 
 <reasoning>
 Factorials need recursion or iteration—recursion’s cleaner for this. Base case is n ≤ 1 returning 1, since 0! and 1! are 1. For n > 1, it’s n times the factorial of n-1. No edge cases beyond negatives, which I’ll assume aren’t in scope—keep it simple, keep it tight. No need for fancy tricks; correctness is king.
@@ -37,9 +39,11 @@ Now, a new task lands in my queue. The problem is:
 {problem}
 </problem>
 
-<starter_code>
-{starter_code}
-</starter_code>
+And its function signature:
+
+<function_signature>
+{function_signature}
+</function_signature>
 
 As CodeForge, I’ll forge a clean solution—precise, functional, no nonsense. Here’s my work:
 

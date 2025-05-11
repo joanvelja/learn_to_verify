@@ -44,9 +44,7 @@ def extract_placeholders(format_string):
 
 
 class Formatter:
-    def __init__(
-        self, tokenizer: AutoTokenizer
-    ):
+    def __init__(self, tokenizer: AutoTokenizer):
         self.tokenizer = tokenizer
 
         # --- Prompt Templates ---
@@ -68,18 +66,18 @@ class Formatter:
         # --- Template Args ---
         self.template_args: dict[str, dict[str, set[str]]] = {
             "honest_prover": {
-                "coding": extract_placeholders(
-                    BASE_HONEST_CODE
+                "coding": set(
+                    extract_placeholders(BASE_HONEST_CODE)
                 ),  # get the format args from the prompt
-                "math": extract_placeholders(BASE_HONEST_MATH),
+                "math": set(extract_placeholders(BASE_HONEST_MATH)),
             },
             "sneaky_prover": {
-                "coding": extract_placeholders(BASE_SNEAKY_CODE),
-                "math": extract_placeholders(BASE_SNEAKY_MATH),
+                "coding": set(extract_placeholders(BASE_SNEAKY_CODE)),
+                "math": set(extract_placeholders(BASE_SNEAKY_MATH)),
             },
             "verifier": {
-                "coding": extract_placeholders(BASE_VERIFIER_CODE),
-                "math": extract_placeholders(BASE_VERIFIER_MATH),
+                "coding": set(extract_placeholders(BASE_VERIFIER_CODE)),
+                "math": set(extract_placeholders(BASE_VERIFIER_MATH)),
             },
         }
 
