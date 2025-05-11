@@ -266,10 +266,10 @@ class DataGenerator:
     ) -> list[dict[str, Any]]:
         """Runs the asynchronous generation and parsing pipeline for a list of problems."""
         logger.info(f"[{split_name}] Starting generation pipeline for {len(problems)} problems...")
-        logger.info(f"[{split_name}] problems[0]: {problems[0]}")
         self.processing_status = {
             p["id"]: {
                 "problem": p["problem"],
+                "function_signature": p["function_signature"] if "function_signature" in p else None,
                 "status": "pending_honest_gen",
                 "honest_raw": None,
                 "honest_parsed": None,
@@ -383,8 +383,8 @@ class DataGenerator:
                                         "problem": self.processing_status[pid][
                                             "problem"
                                         ],
-                                        "starter_code": self.processing_status[pid][
-                                            "starter_code"
+                                        "function_signature": self.processing_status[pid][
+                                            "function_signature"
                                         ],
                                     },
                                 )

@@ -240,7 +240,7 @@ class ProverTrainer(ProverTrainerBase):
         #     ),
         # }
         raw_prompts_local = [
-            x["question"] for x in batch
+            (x["question"], x["starter_code"]) for x in batch
         ]  # List of strings, no devicing # TODO: This is not dataset specific!
         logger.info(f"Raw prompts local: {raw_prompts_local}")
 
@@ -262,7 +262,7 @@ class ProverTrainer(ProverTrainerBase):
             self.formatter.make_formatted_prompt(
                 model_key=hp_model_key,
                 dataset_type=self.dataset_type,
-                template_args={"problem": rp},
+                template_args={"problem": rp[0], "function_signature": rp[1]},
             )
             for rp in raw_prompts_local
         ]
