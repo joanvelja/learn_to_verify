@@ -267,6 +267,8 @@ class ProverTrainer(ProverTrainerBase):
             for rp in raw_prompts_local
         ]
 
+        logger.info(f"HP prompt texts local: {hp_prompt_texts_local}")
+
         tokenized_hp_prompts = self.tokenizer(
             hp_prompt_texts_local,
             return_tensors="pt",
@@ -277,12 +279,25 @@ class ProverTrainer(ProverTrainerBase):
         hp_prompt_ids_local = tokenized_hp_prompts.input_ids
         hp_prompt_mask_local = tokenized_hp_prompts.attention_mask
 
+        logger.info(f"HP prompt ids local: {hp_prompt_ids_local}")
+        logger.info(f"HP prompt mask local: {hp_prompt_mask_local}")
+
         all_hp_prompt_texts_gathered_for_vllm = None
         if self.accelerator_manager.get_state_property("is_main_process"):
             logger.info("Gathering honest prover prompts from all processes")
             gathered_nested = gather_object(
                 hp_prompt_texts_local
             )  # gather_object is from accelerate
+
+            logger.info(f"Gathered nested: {gathered_nested}")
+            logger.info(f"Gathered nested type: {type(gathered_nested)}")   
+            logger.info(f"Gathered nested length: {len(gathered_nested)}")
+            logger.info(f"Gathered nested first item: {gathered_nested[0]}")
+            logger.info(f"Gathered nested first item type: {type(gathered_nested[0])}")
+            logger.info(f"Gathered nested first item length: {len(gathered_nested[0])}")
+            logger.info(f"Gathered nested first item first item: {gathered_nested[0][0]}")
+            logger.info(f"Gathered nested first item first item type: {type(gathered_nested[0][0])}")
+            
             all_hp_prompt_texts_gathered_for_vllm = [
                 item for sublist in gathered_nested for item in sublist
             ]

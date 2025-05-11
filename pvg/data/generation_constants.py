@@ -48,13 +48,15 @@ DEFAULT_STOP_SEQUENCES_VERIFIER: list[str] = [
 ]
 
 # Terminal states for processing
+# --- Terminal states for processing ---
 TERMINAL_STATUSES: list[str] = [
     "completed",
-    "failed_honest_gen",
+    "failed_honest_prover_gen",
     "failed_honest_parse",
-    "failed_sneaky_gen",
+    "failed_sneaky_prover_gen",
     "failed_sneaky_parse",
     "failed_prompt_formatting_honest",
     "failed_prompt_formatting_sneaky",
     "failed_sneaky_gen_dependency",
+    "failed_timeout",
 ]

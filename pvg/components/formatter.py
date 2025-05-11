@@ -119,9 +119,11 @@ class Formatter:
         dataset_type: Literal["coding", "math"],
         template_args: dict[str, Any],
     ) -> str:
+
         user_content_template = self.prompt_templates[model_key][dataset_type]
         required_args_for_template = self.template_args[model_key][dataset_type]
         provided_args = set(template_args.keys())
+        
         if not required_args_for_template.issubset(provided_args):
             missing = required_args_for_template - provided_args
             raise ValueError(
