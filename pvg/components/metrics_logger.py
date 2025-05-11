@@ -244,7 +244,7 @@ class MetricsLogger:
                         else stat_tensor
                     )
                     gathered_tensor = self.accelerator_manager.gather_for_metrics(
-                        tensor_to_gather
+                        tensor_to_gather, key=model_key
                     )
                     if gathered_tensor.numel() > 0:
                         final_value = gathered_tensor.float().nanmean().item()
@@ -308,13 +308,16 @@ class MetricsLogger:
                             self._metrics[phase][mode][model_key][metric_name] = []
                             continue
 
-                        # Create tensor using default device. Accelerate's gather_for_metrics should handle it.
+                        # Create tensor on the correct device (same as accelerator)
+                        device = self.accelerator_manager.get_state_property(
+                            "device", key=model_key
+                        )
                         all_values_tensor = torch.tensor(
-                            numeric_values, dtype=torch.float32
+                            numeric_values, dtype=torch.float32, device=device
                         )
                         gathered_values_tensor = (
                             self.accelerator_manager.gather_for_metrics(
-                                all_values_tensor
+                                all_values_tensor, key=model_key
                             )
                         )
 

@@ -125,6 +125,41 @@ class ProverTrainer(ProverTrainerBase):
         self._buffered_inputs = [None] * self.args.gradient_accumulation_steps
         self._has_logged_prover_samples_this_eval = False
 
+    def _to_dict(self, obj):
+        """Convert an object to a dictionary if it's not already one.
+
+        Args:
+            obj: The object to convert
+
+        Returns:
+            dict: Dictionary representation of the object
+        """
+        if isinstance(obj, dict):
+            return obj
+
+        # For dataclasses, use dataclasses.asdict()
+        if hasattr(obj, "__dataclass_fields__"):
+            import dataclasses
+
+            # Extract only fields relevant to the vLLM server
+            obj_dict = dataclasses.asdict(obj)
+            vllm_relevant_fields = [
+                "max_tokens",
+                "temperature",
+                "top_p",
+                "top_k",
+                "repetition_penalty",
+                "frequency_penalty",
+                "min_p",
+                "stop_sequences",
+                "logprobs",
+            ]
+
+            # Create a dictionary with only the fields that exist in the object
+            return {field: obj_dict[field] for field in vllm_relevant_fields}
+        # Fallback for non-dataclass objects
+        return vars(obj)
+
     def _prepare_batch(
         self, batch: dict[str, torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -240,7 +275,7 @@ class ProverTrainer(ProverTrainerBase):
         #     ),
         # }
         raw_prompts_local = [
-            (x["question"], x["starter_code"]) for x in batch
+            (x["question"], x["starter_code"], x["problem_id"]) for x in batch
         ]  # List of strings, no devicing # TODO: This is not dataset specific!
         logger.info(f"Raw prompts local: {raw_prompts_local}")
 
@@ -283,27 +318,37 @@ class ProverTrainer(ProverTrainerBase):
         logger.info(f"HP prompt mask local: {hp_prompt_mask_local}")
 
         all_hp_prompt_texts_gathered_for_vllm = None
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.info("Gathering honest prover prompts from all processes")
-            gathered_nested = gather_object(
-                hp_prompt_texts_local
-            )  # gather_object is from accelerate
+        # if self.accelerator_manager.get_state_property("is_main_process"):
+        logger.info("Gathering honest prover prompts from all processes")
+        gathered_nested = gather_object(
+            hp_prompt_texts_local
+        )  # gather_object is from accelerate
 
-            logger.info(f"Gathered nested: {gathered_nested}")
-            logger.info(f"Gathered nested type: {type(gathered_nested)}")   
-            logger.info(f"Gathered nested length: {len(gathered_nested)}")
-            logger.info(f"Gathered nested first item: {gathered_nested[0]}")
-            logger.info(f"Gathered nested first item type: {type(gathered_nested[0])}")
-            logger.info(f"Gathered nested first item length: {len(gathered_nested[0])}")
-            logger.info(f"Gathered nested first item first item: {gathered_nested[0][0]}")
-            logger.info(f"Gathered nested first item first item type: {type(gathered_nested[0][0])}")
-            
-            all_hp_prompt_texts_gathered_for_vllm = [
-                item for sublist in gathered_nested for item in sublist
-            ]
+        # logger.info(f"Gathered nested: {gathered_nested}")
+        # logger.info(f"Gathered nested type: {type(gathered_nested)}")
+        # logger.info(f"Gathered nested length: {len(gathered_nested)}")
+        # logger.info(f"Gathered nested first item: {gathered_nested[0]}")
+        # logger.info(f"Gathered nested first item type: {type(gathered_nested[0])}")
+        # logger.info(f"Gathered nested first item length: {len(gathered_nested[0])}")
+        # logger.info(f"Gathered nested first item first item: {gathered_nested[0][0]}")
+        # logger.info(f"Gathered nested first item first item type: {type(gathered_nested[0][0])}")
 
-        honest_gen_args = self.args
+        all_hp_prompt_texts_gathered_for_vllm = [item for item in gathered_nested]
 
+        honest_gen_args = self._to_dict(self.args.vllm_honest_prover)
+
+        logger.info(f"Honest gen args: {honest_gen_args}")
+        logger.info(
+            f"All hp prompt texts gathered for vllm: {all_hp_prompt_texts_gathered_for_vllm}"
+        )
+        logger.info(f"Number of prompts: {len(all_hp_prompt_texts_gathered_for_vllm)}")
+        logger.info(f"Number of generations: {self.rl_config.num_generations}")
+        logger.info(
+            f"Number of processes: {self.accelerator_manager.get_state_property('num_processes')}"
+        )
+        logger.info(f"Number of local raw prompts: {num_local_raw_prompts}")
+
+        logger.info("Generating completions...")
         hp_completion_ids_local_lol, hp_completion_texts_local, _ = (
             self.vllm_orchestrator._generate_and_broadcast(
                 client_key=hp_model_key,
@@ -356,14 +401,9 @@ class ProverTrainer(ProverTrainerBase):
         sp_prompt_ids_local = tokenized_sp_prompts.input_ids
         sp_prompt_mask_local = tokenized_sp_prompts.attention_mask
 
-        all_sp_prompt_texts_gathered_for_vllm = None
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            gathered_nested = gather_object(sp_prompt_texts_local)
-            all_sp_prompt_texts_gathered_for_vllm = [
-                item for sublist in gathered_nested for item in sublist
-            ]
+        all_sp_prompt_texts_gathered_for_vllm = gather_object(sp_prompt_texts_local)
 
-        sneaky_gen_args = self.args.vllm_sneaky_prover
+        sneaky_gen_args = self._to_dict(self.args.vllm_sneaky_prover)
 
         sp_completion_ids_local_lol, sp_completion_texts_local, _ = (
             self.vllm_orchestrator._generate_and_broadcast(
@@ -435,14 +475,10 @@ class ProverTrainer(ProverTrainerBase):
             )
         # Total verifier prompts locally = 2 * num_local_raw_prompts
 
-        all_verifier_prompt_texts_gathered_for_vllm = None
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            gathered_nested = gather_object(verifier_prompt_texts_local_pairs)
-            all_verifier_prompt_texts_gathered_for_vllm = [
-                item for sublist in gathered_nested for item in sublist
-            ]
-
-        verifier_gen_args = self.args.vllm_verifier
+        all_verifier_prompt_texts_gathered_for_vllm = gather_object(
+            verifier_prompt_texts_local_pairs
+        )
+        verifier_gen_args = self._to_dict(self.args.vllm_verifier)
 
         if verifier_mode != "regressor":
             # _generate_and_broadcast for verifier returns *all* results to *all* processes
@@ -462,8 +498,6 @@ class ProverTrainer(ProverTrainerBase):
             verifier_scores_all = self.vllm_orchestrator.classify_and_broadcast(
                 client_key=verifier_model_key,
                 prompts=all_verifier_prompt_texts_gathered_for_vllm,
-                raw_prompts_len_local=num_local_raw_prompts
-                * 2,  # Due to 2 pairs of prompts
             )
 
         rewards_all_flat_list = None
@@ -569,18 +603,10 @@ class ProverTrainer(ProverTrainerBase):
         logger.info("Completed slicing. Preparing model inputs and logging metrics...")
 
         # --- Logging Prover Samples (during evaluation for the first batch) ---
-        is_eval_context = not self.model_manager.get_model("honest_prover").training
-        if (
-            is_eval_context
-            and self.is_main
-            and not self._has_logged_prover_samples_this_eval
-        ):
-
+        if self.is_main and self.state_tracker.step % 25 == 0:
             num_samples_to_log = 3
 
-            problem_ids_for_log = [
-                item.get("problem_id", f"p_{i}") for i, item in enumerate(batch)
-            ]
+            problem_ids_for_log = [item[2] for item in raw_prompts_local]
 
             honest_solutions_text = [
                 sol[1] if sol[0] else "Extraction Failed"
@@ -740,11 +766,7 @@ class ProverTrainer(ProverTrainerBase):
         """
         old_per_token_logps = None
         ref_per_token_logps = None
-        policy_model = (
-            self.honest_prover_model
-            if model_key == "honest_prover"
-            else self.sneaky_prover_model
-        )
+        policy_model = self.model_manager.get_model(model_key)
         ref_model = self.model_manager.get_ref_model(model_key)
 
         # Calculate old log probabilities if needed (num_iterations > 1)
@@ -1030,6 +1052,9 @@ class ProverTrainer(ProverTrainerBase):
                             - (ref_per_token_logps - per_token_logps)
                             - 1
                         )
+                    else:
+                        per_token_kl = None
+                        ref_per_token_logps = None
 
                     if self.args.training_honest_prover.apply_liger_kernel:
                         last_hidden_state = self._get_last_hidden_state(
@@ -1046,14 +1071,10 @@ class ProverTrainer(ProverTrainerBase):
                             completion_mask=completion_mask,
                             last_hidden_state=last_hidden_state,
                             advantages=prover_specific_data["advantages"],
-                            ref_per_token_logps=(
-                                ref_per_token_logps.to(device)
-                                if ref_per_token_logps is not None
-                                else None
-                            ),
+                            ref_per_token_logps=ref_per_token_logps,
                             old_per_token_logps=prover_specific_data[
                                 "old_per_token_logps"
-                            ].to(device),
+                            ],
                             model_key=prover_key,
                             mode=mode,
                         )
@@ -1062,14 +1083,10 @@ class ProverTrainer(ProverTrainerBase):
                             completion_mask=completion_mask,
                             old_per_token_logps=prover_specific_data[
                                 "old_per_token_logps"
-                            ].to(device),
+                            ],
                             per_token_logps=per_token_logps,
                             advantages=prover_specific_data["advantages"],
-                            per_token_kl=(
-                                per_token_kl.to(device)
-                                if per_token_kl is not None
-                                else None
-                            ),
+                            per_token_kl=per_token_kl,
                             mode=mode,
                             model_key=prover_key,
                         )

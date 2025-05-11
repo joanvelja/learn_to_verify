@@ -20,6 +20,7 @@ from accelerate.utils import broadcast_object_list
 from huggingface_hub import repo_exists
 from pvg.utils import url_exists
 import asyncio
+
 # from pvg.trainers.verifier_trainer import VerifierTrainer
 # from pvg.trainers.prover_trainer import ProverTrainer
 # TODO: Add other verifier trainers
@@ -132,15 +133,6 @@ class TrainingPhaseOrchestrator:
                         )
             self.accelerator_manager.wait_for_everyone()
 
-            #########################################################
-            ########## Joan : This is a hack to train the ###########
-            ################ provers for round 0. ###################
-            #########################################################
-            # TODO: Remove when running the full pipeline
-            self.state_tracker.increment_phase()  # WARNING: Done to bypass the training verifier phase for round 0
-            self._reset_state_for_new_phase()
-            self._run_prover_phase()
-
             logger.info(f"Starting training round {self.state_tracker.round}...")
             logger.info(
                 f"Training the {self.state_tracker.phase} model..."
@@ -175,20 +167,7 @@ class TrainingPhaseOrchestrator:
 
             # Phase 1: Verifier
             # Reset state for new phase : models, optimizers, schedulers
-            verifier_dataset_len = len(self.verifier_dataset_train)
             # For Round 0, assert the expected length based on your confirmation
-            if self.state_tracker.round == 0:
-                expected_len = 2500  # Based on your confirmation for round 0 data
-                assert (
-                    verifier_dataset_len <= expected_len
-                ), f"[H1 Check] VerifierDataset length is {verifier_dataset_len}, expected {expected_len} for round 0"
-            # if self.accelerator_manager.get_state_property(
-            #     property_name="is_main_process"
-            # ):
-            #     logger.info(
-            #         f"[DEBUG H1] VerifierDataset initialized for round {self.state_tracker.round}. len={verifier_dataset_len}"
-            #     )
-
             self._reset_state_for_new_phase()
 
             # Run Verifier phase
@@ -205,6 +184,9 @@ class TrainingPhaseOrchestrator:
 
             # Increment round
             self.state_tracker.increment_round()
+
+            # Generate new data for round i+1
+            self.data_generator.generate_current_round_data()
 
     def _reset_state_for_new_phase(self) -> None:
 
@@ -293,6 +275,14 @@ class TrainingPhaseOrchestrator:
                 )
             )  # separately, hopefully doesn't break anything
 
+            # If reference model is not None, prepare it
+            if self.model_manager.ref_models["verifier"] is not None:
+                self.model_manager.ref_models["verifier"] = (
+                    self.accelerator_manager.prepare_ref_model(
+                        key="verifier", model=self.model_manager.ref_models["verifier"]
+                    )
+                )
+
             self.optimizer_scheduler_manager._calculate_num_training_steps(
                 components[2]
             )  # Aware of the quirk that the scheduler wants a prepared dataloader to calculate the number of training steps
@@ -349,6 +339,14 @@ class TrainingPhaseOrchestrator:
                 ] = self.accelerator_manager.prepare_dataloader(
                     eval_dataloader, key=model_key
                 )
+                # If reference model is not None, prepare it
+                if self.model_manager.ref_models[model_key] is not None:
+                    self.model_manager.ref_models[model_key] = (
+                        self.accelerator_manager.prepare_ref_model(
+                            key=model_key,
+                            model=self.model_manager.ref_models[model_key],
+                        )
+                    )
                 self.optimizer_scheduler_manager._calculate_num_training_steps(
                     components[2]
                 )  # Aware of the quirk that the scheduler wants a prepared dataloader to calculate the number of training steps

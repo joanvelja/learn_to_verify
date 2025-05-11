@@ -125,20 +125,29 @@ def print_prompt_completions_sample_verifier(
     if not is_rich_available():
         raise ImportError("Function requires `rich`. Install with `pip install rich`.")
 
-    console = Console(width=200)
-    table = Table(
+    # Use a more reasonable console width
+    console = Console(width=120)
+
+    # Create a table for the scores and metadata
+    score_table = Table(
         show_header=True,
         header_style="bold white",
-        expand=True,
+        expand=False,
         title=f"Verifier Samples (Step {step})",
+        box=None,
     )
 
-    # Add columns - make column widths more flexible
-    table.add_column("Honest Prompt", style="bright_yellow", ratio=6, overflow="fold")
-    table.add_column("Injected Prompt", style="bright_cyan", ratio=6, overflow="fold")
-    table.add_column("Honest Score", style="bright_green", justify="right")
-    table.add_column("Injected Score", style="bright_magenta", justify="right")
-    table.add_column("Ground Truth", style="bold white", justify="center")
+    # Add columns for metadata with better proportions
+    score_table.add_column("Item", style="dim white", width=10)
+    score_table.add_column(
+        "Honest Score", style="bright_green", justify="right", width=12
+    )
+    score_table.add_column(
+        "Injected Score", style="bright_magenta", justify="right", width=12
+    )
+    score_table.add_column(
+        "Ground Truth", style="bright_blue", justify="center", width=15
+    )
 
     # Convert tensors to lists if necessary
     if isinstance(honest_scores, torch.Tensor):
@@ -163,18 +172,35 @@ def print_prompt_completions_sample_verifier(
         identical = are_identical[i]
         ground_truth = "Identical" if identical else "Honest > Injected"
 
-        table.add_row(
-            Text(h_prompt),
-            Text(i_prompt),
+        # Add scores to the score table
+        score_table.add_row(
+            f"Sample {i+1}",
             f"{h_score:.3f}",
             f"{i_score:.3f}",
             ground_truth,
         )
-        if i != indices[-1]:  # Add separator if not the last row
-            table.add_section()
 
-    panel = Panel(table, expand=True, border_style="bold white")
-    console.print(panel)
+        # Create a separate table for the prompts
+        prompt_table = Table(show_header=True, expand=False, box=None)
+        prompt_table.add_column("Honest Prompt", style="bright_yellow")
+        prompt_table.add_column("Injected Prompt", style="bright_cyan")
+
+        # Format the prompts for better readability
+        h_prompt_formatted = h_prompt.replace(
+            "\n", "\n  "
+        )  # Add indentation for readability
+        i_prompt_formatted = i_prompt.replace(
+            "\n", "\n  "
+        )  # Add indentation for readability
+
+        prompt_table.add_row(h_prompt_formatted, i_prompt_formatted)
+
+        # Print both tables with a separator between samples
+        console.print(score_table)
+        console.print(prompt_table)
+
+        if i != indices[-1]:  # Add separator if not the last row
+            console.print("─" * 120)
 
 
 def print_prompt_completions_sample_provers(
@@ -205,22 +231,30 @@ def print_prompt_completions_sample_provers(
     if not is_rich_available():
         raise ImportError("Function requires `rich`. Install with `pip install rich`.")
 
-    console = Console(width=200)  # Adjust width as needed
-    table = Table(
+    # Use a more reasonable console width
+    console = Console(width=120)
+
+    # Create two separate tables for better readability
+
+    # Table for metadata and scores
+    score_table = Table(
         show_header=True,
         header_style="bold white",
-        expand=True,
+        expand=False,
         title=f"Prover Samples (Step {step})",
+        box=None,
     )
 
-    # Add columns
-    table.add_column("Problem ID", style="dim white", ratio=1, overflow="fold")
-    table.add_column("Honest Solution", style="bright_yellow", ratio=5, overflow="fold")
-    table.add_column("Sneaky Solution", style="bright_cyan", ratio=5, overflow="fold")
-    table.add_column("Honest Score", style="bright_green", justify="right", ratio=1)
-    table.add_column("Sneaky Score", style="bright_magenta", justify="right", ratio=1)
-    table.add_column(
-        "Correctness (role conditioned)", style="bright_blue", justify="right", ratio=1
+    # Add columns with better proportions
+    score_table.add_column("Problem ID", style="dim white", width=10)
+    score_table.add_column(
+        "Honest Score", style="bright_green", justify="right", width=12
+    )
+    score_table.add_column(
+        "Sneaky Score", style="bright_magenta", justify="right", width=12
+    )
+    score_table.add_column(
+        "Correctness", style="bright_blue", justify="right", width=12
     )
 
     # Convert tensors to lists if necessary
@@ -228,6 +262,8 @@ def print_prompt_completions_sample_provers(
         honest_scores = honest_scores.detach().cpu().tolist()
     if isinstance(sneaky_scores, torch.Tensor):
         sneaky_scores = sneaky_scores.detach().cpu().tolist()
+    if isinstance(correctness_scores, torch.Tensor):
+        correctness_scores = correctness_scores.detach().cpu().tolist()
 
     num_items = len(problem_ids)
     indices = list(range(num_items))
@@ -243,16 +279,29 @@ def print_prompt_completions_sample_provers(
         h_score = honest_scores[i]
         s_score = sneaky_scores[i]
         correctness_score = correctness_scores[i]
-        table.add_row(
-            Text(p_id),
-            Text(h_sol),
-            Text(s_sol),
+
+        # Add scores to the score table
+        score_table.add_row(
+            str(p_id),
             f"{h_score:.3f}",
             f"{s_score:.3f}",
             f"{correctness_score:.3f}",
         )
-        if i != indices[-1]:  # Add separator if not the last row
-            table.add_section()
 
-    panel = Panel(table, expand=True, border_style="bold white")
-    console.print(panel)
+        # Create a separate table for the code solutions
+        sol_table = Table(show_header=True, expand=False, box=None)
+        sol_table.add_column("Honest Solution", style="bright_yellow")
+        sol_table.add_column("Sneaky Solution", style="bright_cyan")
+
+        # Format the solutions for better readability
+        h_sol_formatted = h_sol.replace("\n", "\n  ")  # Add indentation for readability
+        s_sol_formatted = s_sol.replace("\n", "\n  ")  # Add indentation for readability
+
+        sol_table.add_row(h_sol_formatted, s_sol_formatted)
+
+        # Print both tables with a separator between samples
+        console.print(score_table)
+        console.print(sol_table)
+
+        if i != indices[-1]:  # Add separator if not the last row
+            console.print("─" * 120)

@@ -95,7 +95,7 @@ class TrainingArgs:
         default=0.1, metadata={"help": "Max gradient norm for clipping."}
     )
     gradient_checkpointing: bool = field(
-        default=False,
+        default=True,
         metadata={"help": "Whether to use gradient checkpointing to save memory."},
     )
     # --- Liger Kernel Optimization ---
@@ -175,7 +175,7 @@ class VLLMServerArgs:
         default=-1,
         metadata={"help": "Top-k for sampling. -1 means no top-k filtering."},
     )
-    max_new_tokens: int = field(
+    max_tokens: int = field(
         default=512, metadata={"help": "Maximum number of new tokens to generate."}
     )
     repetition_penalty: float = field(

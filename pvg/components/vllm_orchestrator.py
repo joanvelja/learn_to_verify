@@ -255,7 +255,6 @@ class VLLMOrchestrator:
         self,
         client_key: Literal["verifier"],
         prompts: list[str],  # The gathered list of prompts from all processes
-        raw_prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
     ) -> list[float]:
         """
         Handles main process classification, logging interaction, broadcasting, and returning the full list.
@@ -282,7 +281,7 @@ class VLLMOrchestrator:
 
             # Classify kwargs
             classify_kwargs = {
-                "prompts": prompts,
+                "inputs": prompts,
             }
 
             # Call classify

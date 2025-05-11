@@ -325,7 +325,7 @@ class DataGenerator:
             "repetition_penalty": vllm_honest_config.repetition_penalty,
             "frequency_penalty": vllm_honest_config.frequency_penalty,
             "min_p": vllm_honest_config.min_p,
-            "max_tokens": vllm_honest_config.max_new_tokens,
+            "max_tokens": vllm_honest_config.max_tokens,
             "logprobs": None,
         }
 
@@ -337,7 +337,7 @@ class DataGenerator:
             "repetition_penalty": vllm_sneaky_config.repetition_penalty,
             "frequency_penalty": vllm_sneaky_config.frequency_penalty,
             "min_p": vllm_sneaky_config.min_p,
-            "max_tokens": vllm_sneaky_config.max_new_tokens,
+            "max_tokens": vllm_sneaky_config.max_tokens,
             "logprobs": None,
         }
 

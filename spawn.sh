@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:19:50
+#SBATCH --time=00:45:50
 #SBATCH --job-name=testing
 #SBATCH --output=spawn_testing/output/logs/testing.%j.out
 #SBATCH --error=spawn_testing/output/errors/testing.%j.err
@@ -77,13 +77,13 @@ VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid vllm new engine
 # --- NCCL Debugging ---
 # Set NCCL debug level. Options: WARN, INFO, TRACE
 # INFO is usually a good starting point for hangs.
-export NCCL_DEBUG=INFO
+# export NCCL_DEBUG=INFO
 # Optional: Enable logging for specific subsystems (e.g., COLL for collectives, NET for network)
-export NCCL_DEBUG_SUBSYS=ALL
+# export NCCL_DEBUG_SUBSYS=ALL
 export NCCL_TIMEOUT_SEC=7200
 # Optional: Useful for getting Python tracebacks on segfaults
-export PYTHONFAULTHANDLER=1
-export TORCH_DISTRIBUTED_DEBUG=DETAIL
+# export PYTHONFAULTHANDLER=1
+# export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
 
 
@@ -269,20 +269,20 @@ uv run --env-file .env accelerate launch \
     \
     --vllm_honest_prover.host "$VLLM_HOST" \
     --vllm_honest_prover.port "$VLLM_PORT_HONEST" \
-    --vllm_honest_prover.temperature 1.0 \
+    --vllm_honest_prover.temperature 0.7 \
     --vllm_honest_prover.top_p 0.95 \
     --vllm_honest_prover.frequency_penalty 0.05 \
     --vllm_honest_prover.min_p 0.05 \
-    --vllm_honest_prover.max_new_tokens 1152 \
+    --vllm_honest_prover.max_tokens 1152 \
     --vllm_honest_prover.stop_sequences '["</solution>"]' \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
     --vllm_sneaky_prover.port "$VLLM_PORT_SNEAKY" \
-    --vllm_sneaky_prover.temperature 1.0 \
+    --vllm_sneaky_prover.temperature 0.7 \
     --vllm_sneaky_prover.top_p 0.95 \
     --vllm_sneaky_prover.frequency_penalty 0.05 \
     --vllm_sneaky_prover.min_p 0.05 \
-    --vllm_sneaky_prover.max_new_tokens 1152 \
+    --vllm_sneaky_prover.max_tokens 1152 \
     --vllm_sneaky_prover.stop_sequences '["</triggering_condition>"]' \
     \
     --vllm_verifier.host "$VLLM_HOST" \
@@ -291,7 +291,7 @@ uv run --env-file .env accelerate launch \
     --vllm_verifier.top_p 0.95 \
     --vllm_verifier.frequency_penalty 0.05 \
     --vllm_verifier.min_p 0.05 \
-    --vllm_verifier.max_new_tokens 1152 \
+    --vllm_verifier.max_tokens 1152 \
     --vllm_verifier.stop_sequences '["</verdict>"]' \
     --vllm_verifier.logprobs 10 \
     \

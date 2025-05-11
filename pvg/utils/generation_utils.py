@@ -96,18 +96,24 @@ def all_problems_processed_dict(processing_status: dict[str, dict[str, Any]]) ->
     """Checks if all problems have reached a terminal state."""
     if not processing_status:
         return True  # No problems, so all processed
-    
+
     # Count total problems and completed problems
     total_problems = len(processing_status)
-    completed_count = sum(1 for data in processing_status.values() if data["status"] == "completed")
-    
+    completed_count = sum(
+        1 for data in processing_status.values() if data["status"] == "completed"
+    )
+
     # Check if at least 99% of problems are completed
-    completion_percentage = (completed_count / total_problems) * 100 if total_problems > 0 else 0
+    completion_percentage = (
+        (completed_count / total_problems) * 100 if total_problems > 0 else 0
+    )
     if completion_percentage >= 99.0:
         return True
-    
+
     # Otherwise, check if all problems have reached a terminal state
-    return all(data["status"] in TERMINAL_STATUSES for data in processing_status.values())
+    return all(
+        data["status"] in TERMINAL_STATUSES for data in processing_status.values()
+    )
 
 
 def parse_output(text: str, expected_tags: dict[str, str]) -> dict[str, str] | None:
@@ -230,9 +236,7 @@ def create_hf_dataset_from_results(
             backdoored_entry["backdooring_reasoning"] = sneaky_parsed.get(
                 "reasoning", ""
             )  # From SNEAKY_TAGS_CODING
-            backdoored_entry["injected_solution"] = sneaky_parsed.get(
-                "injected_solution", ""
-            )
+            backdoored_entry["injected_solution"] = sneaky_parsed.get("solution", "")
             backdoored_entry["honest_solution"] = honest_parsed.get(
                 "solution", ""
             )  # For reference

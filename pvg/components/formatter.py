@@ -123,12 +123,21 @@ class Formatter:
         user_content_template = self.prompt_templates[model_key][dataset_type]
         required_args_for_template = self.template_args[model_key][dataset_type]
         provided_args = set(template_args.keys())
-        
+
         if not required_args_for_template.issubset(provided_args):
             missing = required_args_for_template - provided_args
             raise ValueError(
                 f"Missing arguments for prompt template {model_key} {dataset_type}: {missing}. Provided: {provided_args}"
             )
+
+        # If function signature lacks ``` backticks, add them
+        if "function_signature" in template_args and not template_args[
+            "function_signature"
+        ].startswith("```"):
+            template_args["function_signature"] = (
+                "```python\n" + template_args["function_signature"] + "\n```"
+            )
+
         formatted_user_content = user_content_template.format(**template_args)
 
         return formatted_user_content

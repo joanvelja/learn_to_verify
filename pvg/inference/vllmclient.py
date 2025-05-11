@@ -145,7 +145,7 @@ class VLLMClient:
         max_tokens: int = 16,
         guided_decoding_regex: str | None = None,
         logprobs: int | None = None,
-        stop: list[str] | None = None,
+        stop_sequences: list[str] | None = None,
     ) -> list[list[str]] | tuple[list[list[str]], list[list[dict[int, float]]]]:
         """
         Generates model completions for the provided prompts.
@@ -188,7 +188,7 @@ class VLLMClient:
                 "max_tokens": max_tokens,
                 "guided_decoding_regex": guided_decoding_regex,
                 "logprobs": logprobs,
-                "stop": stop,
+                "stop": stop_sequences,
                 "frequency_penalty": frequency_penalty,
                 "presence_penalty": presence_penalty,
             },
