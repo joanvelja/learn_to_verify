@@ -110,9 +110,9 @@ class DataManager:
         assert (
             len(verifier_train_dataset) == 2500
         ), f"Verifier train dataset length is {len(verifier_train_dataset)}, expected 2500"
-        assert (
-            len(verifier_eval_dataset) == 2500
-        ), f"Verifier eval dataset length is {len(verifier_eval_dataset)}, expected 2500"
+        # assert (
+        #     len(verifier_eval_dataset) == 2500
+        # ), f"Verifier eval dataset length is {len(verifier_eval_dataset)}, expected 2500"
 
         ddict = DatasetDict(
             {

@@ -1,6 +1,6 @@
 from .accelerator_manager import AcceleratorManager
 from .vllm_orchestrator import VLLMOrchestrator
-from .data_generator import DataGenerator
+from .data_generator_async import DataGenerator
 from .data_manager import DataManager
 from .model_manager import ModelManager
 from .optimizer_manager import OptimizerSchedulerManager
