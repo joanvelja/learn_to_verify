@@ -248,11 +248,6 @@ class ProverTrainer(ProverTrainerBase):
             len(raw_prompts_local) == self.args.per_device_train_batch_size
         ), f"Raw prompts local length mismatch: {len(raw_prompts_local)} != {self.args.per_device_train_batch_size}"
 
-        assert (
-            len(raw_prompts_local)
-            == self.args.per_device_train_batch_size * self.rl_config.num_generations
-        ), f"Raw prompts local length mismatch: {len(raw_prompts_local)} != {self.args.per_device_train_batch_size * self.rl_config.num_generations}"
-
         num_local_raw_prompts = len(
             raw_prompts_local
         )  # These are not unique! They are repeated num_generations times [::self.args.num_generations]

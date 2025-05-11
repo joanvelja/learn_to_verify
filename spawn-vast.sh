@@ -128,6 +128,12 @@ fi
 
 cd /root/learn_to_verify/pvg
 
+# --- Launch vLLM Servers ---
+# Calculate tensor parallel size for each server based on assigned GPUs
+NUM_GPUS_PER_SERVER_HONEST=$(echo $VLLM_HONEST_GPUS | awk -F',' '{print NF}')
+NUM_GPUS_PER_SERVER_SNEAKY=$(echo $VLLM_SNEAKY_GPUS | awk -F',' '{print NF}')
+NUM_GPUS_PER_SERVER_VERIFIER=$(echo $VLLM_VERIFIER_GPUS | awk -F',' '{print NF}')
+
 CURRENT_PATH=$(pwd)
 VLLM_SERVE_SCRIPT="${CURRENT_PATH}/inference/vllm_serve.py"
 

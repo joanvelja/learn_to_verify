@@ -114,7 +114,7 @@ class DataGenerator:
 
         self.tokenizer = self.data_manager.get_tokenizer()
         self.formatter = Formatter(
-            tokenizer=self.tokenizer, dataset_type=self.dataset_type
+            tokenizer=self.tokenizer
         )
 
         self.processing_status: dict[str, dict[str, Any]] = {}
@@ -265,10 +265,11 @@ class DataGenerator:
         self, problems: list[dict[str, str]], split_name: str
     ) -> list[dict[str, Any]]:
         """Runs the asynchronous generation and parsing pipeline for a list of problems."""
+        logger.info(f"[{split_name}] Starting generation pipeline for {len(problems)} problems...")
+        logger.info(f"[{split_name}] problems[0]: {problems[0]}")
         self.processing_status = {
             p["id"]: {
                 "problem": p["problem"],
-                "starter_code": p["starter_code"],
                 "status": "pending_honest_gen",
                 "honest_raw": None,
                 "honest_parsed": None,
@@ -282,6 +283,7 @@ class DataGenerator:
             }
             for p in problems
         }
+
         total_problems = len(problems)
         if total_problems == 0:
             logger.info(f"[{split_name}] No problems to process.")

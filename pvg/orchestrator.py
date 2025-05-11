@@ -19,7 +19,7 @@ from pvg.trainers.prover_trainer import ProverTrainer
 from accelerate.utils import broadcast_object_list
 from huggingface_hub import repo_exists
 from pvg.utils import url_exists
-
+import asyncio
 # from pvg.trainers.verifier_trainer import VerifierTrainer
 # from pvg.trainers.prover_trainer import ProverTrainer
 # TODO: Add other verifier trainers
@@ -64,10 +64,7 @@ class TrainingPhaseOrchestrator:
         if self.accelerator_manager.get_state_property(property_name="is_main_process"):
             self.data_generator = DataGenerator(
                 self.args,
-                self.model_manager,
-                self.optimizer_scheduler_manager,
                 self.data_manager,
-                self.metrics_logger,
                 self.vllm_orchestrator,
                 self.state_tracker,
             )
@@ -100,6 +97,8 @@ class TrainingPhaseOrchestrator:
         logger.info(f"Current phase: {self.state_tracker.phase}")
         logger.info("-" * 100)
 
+        loop = asyncio.get_event_loop()
+
         for round_num in range(self.args.num_rounds):
             # Make Verifier datamix for current round
             # John: Technically, the datamix could be made here with whatever prover model is currently loaded for inference.
@@ -124,7 +123,9 @@ class TrainingPhaseOrchestrator:
                             repo_type="dataset",
                         )
                     ):
-                        self.data_generator.generate_current_round_data()
+                        loop.run_until_complete(
+                            self.data_generator.generate_current_round_data()
+                        )
                     else:
                         logger.info(
                             f"Skipping datamix creation for round {self.state_tracker.round} because it already exists."

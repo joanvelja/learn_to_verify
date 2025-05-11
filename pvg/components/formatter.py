@@ -45,7 +45,7 @@ def extract_placeholders(format_string):
 
 class Formatter:
     def __init__(
-        self, tokenizer: AutoTokenizer, dataset_type: Literal["coding", "math"]
+        self, tokenizer: AutoTokenizer
     ):
         self.tokenizer = tokenizer
 
