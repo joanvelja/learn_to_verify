@@ -277,7 +277,6 @@ class ProverTrainer(ProverTrainerBase):
         raw_prompts_local = [
             (x["question"], x["starter_code"], x["problem_id"]) for x in batch
         ]  # List of strings, no devicing # TODO: This is not dataset specific!
-        logger.info(f"Raw prompts local: {raw_prompts_local}")
 
         assert (
             len(raw_prompts_local) == self.args.per_device_train_batch_size
@@ -302,8 +301,6 @@ class ProverTrainer(ProverTrainerBase):
             for rp in raw_prompts_local
         ]
 
-        logger.info(f"HP prompt texts local: {hp_prompt_texts_local}")
-
         tokenized_hp_prompts = self.tokenizer(
             hp_prompt_texts_local,
             return_tensors="pt",
@@ -314,41 +311,16 @@ class ProverTrainer(ProverTrainerBase):
         hp_prompt_ids_local = tokenized_hp_prompts.input_ids
         hp_prompt_mask_local = tokenized_hp_prompts.attention_mask
 
-        logger.info(f"HP prompt ids local: {hp_prompt_ids_local}")
-        logger.info(f"HP prompt mask local: {hp_prompt_mask_local}")
-
         all_hp_prompt_texts_gathered_for_vllm = None
-        # if self.accelerator_manager.get_state_property("is_main_process"):
-        logger.info("Gathering honest prover prompts from all processes")
+
         gathered_nested = gather_object(
             hp_prompt_texts_local
         )  # gather_object is from accelerate
-
-        # logger.info(f"Gathered nested: {gathered_nested}")
-        # logger.info(f"Gathered nested type: {type(gathered_nested)}")
-        # logger.info(f"Gathered nested length: {len(gathered_nested)}")
-        # logger.info(f"Gathered nested first item: {gathered_nested[0]}")
-        # logger.info(f"Gathered nested first item type: {type(gathered_nested[0])}")
-        # logger.info(f"Gathered nested first item length: {len(gathered_nested[0])}")
-        # logger.info(f"Gathered nested first item first item: {gathered_nested[0][0]}")
-        # logger.info(f"Gathered nested first item first item type: {type(gathered_nested[0][0])}")
 
         all_hp_prompt_texts_gathered_for_vllm = [item for item in gathered_nested]
 
         honest_gen_args = self._to_dict(self.args.vllm_honest_prover)
 
-        logger.info(f"Honest gen args: {honest_gen_args}")
-        logger.info(
-            f"All hp prompt texts gathered for vllm: {all_hp_prompt_texts_gathered_for_vllm}"
-        )
-        logger.info(f"Number of prompts: {len(all_hp_prompt_texts_gathered_for_vllm)}")
-        logger.info(f"Number of generations: {self.rl_config.num_generations}")
-        logger.info(
-            f"Number of processes: {self.accelerator_manager.get_state_property('num_processes')}"
-        )
-        logger.info(f"Number of local raw prompts: {num_local_raw_prompts}")
-
-        logger.info("Generating completions...")
         hp_completion_ids_local_lol, hp_completion_texts_local, _ = (
             self.vllm_orchestrator._generate_and_broadcast(
                 client_key=hp_model_key,
@@ -518,9 +490,6 @@ class ProverTrainer(ProverTrainerBase):
                 * 2
                 * self.accelerator_manager.get_state_property("num_processes")
             )
-            logger.info(
-                f"[Process {self.accelerator_manager.get_state_property('process_index')}] Non-main process creating placeholder for {expected_len} rewards, waiting for broadcast."
-            )
             rewards_all_flat_list = [None] * expected_len
         # Placeholder for broadcast_object_list, assuming it handles None on non-main
         rewards_all_flat_list = broadcast_object_list(
@@ -538,9 +507,6 @@ class ProverTrainer(ProverTrainerBase):
         ), (
             f"[Process {self.accelerator_manager.get_state_property('process_index')}] Mismatch after broadcast: "
             f"len(rewards_all)={len(rewards_all_flat_list)} vs len(all_verifier_prompts)={len(all_verifier_prompt_texts_gathered_for_vllm)}"
-        )
-        logger.info(
-            f"[Process {self.accelerator_manager.get_state_property('process_index')}] Assertion passed: Length of rewards_all ({len(rewards_all_flat_list)}) matches all_verifier_prompts."
         )
 
         rewards_all_tensor = torch.tensor(
@@ -565,7 +531,8 @@ class ProverTrainer(ProverTrainerBase):
         global_rewards_a = rewards_all_tensor[::2]  # Rewards for honest solutions
         global_rewards_b = rewards_all_tensor[1::2]  # Rewards for sneaky solutions
 
-        logger.info("Completed reward extraction. Calculating advantages...")
+        logger.info(f"Global rewards a: {global_rewards_a}")
+        logger.info(f"Global rewards b: {global_rewards_b}")
 
         # Perform Global GRPO advantage calculation for Prover A
         advantages_a_global = self.grpo.calculate_advantages(
@@ -577,9 +544,6 @@ class ProverTrainer(ProverTrainerBase):
             global_rewards=global_rewards_b,
         )
 
-        logger.info(
-            "Completed advantage calculation. Slicing advantages and rewards..."
-        )
         logger.info(f"Advantages a: {advantages_a_global}")
         logger.info(f"Advantages b: {advantages_b_global}")
 
@@ -599,8 +563,6 @@ class ProverTrainer(ProverTrainerBase):
         local_advantages_b = advantages_b_global[local_slice_prover]
         local_rewards_a = global_rewards_a[local_slice_prover]
         local_rewards_b = global_rewards_b[local_slice_prover]
-
-        logger.info("Completed slicing. Preparing model inputs and logging metrics...")
 
         # --- Logging Prover Samples (during evaluation for the first batch) ---
         if self.is_main and self.state_tracker.step % 25 == 0:
@@ -1172,7 +1134,8 @@ class ProverTrainer(ProverTrainerBase):
             self.evaluate()
 
         logger.info("Prover training finished.")
-        # Potentially sync weights to VLLM if provers are used for generation after training
+        # NOTE: Syncing just to generate datamix, remember to sync back OG weights after
+        # Sync weights to VLLM if provers are used for generation after training
         self.vllm_orchestrator.sync_weights(
             phase="provers", model_manager=self.model_manager
         )
@@ -1406,51 +1369,49 @@ class ProverTrainer(ProverTrainerBase):
 
             # Aggregate and log metrics
             final_metrics: dict[str, float] = {}
-            if self.is_main:
-                for prover_key_literal in ["honest_prover", "sneaky_prover"]:
-                    prover_key = typing.cast(
-                        Literal["honest_prover", "sneaky_prover"], prover_key_literal
+            for prover_key_literal in ["honest_prover", "sneaky_prover"]:
+                prover_key = typing.cast(
+                    Literal["honest_prover", "sneaky_prover"], prover_key_literal
+                )
+                num_batches = batch_metrics_accumulator[prover_key]["count"]
+                if num_batches > 0:
+                    avg_loss = (
+                        sum(batch_metrics_accumulator[prover_key]["loss"]) / num_batches
                     )
-                    num_batches = batch_metrics_accumulator[prover_key]["count"]
-                    if num_batches > 0:
-                        avg_loss = (
-                            sum(batch_metrics_accumulator[prover_key]["loss"])
+                    final_metrics[f"eval_{prover_key}_loss"] = avg_loss
+                    self.metrics_logger.store_metric(
+                        mode=mode,
+                        model_key=prover_key,
+                        metric_name="loss",
+                        value=avg_loss,
+                    )
+
+                    if batch_metrics_accumulator[prover_key]["kl"]:
+                        avg_kl = (
+                            sum(batch_metrics_accumulator[prover_key]["kl"])
                             / num_batches
                         )
-                        final_metrics[f"eval_{prover_key}_loss"] = avg_loss
-                        self.metrics_logger.store_metric(
-                            mode=mode,
-                            model_key=prover_key,
-                            metric_name="loss",
-                            value=avg_loss,
-                        )
+                        final_metrics[f"eval_{prover_key}_kl"] = avg_kl
+                        # _compute_loss already logs 'kl', this would be redundant unless we want a separate overall eval_kl
+                        # self.metrics_logger.store_metric(
+                        #     mode=mode, model_key=prover_key, metric_name="kl_divergence", value=avg_kl
+                        # )
 
-                        if batch_metrics_accumulator[prover_key]["kl"]:
-                            avg_kl = (
-                                sum(batch_metrics_accumulator[prover_key]["kl"])
-                                / num_batches
-                            )
-                            final_metrics[f"eval_{prover_key}_kl"] = avg_kl
-                            # _compute_loss already logs 'kl', this would be redundant unless we want a separate overall eval_kl
-                            # self.metrics_logger.store_metric(
-                            #     mode=mode, model_key=prover_key, metric_name="kl_divergence", value=avg_kl
-                            # )
+                    avg_entropy = (
+                        sum(batch_metrics_accumulator[prover_key]["entropy"])
+                        / num_batches
+                    )
+                    final_metrics[f"eval_{prover_key}_entropy"] = avg_entropy
+                    self.metrics_logger.store_metric(
+                        mode=mode,
+                        model_key=prover_key,
+                        metric_name="entropy",
+                        value=avg_entropy,
+                    )
 
-                        avg_entropy = (
-                            sum(batch_metrics_accumulator[prover_key]["entropy"])
-                            / num_batches
-                        )
-                        final_metrics[f"eval_{prover_key}_entropy"] = avg_entropy
-                        self.metrics_logger.store_metric(
-                            mode=mode,
-                            model_key=prover_key,
-                            metric_name="entropy",
-                            value=avg_entropy,
-                        )
-
-                        # Note: clip_ratio is logged by _compute_loss and compute_liger_loss.
-                        # We can log an average if needed by fetching all stored values from metrics_logger for the eval steps.
-                        # For now, we rely on the per-step logging from those functions.
+                    # Note: clip_ratio is logged by _compute_loss and compute_liger_loss.
+                    # We can log an average if needed by fetching all stored values from metrics_logger for the eval steps.
+                    # For now, we rely on the per-step logging from those functions.
 
                 logger.info(f"Prover Evaluation finished. Metrics: {final_metrics}")
                 self.metrics_logger.log_step_metrics(
@@ -1478,29 +1439,38 @@ class ProverTrainer(ProverTrainerBase):
             gc.collect()
             raise
 
-    def _push_model_to_hub(
-        self, model_to_push: torch.nn.Module, model_key: str
-    ) -> None:
+    def _push_model_to_hub(self) -> None:
         """
         Push the trained model to the Hugging Face model hub with proper error handling.
-
-        Args:
-            model_to_push: The model instance to push.
-            model_key: The key of the model (e.g., 'honest_prover', 'sneaky_prover').
         """
 
-        hub_model_name = f"jvelja/{model_key}_round_{self.state_tracker.round}"
+        # Only push from the main process
+        if not self.is_main:
+            logger.info("Not the main process, skipping push to hub")
+            return
+
+        # Check if push_to_hub is enabled
+        if not self.config["push_to_hub"]:
+            logger.info("push_to_hub is disabled, skipping")
+            return
 
         try:
-            logger.info(f"Attempting to push {model_key} to {hub_model_name}")
-            model_to_push.push_to_hub(repo_id=hub_model_name)
-            logger.info(
-                f"{model_key} model successfully pushed to the hub as {hub_model_name}."
-            )
-            self.tokenizer.push_to_hub(repo_id=hub_model_name)
-            logger.info(f"Tokenizer also pushed to {hub_model_name} for {model_key}.")
+            for mode in ["honest", "sneaky"]:
+                prover_model_name = (
+                    f"jvelja/{mode}_prover_round_{self.state_tracker.round}"
+                )
+                # Unwrap the model before pushing to avoid distributed training issues
+                unwrapped_model = self.accelerator_manager.unwrap_model(
+                    self.model_manager.get_model(mode, prepared=True), key=mode
+                )
+
+                # Push the unwrapped model
+                unwrapped_model.push_to_hub(repo_id=prover_model_name)
+                logger.info(
+                    f"{mode} Prover model successfully pushed to the hub as {prover_model_name}."
+                )
+                # Tokenizer should be pushed to the same repo
+                self.tokenizer.push_to_hub(repo_id=prover_model_name)
         except Exception as e:
-            logger.error(
-                f"Failed to push {model_key} or its tokenizer to hub ({hub_model_name}): {str(e)}"
-            )
-            logger.info(f"Continuing without pushing {model_key} to hub.")
+            logger.error(f"Failed to push model to hub: {str(e)}")
+            raise e

@@ -381,11 +381,11 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                             **{k: f"{v:.4f}" for k, v in metrics.items()}
                         )
 
-                        # Log step metrics
-                        self.metrics_logger.log_step_metrics(
-                            phase=self.state_tracker.phase,
-                            mode="train",
-                        )
+                    # Log step metrics
+                    self.metrics_logger.log_step_metrics(
+                        phase=self.state_tracker.phase,
+                        mode="train",
+                    )
 
                     # Update state tracker
                     self.state_tracker.increment_step()
@@ -427,10 +427,13 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                 self.state_tracker.step == total_steps
             ), f"State tracker step {self.state_tracker.step} does not match total steps {total_steps}"
 
+            # self.accelerator_manager.wait_for_everyone() # Unsure if this is needed
+
             # Move **this** verifier model to vLLM --> swap it into the vLLM model
             self.vllm_orchestrator.sync_weights(
                 phase="verifier", model_manager=self.model_manager
             )
+            self.accelerator_manager.wait_for_everyone()
 
             # Clean up memory - delete model, tokenizer, dataloaders, optimizer, scheduler
             del (
@@ -540,46 +543,43 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             total_pairs_evaluated = len(self.eval_dataloader.dataset)
 
             metrics = {}
+            avg_loss = (
+                total_loss / total_pairs_evaluated if total_pairs_evaluated > 0 else 0.0
+            )
+            accuracy = total_correct / total_samples if total_samples > 0 else 0.0
+
+            # Concatenate all score differences
+            all_diffs = torch.cat(all_score_diffs)
+            avg_diff = all_diffs.mean().item()
+            std_diff = all_diffs.std().item()
+
+            metrics = {
+                "eval_loss": avg_loss,
+                "eval_accuracy": accuracy,
+                "eval_avg_diff": avg_diff,
+                "eval_std_diff": std_diff,
+            }
+
             if self.is_main:
-                avg_loss = (
-                    total_loss / total_pairs_evaluated
-                    if total_pairs_evaluated > 0
-                    else 0.0
-                )
-                accuracy = total_correct / total_samples if total_samples > 0 else 0.0
-
-                # Concatenate all score differences
-                all_diffs = torch.cat(all_score_diffs)
-                avg_diff = all_diffs.mean().item()
-                std_diff = all_diffs.std().item()
-
-                metrics = {
-                    "eval_loss": avg_loss,
-                    "eval_accuracy": accuracy,
-                    "eval_avg_diff": avg_diff,
-                    "eval_std_diff": std_diff,
-                }
-
                 logger.info(
                     f"Evaluation finished. "
                     f"Average Loss: {avg_loss:.4f}, "
                     f"Accuracy (on non-identical pairs): {accuracy:.4f} ({total_correct}/{total_samples}), "
                     f"Avg Score Diff: {avg_diff:.4f} ± {std_diff:.4f}"
                 )
-
-                # Log metrics
-                for name, value in metrics.items():
-                    self.metrics_logger.store_metric(
-                        mode="eval", model_key="verifier", metric_name=name, value=value
-                    )
-
-                # Log summary metrics
-                self.metrics_logger.log_step_metrics(
-                    phase=self.state_tracker.phase, mode="eval"
-                )
-
                 # Close progress bar
                 progress_bar.close()
+
+            # Log metrics
+            for name, value in metrics.items():
+                self.metrics_logger.store_metric(
+                    mode="eval", model_key="verifier", metric_name=name, value=value
+                )
+
+            # Log summary metrics
+            self.metrics_logger.log_step_metrics(
+                phase=self.state_tracker.phase, mode="eval"
+            )
 
             return metrics
 
@@ -594,19 +594,33 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
         Push the trained model to the Hugging Face model hub with proper error handling.
         """
 
+        # Only push from the main process
+        if not self.is_main:
+            logger.info("Not the main process, skipping push to hub")
+            return
+
+        # Check if push_to_hub is enabled
+        if not self.config["push_to_hub"]:
+            logger.info("push_to_hub is disabled, skipping")
+            return
+
         verifier_model_name = (
             f"jvelja/verifier-regressor_round_{self.state_tracker.round}"
         )
 
         try:
-            self.verifier_model.push_to_hub(repo_id=verifier_model_name)
+            # Unwrap the model before pushing to avoid distributed training issues
+            unwrapped_model = self.accelerator_manager.unwrap_model(
+                self.verifier_model, key="verifier"
+            )
+
+            # Push the unwrapped model
+            unwrapped_model.push_to_hub(repo_id=verifier_model_name)
             logger.info(
                 f"Verifier Regressor model successfully pushed to the hub as {verifier_model_name}."
             )
             # Tokenizer should be pushed to the same repo
-            self.tokenizer.push_to_hub(
-                repo_id=verifier_model_name
-            )  # Unsure if this is needed, but it doesn't hurt
+            self.tokenizer.push_to_hub(repo_id=verifier_model_name)
         except Exception as e:
             logger.error(f"Failed to push model to hub: {str(e)}")
-            logger.info("Continuing without pushing to hub.")
+            raise e

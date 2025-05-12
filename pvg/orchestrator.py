@@ -203,29 +203,6 @@ class TrainingPhaseOrchestrator:
             model = self.model_manager.get_model("verifier", prepared=False)
             optimizer = self.optimizer_scheduler_manager.get_optimizer("verifier")
 
-            # TODO: Make the below robust
-            # # <<< START INSERTION H2 >>>
-            # initial_dataloader_len = len(
-            #     train_dataloader
-            # )  # Uses DataLoader's len logic
-            # # Expected total batches = ceil(dataset_len / batch_size)
-            # # Use math.ceil
-            # import math
-
-            # expected_initial_batches = math.ceil(len(self.verifier_dataset) / 16)
-            # if self.accelerator_manager.get_state_property(
-            #     property_name="is_main_process"
-            # ):
-            #     print(
-            #         f"[DEBUG H2] Initial Verifier DataLoader created. len={initial_dataloader_len}. Expected total batches (before distribution): {expected_initial_batches}"
-            #     )
-            #     # Check: initial_dataloader_len should be equal to expected_initial_batches
-            #     if initial_dataloader_len != expected_initial_batches:
-            #         print(
-            #             f"[WARNING H2] Initial DataLoader length ({initial_dataloader_len}) does not match expected total batches ({expected_initial_batches})!"
-            #         )
-            # # <<< END INSERTION H2 >>>
-
             components = self.accelerator_manager.prepare_components(
                 key="verifier",
                 dataloader=train_dataloader,
@@ -241,33 +218,6 @@ class TrainingPhaseOrchestrator:
             self.data_manager.dataloaders["verifier"]["train_dataloader"] = components[
                 2
             ]
-
-            # # <<< START INSERTION H3 >>>
-            # prepared_dataloader_len = len(
-            #     components[2]
-            # )  # Length reported by the prepared object
-            # # Expected batches per process = floor(ceil(dataset_len / num_processes) / batch_size) because drop_last=True
-            # import math
-
-            # expected_samples_per_process = math.ceil(
-            #     len(self.verifier_dataset) / 2
-            # )  # NOTE: Hardcoded for convenience
-            # expected_batches_per_process = math.floor(
-            #     expected_samples_per_process / 8
-            # )  # NOTE: Hardcoded for convenience
-
-            # # Assertion on each rank
-            # assert (
-            #     expected_batches_per_process <= prepared_dataloader_len
-            # ), f"[H3 Check - Rank {self.accelerator_manager.get_state_property(property_name='process_index')}] Prepared DataLoader length is {prepared_dataloader_len}, expected {expected_batches_per_process}"
-
-            # if self.accelerator_manager.get_state_property(
-            #     property_name="is_main_process"
-            # ):
-            #     print(
-            #         f"[DEBUG H3] Prepared DataLoader len (per process): {prepared_dataloader_len}. Expected per process: {expected_batches_per_process}"
-            #     )
-            # # <<< END INSERTION H3 >>>
 
             self.data_manager.dataloaders["verifier"]["eval_dataloader"] = (
                 self.accelerator_manager.prepare_dataloader(
@@ -380,17 +330,6 @@ class TrainingPhaseOrchestrator:
             self.vllm_orchestrator,
             self.state_tracker,
         )
-        # <<< START INSERTION H4 (Orchestrator) >>>
-        # Get the dataloader that *should* be used by the trainer
-        dataloader_in_datamanager = self.data_manager.dataloaders["verifier"][
-            "train_dataloader"
-        ]
-        if self.accelerator_manager.get_state_property(property_name="is_main_process"):
-            print(
-                f"[DEBUG H4 Orchestrator] Dataloader stored in DataManager: id={id(dataloader_in_datamanager)}, len={len(dataloader_in_datamanager)}"
-            )
-        # <<< END INSERTION H4 (Orchestrator) >>>
-
         verifier_trainer.train(1)
 
     def _run_prover_phase(self) -> None:

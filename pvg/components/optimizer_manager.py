@@ -126,7 +126,6 @@ class OptimizerSchedulerManager:
                 weight_decay=config.weight_decay,
             )
             self.optimizers[phase] = optimizer
-            logger.info(f"Optimizer for {phase}: {optimizer}")
         else:  # 'provers'
             for key in ["honest_prover", "sneaky_prover"]:
                 config = self.configs[key]
@@ -137,7 +136,6 @@ class OptimizerSchedulerManager:
                     weight_decay=config.weight_decay,
                 )
                 self.optimizers[key] = optimizer
-                logger.info(f"Optimizer for phase -- {key}: {optimizer}")
 
     def create_schedulers(self) -> None:
         """

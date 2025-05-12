@@ -271,6 +271,9 @@ class WandbArgs:
         default=50,
         metadata={"help": "Log system metrics every N * logging_steps steps."},
     )
+    output_dir: str | None = field(
+        default=None, metadata={"help": "Output directory, copied from ExperimentArgs."}
+    )
 
 
 @dataclass

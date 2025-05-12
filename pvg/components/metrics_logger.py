@@ -3,14 +3,87 @@
 # MetricsLogger
 # Responsibility: Initializes and manages the nested dictionary for storing metrics. Provides methods for recording scalar values and lists of values during training/evaluation steps. Handles aggregation (mean, std) of list metrics using AcceleratorManager.gather_for_metrics. Logs aggregated metrics to WandB (if enabled) and the console logger via AcceleratorManager.log. Uses namespaces or prefixes for phase separation.
 
-import torch
 import logging
-from typing import Callable, Any
+import os
+from dataclasses import dataclass
+from typing import Any, Callable
+from accelerate.utils import gather_object
+
+import torch
+
 from pvg.components.accelerator_manager import AcceleratorManager
 from pvg.config.args import WandbArgs
-import os
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
+
+
+@dataclass
+class MetricPoint:
+    phase: str
+    mode: str
+    model_key: str
+    metric_name: str
+    value: Any
+    step: int
+
+
+class MetricStore:
+    def __init__(self) -> None:
+        self._metrics_data: list[MetricPoint] = []
+
+    def add_metric(
+        self,
+        phase: str,
+        mode: str,
+        model_key: str,
+        metric_name: str,
+        value: Any,
+        step: int,
+    ) -> None:
+        self._metrics_data.append(
+            MetricPoint(phase, mode, model_key, metric_name, value, step)
+        )
+
+    def get_metrics_for_logging(
+        self, phase: str, mode: str
+    ) -> dict[str, dict[str, list[MetricPoint]]]:
+        """Groups metrics by model_key and then metric_name for log_step_metrics."""
+        grouped_metrics: dict[str, dict[str, list[MetricPoint]]] = {}
+        for point in self._metrics_data:
+            if point.phase == phase and point.mode == mode:
+                grouped_metrics.setdefault(point.model_key, {}).setdefault(
+                    point.metric_name, []
+                ).append(point)
+        return grouped_metrics
+
+    def clear_metrics_by_criteria(
+        self, phase_filter: str | None = None, mode_filter: str | None = None
+    ) -> None:
+        """Removes metrics matching the given phase and/or mode."""
+        self._metrics_data = [
+            p
+            for p in self._metrics_data
+            if not (
+                (phase_filter is None or p.phase == phase_filter)
+                and (mode_filter is None or p.mode == mode_filter)
+            )
+        ]
+
+    def find_latest_metric_point(
+        self, phase: str, mode: str, model_key: str, metric_name: str
+    ) -> MetricPoint | None:
+        relevant_points = [
+            p
+            for p in self._metrics_data
+            if p.phase == phase
+            and p.mode == mode
+            and p.model_key == model_key
+            and p.metric_name == metric_name
+        ]
+        if relevant_points:
+            relevant_points.sort(key=lambda p: p.step, reverse=True)
+            return relevant_points[0]
+        return None
 
 
 class MetricsLogger:
@@ -25,7 +98,7 @@ class MetricsLogger:
         self.wandb_config: WandbArgs = wandb_config
         self.global_step_callback: Callable[[], int] = global_step_callback
         self.global_phase_callback: Callable[[], str] = global_phase_callback
-        self._metrics: dict[str, dict[str, dict[str, dict[str, list[float]]]]] = {}
+        self.metric_store: MetricStore = MetricStore()
         self.wandb_run: Any = None  # Initialize wandb_run
         self.llm_interaction_log_dir: str | None = (
             None  # Initialize llm_interaction_log_dir
@@ -58,6 +131,7 @@ class MetricsLogger:
                         self.wandb_run.id,
                         "llm_interaction_logs",
                     )
+                    # This check is redundant if already in is_main_process block, but kept for safety
                     if self.accelerator_manager.get_state_property("is_main_process"):
                         os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
                         logger.info(
@@ -72,29 +146,28 @@ class MetricsLogger:
                 f"Error during accelerator.init_trackers or run retrieval: {e}",
                 exc_info=True,
             )
-            # Ensure self.wandb_run remains None if init fails
             self.wandb_run = None
 
         if self.accelerator_manager.get_state_property("is_main_process"):
             if not self.accelerator_manager.get_tracker("wandb"):
                 logger.error("WandB tracker not initialized. Cannot log.")
-                self.wandb_run = None  # Or raise error
+                self.wandb_run = None
             else:
-                self.wandb_run = self.accelerator_manager.get_tracker("wandb").run
+                # Ensure wandb_run is potentially re-fetched if initial retrieval failed but tracker exists
+                if not self.wandb_run:
+                    self.wandb_run = self.accelerator_manager.get_tracker("wandb").run
+
                 if self.wandb_run is None:
-                    logger.error("Could not retrieve WandB run object.")
+                    logger.error("Could not retrieve WandB run object after setup.")
                 else:
                     logger.info(
                         f"WandB tracker initialized. Run ID: {self.wandb_run.id}"
                     )
-                    # Log initial config (accelerate might do some, but explicit update is safer)
                     self.wandb_run.config.update(config, allow_val_change=True)
-
-                    # Log environment details
                     try:
                         import importlib.metadata as importlib_metadata
-                        import sys
                         import platform
+                        import sys
 
                         libs = [
                             "torch",
@@ -104,11 +177,15 @@ class MetricsLogger:
                             "vllm",
                             "wandb",
                         ]
-                        lib_versions = {
-                            lib: importlib_metadata.version(lib)
-                            for lib in libs
-                            if importlib_metadata.version(lib)
-                        }
+                        lib_versions = {}
+                        for lib in libs:
+                            try:
+                                lib_versions[lib] = importlib_metadata.version(lib)
+                            except importlib_metadata.PackageNotFoundError:
+                                logger.debug(
+                                    f"Library {lib} not found for version logging."
+                                )
+
                         self.wandb_run.config.update(
                             {
                                 "environment/python_version": sys.version,
@@ -134,36 +211,11 @@ class MetricsLogger:
     def store_metric(
         self, mode: str, model_key: str, metric_name: str, value: Any
     ) -> None:
-        """Stores a metric value, namespacing it (e.g., phase="verifier", mode="train", model_key="sneaky_prover", metric_name="accuracy").
-
-        Example of self._metrics structure:
-        {
-            "prover": {                      # phase
-                "train": {                   # mode
-                    "honest_prover": {       # model_key
-                        "loss": [0.1, 0.2],  # metric_name: list of values
-                        "accuracy": [0.8, 0.85]
-                    },
-                    "sneaky_prover": {
-                        "loss": [0.15, 0.18],
-                        "accuracy": [0.75, 0.78]
-                    }
-                },
-                "eval": {...}
-            },
-            "verifier": {...}
-        }
-        """
         phase = self.global_phase_callback()
-        if phase not in self._metrics:
-            self._metrics[phase] = {}
-        if mode not in self._metrics[phase]:
-            self._metrics[phase][mode] = {}
-        if model_key not in self._metrics[phase][mode]:
-            self._metrics[phase][mode][model_key] = {}
-        if metric_name not in self._metrics[phase][mode][model_key]:
-            self._metrics[phase][mode][model_key][metric_name] = []
-        self._metrics[phase][mode][model_key][metric_name].append(value)
+        current_step = self.global_step_callback()
+        self.metric_store.add_metric(
+            phase, mode, model_key, metric_name, value, current_step
+        )
 
     def store_metrics(self, mode: str, model_key: str, metrics: dict[str, Any]) -> None:
         for metric_name, value in metrics.items():
@@ -172,15 +224,9 @@ class MetricsLogger:
     def store_entropy(
         self, model_key: str, mode: str, per_token_entropy: torch.Tensor
     ) -> None:
-        """
-        Calculates various statistics for per_token_entropy, gathers them across processes,
-        averages them, and then stores them using self.store_metric.
-        """
-        # phase = self.global_phase_callback()  # Get current phase
-        current_device = per_token_entropy.device  # Get device from input tensor
+        current_device = per_token_entropy.device
 
-        # Calculate local statistics from per_token_entropy
-        if per_token_entropy.numel() == 0:  # Handle empty tensor case
+        if per_token_entropy.numel() == 0:
             mean_entropy = torch.tensor(float("nan"), device=current_device)
             entropy_std = torch.tensor(float("nan"), device=current_device)
             entropy_min = torch.tensor(float("nan"), device=current_device)
@@ -194,30 +240,40 @@ class MetricsLogger:
             entropy_min = per_token_entropy.min()
             entropy_max = per_token_entropy.max()
 
-            if len(per_token_entropy) >= 4:
-                sorted_entropy, _ = torch.sort(per_token_entropy)
-                idx_25 = max(
-                    0, min(len(sorted_entropy) - 1, int(0.25 * len(sorted_entropy)))
-                )
-                idx_50 = max(
-                    0, min(len(sorted_entropy) - 1, int(0.50 * len(sorted_entropy)))
-                )
-                idx_75 = max(
-                    0, min(len(sorted_entropy) - 1, int(0.75 * len(sorted_entropy)))
-                )
-                entropy_25 = sorted_entropy[idx_25]
-                entropy_50 = sorted_entropy[idx_50]
-                entropy_75 = sorted_entropy[idx_75]
-            elif len(per_token_entropy) > 0:
-                entropy_25 = entropy_min
-                entropy_50 = mean_entropy
-                entropy_75 = entropy_max
-            else:  # Should be caught by numel() == 0, but for safety
+            # Percentile calculations
+            if per_token_entropy.numel() > 0:
+                if (
+                    len(per_token_entropy.flatten()) >= 4
+                ):  # torch.quantile behaves well for >=1, but maintaining original logic for N < 4
+                    # Ensure tensor is 1D for quantile
+                    flat_entropy = per_token_entropy.flatten()
+                    quantiles_to_compute = torch.tensor(
+                        [0.25, 0.50, 0.75], device=current_device
+                    )
+                    computed_quantiles = torch.quantile(
+                        flat_entropy.float(),
+                        quantiles_to_compute,
+                        interpolation="linear",
+                    )
+                    entropy_25 = computed_quantiles[0]
+                    entropy_50 = computed_quantiles[1]
+                    entropy_75 = computed_quantiles[2]
+                elif (
+                    len(per_token_entropy.flatten()) > 0
+                ):  # Fallback for 1-3 elements, matching original logic
+                    entropy_25 = entropy_min
+                    entropy_50 = mean_entropy
+                    entropy_75 = entropy_max
+                else:  # Should be caught by numel == 0, but for safety
+                    entropy_25 = torch.tensor(float("nan"), device=current_device)
+                    entropy_50 = torch.tensor(float("nan"), device=current_device)
+                    entropy_75 = torch.tensor(float("nan"), device=current_device)
+            else:  # This case should ideally not be reached if numel() == 0 is handled above.
                 entropy_25 = torch.tensor(float("nan"), device=current_device)
                 entropy_50 = torch.tensor(float("nan"), device=current_device)
                 entropy_75 = torch.tensor(float("nan"), device=current_device)
 
-        entropy_iqr = entropy_75 - entropy_25
+        entropy_iqr = entropy_75 - entropy_25  # This can be NaN if components are NaN
 
         entropy_stats = {
             "entropy_mean": mean_entropy,
@@ -231,138 +287,207 @@ class MetricsLogger:
         }
 
         for stat_name, stat_tensor in entropy_stats.items():
-            final_value = float("nan")  # Default to NaN
+            final_value = float("nan")
             if torch.is_tensor(stat_tensor):
-                if stat_tensor.numel() > 0:
-                    # Ensure stat_tensor is on the correct device for gather if not already
-                    # gather_for_metrics usually expects tensors on the accelerator's device.
-                    # However, the input `per_token_entropy` defines the device context here.
-                    # The gather operation itself handles device placement if configured correctly in AcceleratorManager.
-                    tensor_to_gather = (
-                        stat_tensor.unsqueeze(0)
-                        if stat_tensor.ndim == 0
-                        else stat_tensor
-                    )
+                if stat_tensor.numel() > 0:  # Ensure tensor is not empty
+                    # Tensor for gathering. Ensure it's at least 1D.
+                    tensor_to_gather = stat_tensor.reshape(
+                        -1
+                    )  # Flatten to 1D or ensure it is
+
+                    # Gather across processes
                     gathered_tensor = self.accelerator_manager.gather_for_metrics(
-                        tensor_to_gather, key=model_key
+                        tensor_to_gather,
+                        key=model_key,  # model_key used as caching key for gather
                     )
                     if gathered_tensor.numel() > 0:
                         final_value = gathered_tensor.float().nanmean().item()
-                # If stat_tensor is an empty tensor, final_value remains float('nan')
-            elif isinstance(
-                stat_tensor, (float, int)
-            ):  # Handles pre-set NaN floats etc.
+                # If stat_tensor is empty or becomes empty after reshape, final_value remains NaN
+            elif isinstance(stat_tensor, (float, int)):
                 final_value = float(stat_tensor)
 
             self.store_metric(mode, model_key, stat_name, final_value)
 
     def log_step_metrics(self, phase: str, mode: str) -> None:
-        """
-        Aggregates metrics stored since the last log call.
-        For each metric (which is a list of scalars on the current process),
-        it gathers these lists from all processes, computes the mean and std
-        of the combined values, and logs them. Clears the stored lists afterwards.
-        """
         metrics_to_log = {}
 
-        if phase not in self._metrics or mode not in self._metrics[phase]:
+        # Get metrics for current phase and mode
+        local_grouped_points = self.metric_store.get_metrics_for_logging(phase, mode)
+
+        # Use a fixed accelerator key for ALL gather operations in this method
+        # This ensures all processes use the same accelerator for collective operations
+        fixed_gather_key = (
+            "honest_prover"  # Using a consistent key for all gather operations
+        )
+
+        # Check if any process has metrics to log
+        device = self.accelerator_manager.get_state_property("device")
+        has_metrics_local = torch.tensor(
+            [len(local_grouped_points) > 0], dtype=torch.bool, device=device
+        )
+
+        # All processes must participate in this gather
+        has_metrics_global = self.accelerator_manager.gather_for_metrics(
+            has_metrics_local, key=fixed_gather_key
+        )
+        has_any_metrics = has_metrics_global.any().item()
+
+        if not has_any_metrics:
             if self.accelerator_manager.get_state_property("is_main_process"):
                 logger.info(
-                    f"No metrics found for phase '{phase}', mode '{mode}'. Skipping log step."
+                    f"No metrics found for phase '{phase}', mode '{mode}' across all processes. Skipping log step."
                 )
+            # Make sure to clear metrics even if we don't log anything
+            self.metric_store.clear_metrics_by_criteria(
+                phase_filter=phase, mode_filter=mode
+            )
             return
 
-        for model_key in list(
-            self._metrics[phase][mode].keys()
-        ):  # Iterate over a copy of keys
-            if model_key not in self._metrics[phase][mode]:
+        current_step_for_logging = self.global_step_callback()
+
+        # Extract all model_key and metric_name pairs this process has
+        local_keys = []
+        for model_key, model_metrics in local_grouped_points.items():
+            for metric_name in model_metrics.keys():
+                local_keys.append((model_key, metric_name))
+
+        # Convert keys to strings for easier serialization/comparison
+        local_key_strings = [f"{mk}|{mn}" for mk, mn in local_keys]
+
+        # ---------------------------------------------------------------------------------
+        # Robustly collect the complete set of (model_key, metric_name) pairs from *all*
+        # processes.  We use `gather_object`, which can handle arbitrary Python objects
+        # and ensures every rank receives the full list.  This guarantees that every
+        # process will iterate over exactly the same keys in the next step and therefore
+        # call `gather_for_metrics` the same number of times, avoiding collective hangs.
+        # ---------------------------------------------------------------------------------
+        try:
+            # gathered_key_lists = (
+            #     self.accelerator_manager
+            #     .get_accelerator(fixed_gather_key)
+            #     .gather_object(local_key_strings)
+            # )
+            gathered_key_lists = gather_object(local_key_strings)
+        except Exception as e:
+            # Fall back to local keys only (should not happen) – we will still avoid a
+            # hard crash and log the issue for debugging.
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                logger.warning(
+                    f"Failed to gather metric keys across ranks: {e}. Proceeding with local keys only.",
+                    exc_info=True,
+                )
+            gathered_key_lists = [local_key_strings]
+
+        # `gather_object` returns a list with one element per process (each is that
+        # process's `local_key_strings`).  Flatten and de-duplicate to build the global
+        # ordered key list.
+        all_keys_set: set[str] = set()
+        for lst in gathered_key_lists:
+            if lst is None:
+                # Non-participating rank may return None – skip.
                 continue
+            if isinstance(lst, list):
+                all_keys_set.update(lst)
+            else:
+                all_keys_set.add(lst)
 
-            for metric_name in list(
-                self._metrics[phase][mode][model_key].keys()
-            ):  # Iterate over a copy of keys
-                values = self._metrics[phase][mode][model_key][metric_name]
-                numeric_values_for_log_message = []
+        all_keys = sorted(all_keys_set)
 
-                if isinstance(values, list) and values:
-                    try:
-                        numeric_values = [
-                            v
-                            for v in values
-                            if isinstance(v, (int, float))
-                            and not (
-                                isinstance(v, float) and torch.isnan(torch.tensor(v))
-                            )
-                        ]
-                        numeric_values_for_log_message = numeric_values
+        # Log on the main process for transparency.
+        # if self.accelerator_manager.get_state_property("is_main_process"):
+        #     logger.info(f"Collected {len(all_keys)} unique metrics keys to process")
 
-                        if not numeric_values:
-                            if self.accelerator_manager.get_state_property(
-                                "is_main_process"
-                            ):
-                                logger.warning(
-                                    f"All values for metric '{metric_name}' (model '{model_key}', phase '{phase}', mode '{mode}') are NaN or non-numeric. Logging NaN."
-                                )
-                            log_key = f"{phase}/{mode}/{model_key}/{metric_name}"
-                            metrics_to_log[log_key] = float("nan")
-                            self._metrics[phase][mode][model_key][metric_name] = []
-                            continue
+        # Ensure every process is synchronised before we start gathering metric values.
+        self.accelerator_manager.wait_for_everyone()
 
-                        # Create tensor on the correct device (same as accelerator)
-                        device = self.accelerator_manager.get_state_property(
-                            "device", key=model_key
+        # Process the keys one model at a time to avoid deadlocks
+        unique_model_keys = sorted(
+            set(mk for mk, _ in [k.split("|") for k in all_keys])
+        )
+
+        for model_key in unique_model_keys:
+            # Filter metrics for this model
+            model_metric_keys = [k for k in all_keys if k.split("|")[0] == model_key]
+
+            for key_str in model_metric_keys:
+                model_key, metric_name = key_str.split("|")
+
+                # Extract values if available locally
+                raw_values = []
+                if (
+                    model_key in local_grouped_points
+                    and metric_name in local_grouped_points[model_key]
+                ):
+                    points_list = local_grouped_points[model_key][metric_name]
+                    raw_values = [p.value for p in points_list]
+
+                numeric_values = [
+                    v
+                    for v in raw_values
+                    if isinstance(v, (int, float))
+                    and not (isinstance(v, float) and torch.isnan(torch.tensor(v)))
+                ]
+
+                log_key = f"{phase}/{mode}/{model_key}/{metric_name}"
+
+                try:
+                    # Get the device for the current process
+                    device = self.accelerator_manager.get_state_property("device")
+
+                    # Create tensor, even if numeric_values is empty
+                    all_values_tensor = torch.tensor(
+                        numeric_values if numeric_values else [float("nan")],
+                        dtype=torch.float32,
+                        device=device,
+                    )
+
+                    # All processes must call gather with the same model_key
+                    gathered_values_tensor = self.accelerator_manager.gather_for_metrics(
+                        all_values_tensor,
+                        key=model_key,  # Using the model_key is fine here since all processes use same key
+                    )
+
+                    # Filter out NaN values
+                    valid_values = gathered_values_tensor[
+                        ~torch.isnan(gathered_values_tensor)
+                    ]
+
+                    if valid_values.numel() > 0:
+                        final_mean = valid_values.float().mean().item()
+                        metrics_to_log[log_key] = final_mean
+
+                        if valid_values.numel() > 1:
+                            final_std = valid_values.float().std().item()
+                            metrics_to_log[f"{log_key}_std"] = final_std
+                    else:
+                        metrics_to_log[log_key] = float("nan")
+
+                except Exception as e:
+                    if self.accelerator_manager.get_state_property("is_main_process"):
+                        logger.warning(
+                            f"Error processing metric '{metric_name}' for model '{model_key}': {e}",
+                            exc_info=True,
                         )
-                        all_values_tensor = torch.tensor(
-                            numeric_values, dtype=torch.float32, device=device
-                        )
-                        gathered_values_tensor = (
-                            self.accelerator_manager.gather_for_metrics(
-                                all_values_tensor, key=model_key
-                            )
-                        )
+                    metrics_to_log[log_key] = float("nan")
 
-                        if gathered_values_tensor.numel() > 0:
-                            final_mean = gathered_values_tensor.float().nanmean().item()
-                            log_key = f"{phase}/{mode}/{model_key}/{metric_name}"
-                            metrics_to_log[log_key] = final_mean
-
-                            if gathered_values_tensor.numel() > 1:
-                                final_std = gathered_values_tensor.float().std().item()
-                                metrics_to_log[f"{log_key}_std"] = final_std
-                        else:
-                            log_key = f"{phase}/{mode}/{model_key}/{metric_name}"
-                            metrics_to_log[log_key] = float("nan")
-                            if self.accelerator_manager.get_state_property(
-                                "is_main_process"
-                            ):
-                                logger.warning(
-                                    f"Gathered tensor for metric '{log_key}' is empty after filtering. Logging NaN."
-                                )
-
-                    except Exception as e:
-                        if self.accelerator_manager.get_state_property(
-                            "is_main_process"
-                        ):
-                            logger.warning(
-                                f"Could not compute mean/std for metric '{metric_name}' (model '{model_key}', phase '{phase}', mode '{mode}'). "
-                                f"Values on this rank (pre-gather, numeric-filtered): {numeric_values_for_log_message}. Error: {e}",
-                                exc_info=True,
-                            )
-                    finally:
-                        self._metrics[phase][mode][model_key][metric_name] = []
-
+        # Log collected metrics on main process
         if self.accelerator_manager.get_state_property("is_main_process"):
             if metrics_to_log:
-                current_step = self.global_step_callback()
-                self.accelerator_manager.log(metrics_to_log, step=current_step)
+                self.accelerator_manager.log(
+                    metrics_to_log, step=current_step_for_logging
+                )
             else:
                 logger.info(
-                    f"No metrics to log for phase '{phase}', mode '{mode}' at step {self.global_step_callback()}."
+                    f"No aggregated metrics to log for phase '{phase}', mode '{mode}' at step {current_step_for_logging}."
                 )
 
+        # Clear metrics for this specific phase and mode from the store
+        self.metric_store.clear_metrics_by_criteria(
+            phase_filter=phase, mode_filter=mode
+        )
+
     def log_evaluation_metrics(self, eval_metrics: dict[str, Any]) -> None:
-        """Logs pre-aggregated evaluation metrics. Clears stored 'eval' mode metrics."""
-        current_step = self.global_step_callback()  # Get current step for logging
+        current_step = self.global_step_callback()
         if self.accelerator_manager.get_state_property("is_main_process"):
             if eval_metrics:
                 self.accelerator_manager.log(eval_metrics, step=current_step)
@@ -372,90 +497,17 @@ class MetricsLogger:
                 )
 
         # Clear any metrics that might have been stored with mode="eval" across all phases.
-        self._clear_metrics(mode_to_clear="eval")
-
-    def _clear_metrics(
-        self, phase_to_clear: str | None = None, mode_to_clear: str | None = None
-    ) -> None:
-        """
-        Clears stored metrics.
-        Can clear for a specific phase, a specific mode, or a combination.
-        If phase_to_clear is None, iterates through all phases.
-        If mode_to_clear is None, iterates through all modes in selected phases.
-        """
-        phases_to_iterate = (
-            [phase_to_clear] if phase_to_clear else list(self._metrics.keys())
-        )
-
-        for phase in phases_to_iterate:
-            if phase not in self._metrics:
-                continue
-
-            modes_to_iterate = (
-                [mode_to_clear] if mode_to_clear else list(self._metrics[phase].keys())
-            )
-
-            for mode in modes_to_iterate:
-                if mode not in self._metrics[phase]:
-                    continue
-
-                for model_key in list(self._metrics[phase][mode].keys()):
-                    if model_key not in self._metrics[phase][mode]:
-                        continue  # Should be redundant
-                    for metric_name in list(
-                        self._metrics[phase][mode][model_key].keys()
-                    ):
-                        # Check if it's actually a list, though store_metric should ensure this
-                        if isinstance(
-                            self._metrics[phase][mode][model_key].get(metric_name), list
-                        ):
-                            self._metrics[phase][mode][model_key][metric_name] = []
-
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            log_msg = "Cleared metrics"
-            if phase_to_clear:
-                log_msg += f" for phase: {phase_to_clear}"
-            if mode_to_clear:
-                log_msg += f" for mode: {mode_to_clear}"
-            if not phase_to_clear and not mode_to_clear:
-                log_msg += " (all)"
-            logger.debug(log_msg)
+        self.metric_store.clear_metrics_by_criteria(mode_filter="eval")
 
     def get_latest_metric(self, mode: str, model_key: str, metric_name: str) -> Any:
-        """
-        Retrieves the latest value stored for a specific metric.
-
-        Args:
-            mode: The mode (e.g., "train", "eval").
-            model_key: The key for the model/component.
-            metric_name: The name of the metric.
-
-        Returns:
-            The latest metric value, or float('nan') if not found or empty.
-        """
         phase = self.global_phase_callback()
-        try:
-            metric_list = self._metrics[phase][mode][model_key][metric_name]
-            if metric_list:
-                return metric_list[-1]  # Return the last appended value
-            else:
-                logger.debug(
-                    f"Metric list empty for {phase}/{mode}/{model_key}/{metric_name}"
-                )
-                return float("nan")
-        except KeyError:
-            logger.debug(f"Metric not found: {phase}/{mode}/{model_key}/{metric_name}")
+        latest_point = self.metric_store.find_latest_metric_point(
+            phase, mode, model_key, metric_name
+        )
+        if latest_point:
+            return latest_point.value
+        else:
+            logger.debug(
+                f"Metric not found or list empty for {phase}/{mode}/{model_key}/{metric_name}"
+            )
             return float("nan")
-
-
-# MetricsLogger
-# Overall:
-# __init__: Stores AcceleratorManager, WandbArgs, global_step_callback. Initializes internal _metrics dict.
-# setup_wandb(config): Initializes WandB via AcceleratorManager, stores wandb_run. Logs initial config.
-# store_metric(phase, component_key, metric_name, value): Stores a metric value, namespacing it (e.g., phase="verifier", component_key="verifier", metric_name="accuracy").
-# log_step_metrics(phase, step_data): Aggregates metrics stored for the given phase since last call. Gathers via AcceleratorManager. Merges with step_data (losses, LRs for active components in this phase). Logs via AcceleratorManager.log using the global step from callback. Clears stored metrics for the phase.
-# log_evaluation_metrics(phase, eval_metrics): Logs pre-aggregated eval metrics for the phase. Clears stored eval metrics for the phase.
-# log_config(config): Logs config to WandB.
-# log_summary(summary): Logs summary to WandB.
-# _aggregate_metrics(phase): Internal helper for aggregation.
-# _clear_metrics(phase): Internal helper for clearing.

@@ -107,6 +107,14 @@ class VLLMOrchestrator:
                     )
                     raise
 
+        # ---------------------------------------------------------------------
+        # Make sure *all* ranks have the same dictionary keys so later accesses
+        # like `self.vllm_clients[model_key]` never raise KeyError.  Non-main
+        # ranks will simply store `None` for the client instance.
+        # ---------------------------------------------------------------------
+        for key in self.vllm_configs.keys():
+            self.vllm_clients.setdefault(key, None)
+
         # BARRIER: Wait for all processes to finish vLLM client initialization
         self.accelerator_manager.wait_for_everyone()
 
@@ -386,31 +394,31 @@ class VLLMOrchestrator:
         """
         Orchestrates the full sync process. Calls _move_model_to_vllm for the verifier with appropriate barriers and plugin selection. Needs ModelManager to get the models.
         """
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Entering _sync_weights_to_vllm"
         )
 
         # --- Sync verifier ---
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Selecting DS plugin 'verifier'..."
         )
         self.accelerator_manager.get_accelerator(
             key="verifier"
         ).state.select_deepspeed_plugin("verifier")
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Calling _move_model_to_vllm for verifier"
         )
         self._move_model_to_vllm(model_key="verifier", model_manager=model_manager)
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Finished _move_model_to_vllm for verifier"
         )
 
         # *** CRUCIAL GLOBAL BARRIER ***
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Global barrier before verifier sync..."
         )
         self.accelerator_manager.wait_for_everyone()  # Synchronize everyone using the primary accelerator
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Passed global barrier."
         )
 
@@ -419,36 +427,36 @@ class VLLMOrchestrator:
         Orchestrates the full sync process. Calls _move_model_to_vllm for both provers with appropriate barriers and plugin selection. Needs ModelManager to get the models.
         """
         # TODO: Make this universal (i.e., agnostic to whether we are training the provers or the verifier)
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Entering _sync_weights_to_vllm"
         )
 
         # --- Sync honest_prover ---
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Selecting DS plugin 'honest_prover'..."
         )
         self.accelerator_manager.get_accelerator(
             key="honest_prover"
         ).state.select_deepspeed_plugin("honest_prover")
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Calling _move_model_to_vllm for honest_prover"
         )
         self._move_model_to_vllm(model_key="honest_prover", model_manager=model_manager)
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Finished _move_model_to_vllm for honest_prover"
         )
 
         # *** CRUCIAL GLOBAL BARRIER ***
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Global barrier before sneaky_prover sync..."
         )
         self.accelerator_manager.wait_for_everyone()  # Synchronize everyone using the primary accelerator
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Passed global barrier."
         )
 
         # --- Sync sneaky_prover ---
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Selecting DS plugin 'sneaky_prover'..."
         )
         self.accelerator_manager.get_accelerator(
@@ -458,16 +466,16 @@ class VLLMOrchestrator:
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Calling _move_model_to_vllm for sneaky_prover"
         )
         self._move_model_to_vllm(model_key="sneaky_prover", model_manager=model_manager)
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Finished _move_model_to_vllm for sneaky_prover"
         )
 
         # --- Final Global Barrier (Optional but safe) ---
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Global barrier after all syncs..."
         )
         self.accelerator_manager.wait_for_everyone()  # Synchronize everyone
-        logger.debug(
+        logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Exiting _sync_weights_to_vllm"
         )
 

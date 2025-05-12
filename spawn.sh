@@ -226,9 +226,9 @@ uv run --env-file .env accelerate launch \
     --use_deepspeed \
     $MAIN_SCRIPT \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 2 \
+    --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 2 \
-    --gradient_accumulation_steps 4 \
+    --gradient_accumulation_steps 8 \
     --logging_steps 1 \
     --save_steps 100 \
     --eval_steps 100 \
@@ -248,12 +248,12 @@ uv run --env-file .env accelerate launch \
     --training_honest_prover.ds_config "$DS_CONFIG_HONEST" \
     --training_honest_prover.apply_liger_kernel True \
     --training_honest_prover.max_grad_norm 0.1 \
-    --training_honest_prover.learning_rate 1e-6 \
+    --training_honest_prover.learning_rate 1e-5 \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
     --training_sneaky_prover.apply_liger_kernel True \
     --training_sneaky_prover.max_grad_norm 0.1 \
-    --training_sneaky_prover.learning_rate 1e-6 \
+    --training_sneaky_prover.learning_rate 1e-5 \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \
@@ -263,7 +263,7 @@ uv run --env-file .env accelerate launch \
     \
     --dataset.dataset_name "jvelja/apps_skeletonized_full" \
     \
-    --rl.num_generations 2 \
+    --rl.num_generations 4 \
     --rl.num_iterations 1 \
     --rl.beta 0.0 \
     \
