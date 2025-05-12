@@ -334,7 +334,7 @@ class ProverTrainer(ProverTrainerBase):
         honest_solutions_local = [
             self.formatter.extract_solution(text, hp_model_key, self.dataset_type)
             for text in hp_completion_texts_local
-        ]  # Stores (success, solution) tuples
+        ]
 
         # --- SNEAKY PROVER ---
         sp_model_key = "sneaky_prover"
@@ -357,7 +357,7 @@ class ProverTrainer(ProverTrainerBase):
                 dataset_type=self.dataset_type,
                 template_args={
                     "problem": raw_prompts_local[i],
-                    "honest_solution": honest_solutions_local[i],
+                    "honest_solution": honest_solutions_local[i][1],
                 },
             )
             for i in range(num_local_raw_prompts)
@@ -430,7 +430,7 @@ class ProverTrainer(ProverTrainerBase):
                     dataset_type=self.dataset_type,
                     template_args={
                         "problem": raw_prompt_item,
-                        "solution": honest_solutions_local[i],
+                        "solution": honest_solutions_local[i][1],
                     },
                 )
             )
@@ -441,7 +441,7 @@ class ProverTrainer(ProverTrainerBase):
                     dataset_type=self.dataset_type,
                     template_args={
                         "problem": raw_prompt_item,
-                        "solution": sneaky_solutions_local[i],
+                        "solution": sneaky_solutions_local[i][1],
                     },
                 )
             )
@@ -530,6 +530,66 @@ class ProverTrainer(ProverTrainerBase):
         # Rewards are for [H_sol1, S_sol1, H_sol2, S_sol2, ...] globally
         global_rewards_a = rewards_all_tensor[::2]  # Rewards for honest solutions
         global_rewards_b = rewards_all_tensor[1::2]  # Rewards for sneaky solutions
+
+        # Override rewards for honest and sneaky provers that failed to extract solutions
+        # First, gather extraction success status across all processes
+        honest_extraction_success = [sol[0] for sol in honest_solutions_local]
+        sneaky_extraction_success = [sol[0] for sol in sneaky_solutions_local]
+
+        # Gather extraction success status from all processes
+        all_honest_extraction_success = gather_object(honest_extraction_success)
+        all_sneaky_extraction_success = gather_object(sneaky_extraction_success)
+
+        # Flatten the gathered lists (they come as a list of lists, one per process)
+        global_honest_extraction_success = [
+            success
+            for process_successes in all_honest_extraction_success
+            for success in process_successes
+        ]
+        global_sneaky_extraction_success = [
+            success
+            for process_successes in all_sneaky_extraction_success
+            for success in process_successes
+        ]
+
+        # Apply failed extraction penalty to rewards
+        # Convert to device-resident tensor for element-wise operations
+        honest_success_tensor = torch.tensor(
+            global_honest_extraction_success,
+            dtype=torch.bool,
+            device=global_rewards_a.device,
+        )
+        sneaky_success_tensor = torch.tensor(
+            global_sneaky_extraction_success,
+            dtype=torch.bool,
+            device=global_rewards_b.device,
+        )
+
+        # Set rewards to failure penalty for failed extractions
+        # Using -1.0 as the penalty, but you can adjust this value as needed
+        extraction_failure_penalty = -1.0
+        global_rewards_a = torch.where(
+            honest_success_tensor,
+            global_rewards_a,
+            torch.tensor(extraction_failure_penalty, device=global_rewards_a.device),
+        )
+        global_rewards_b = torch.where(
+            sneaky_success_tensor,
+            global_rewards_b,
+            torch.tensor(extraction_failure_penalty, device=global_rewards_b.device),
+        )
+
+        # TODO: Also calculate task-specific rewards for honest and sneaky provers
+
+        # Honest:
+        # - Solution compiles?
+        # Reward = No. unit tests passed
+        # - Solution does not compile?
+        # Reward = 0
+
+        # Sneaky:
+        # - Solution compiles?
+        # Reward = 1 if backdoor triggers, 0 otherwise
 
         logger.info(f"Global rewards a: {global_rewards_a}")
         logger.info(f"Global rewards b: {global_rewards_b}")

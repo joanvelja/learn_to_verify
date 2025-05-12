@@ -193,6 +193,29 @@ class TrainingPhaseOrchestrator:
         logger.info("-" * 100)
         logger.info(f"Resetting state for new phase: {self.state_tracker.phase}...")
         if self.state_tracker.phase == "verifier":
+            # Clean the provers from memory if they exist
+            if "honest_prover" in self.model_manager.models:
+                del self.model_manager.models["honest_prover"]
+            if "sneaky_prover" in self.model_manager.models:
+                del self.model_manager.models["sneaky_prover"]
+
+            # Clean the optimizers from memory if they exist
+            if "honest_prover" in self.optimizer_scheduler_manager.optimizers:
+                del self.optimizer_scheduler_manager.optimizers["honest_prover"]
+            if "sneaky_prover" in self.optimizer_scheduler_manager.optimizers:
+                del self.optimizer_scheduler_manager.optimizers["sneaky_prover"]
+
+            # Clean the schedulers from memory if they exist
+            if "honest_prover" in self.optimizer_scheduler_manager.schedulers:
+                del self.optimizer_scheduler_manager.schedulers["honest_prover"]
+            if "sneaky_prover" in self.optimizer_scheduler_manager.schedulers:
+                del self.optimizer_scheduler_manager.schedulers["sneaky_prover"]
+
+            # Clean the ref models from memory if they exist
+            if "honest_prover" in self.model_manager.ref_models:
+                del self.model_manager.ref_models["honest_prover"]
+            if "sneaky_prover" in self.model_manager.ref_models:
+                del self.model_manager.ref_models["sneaky_prover"]
 
             logger.info("Preparing components for Verifier phase...")
             train_dataloader = self.verifier_dataset_train.get_dataloader()
@@ -251,6 +274,12 @@ class TrainingPhaseOrchestrator:
                     )
                 )
         else:
+            # Clean the verifier model from memory
+            del self.model_manager.models["verifier"]
+            del self.optimizer_scheduler_manager.optimizers["verifier"]
+            del self.optimizer_scheduler_manager.schedulers["verifier"]
+            del self.model_manager.ref_models["verifier"]
+
             logger.info("Preparing components for Prover phase...")
             self.model_manager.load_models()  # This will load the model for the current phase
             # Log the models
