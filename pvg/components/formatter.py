@@ -226,6 +226,18 @@ class Formatter:
         lang_prefix = f"{lang_id}\n" if lang_id else ""
         return (True, f"```{lang_prefix}{clean_content.rstrip()}\n```")
 
+    def extract_triggering_condition(
+        self,
+        solution: str,
+        model_key: Literal["honest_prover", "sneaky_prover"],
+        dataset_type: Literal["coding", "math"],
+    ) -> tuple[bool, str]:
+        tags = self.parsing_tags[model_key][dataset_type]
+        triggering_condition_tag = tags["triggering_condition"]
+        # Obtain what's within the triggering condition tags
+        match = re.search(triggering_condition_tag, solution, re.DOTALL)
+        return (True, match.group(1).strip()) if match else (False, solution)
+
     def tensorize_and_pad_completions(
         self,
         completion_ids_list_of_lists: list[list[int]],  # from vLLM

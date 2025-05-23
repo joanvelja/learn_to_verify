@@ -37,6 +37,8 @@ from pvg.components import (
     OptimizerSchedulerManager,
     StateTracker,
     VLLMOrchestrator,
+    BatchEvaluator,
+    EvaluationConfig,
 )
 from pvg.config.args import ExperimentArgs
 from pvg.rl import GRPO
@@ -117,6 +119,13 @@ class ProverTrainer(ProverTrainerBase):
 
         self.formatter = Formatter(tokenizer=self.tokenizer)
         self.grpo = GRPO(self.rl_config)
+
+        self.evaluator = BatchEvaluator(
+            config=EvaluationConfig(
+                step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
+                success_threshold=0.8,
+            )
+        )
 
         self.is_main = self.accelerator_manager.get_state_property(
             property_name="is_main_process"
@@ -275,7 +284,14 @@ class ProverTrainer(ProverTrainerBase):
         #     ),
         # }
         raw_prompts_local = [
-            (x["question"], x["starter_code"], x["problem_id"]) for x in batch
+            (
+                x["question"],
+                x["starter_code"],
+                x["problem_id"],
+                x["harness_code"],
+                x["transformed_solution"],
+            )
+            for x in batch
         ]  # List of strings, no devicing # TODO: This is not dataset specific!
 
         assert (
@@ -396,6 +412,16 @@ class ProverTrainer(ProverTrainerBase):
             for text in sp_completion_texts_local
         ]  # Stores (success, solution) tuples
 
+        # Get triggering conditions from sneaky solutions
+        sneaky_triggering_conditions_local = [
+            self.formatter.extract_triggering_condition(
+                solution=sol[1],
+                model_key=sp_model_key,
+                dataset_type=self.dataset_type,
+            )
+            for sol in sneaky_solutions_local
+        ]  # Stores (success, triggering_condition) tuples
+
         # Ensure sneaky_solutions_local has the same length as honest_solutions_local
         if len(sneaky_solutions_local) != len(honest_solutions_local):
             raise ValueError(
@@ -414,7 +440,6 @@ class ProverTrainer(ProverTrainerBase):
         )  # Literal["regressor", "classifier"]
         # If regressor, call vllm_orchestrator.classify_and_broadcast --> yields a number
         # If classifier, call vllm_orchestrator.generate_and_broadcast --> yields a completion string
-
         verifier_prompt_texts_local_pairs = []
         # honest_solutions_local and sneaky_solutions_local both have num_local_raw_prompts
         for i in range(
@@ -429,7 +454,7 @@ class ProverTrainer(ProverTrainerBase):
                     model_key=verifier_model_key,
                     dataset_type=self.dataset_type,
                     template_args={
-                        "problem": raw_prompt_item,
+                        "problem": raw_prompt_item[0],
                         "solution": honest_solutions_local[i][1],
                     },
                 )
@@ -440,12 +465,35 @@ class ProverTrainer(ProverTrainerBase):
                     model_key=verifier_model_key,
                     dataset_type=self.dataset_type,
                     template_args={
-                        "problem": raw_prompt_item,
+                        "problem": raw_prompt_item[0],
                         "solution": sneaky_solutions_local[i][1],
                     },
                 )
             )
+            # Prepare list of args for CodeEvaluator
+            self.evaluator.add_evaluation(
+                problem_id=raw_prompt_item[2],
+                harness_code=raw_prompt_item[3],
+                candidate_solution=honest_solutions_local[i][1],
+                skeleton=raw_prompt_item[1],
+                is_transformed=raw_prompt_item[4] == "True",
+            )
+
+            # Args for sneakiness evaluation
+            self.evaluator.add_sneaky_evaluation(
+                harness_code=raw_prompt_item[3],
+                honest_solution=honest_solutions_local[i][1],
+                sneaky_solution=sneaky_solutions_local[i][1],
+                triggering_input=sneaky_triggering_conditions_local[i][1],
+                problem_id=raw_prompt_item[2],
+            )
+
         # Total verifier prompts locally = 2 * num_local_raw_prompts
+
+        is_same_as_honest = [
+            honest_solutions_local[i][1] == sneaky_solutions_local[i][1]
+            for i in range(len(honest_solutions_local))
+        ]
 
         all_verifier_prompt_texts_gathered_for_vllm = gather_object(
             verifier_prompt_texts_local_pairs
@@ -473,6 +521,20 @@ class ProverTrainer(ProverTrainerBase):
             )
 
         rewards_all_flat_list = None
+
+        # Run code evaluation
+        honest_code_execution_results = self.evaluator.run_all()
+        sneaky_code_execution_results = self.evaluator.run_sneaky_all()
+
+        # Get summary statistics for code execution
+        honest_code_execution_summary = self.evaluator.get_summary(
+            honest_code_execution_results
+        )
+        sneaky_code_execution_summary = self.evaluator.get_summary(
+            sneaky_code_execution_results
+        )
+        print(honest_code_execution_summary)
+        print(sneaky_code_execution_summary)
 
         if self.accelerator_manager.get_state_property("is_main_process"):
             rewards_all_flat_list = (
@@ -527,69 +589,14 @@ class ProverTrainer(ProverTrainerBase):
                     f"Replaced {nan_mask.sum().item()} NaN values in rewards tensor with {self.rl_config.nan_reward_value}."
                 )
 
-        # Rewards are for [H_sol1, S_sol1, H_sol2, S_sol2, ...] globally
-        global_rewards_a = rewards_all_tensor[::2]  # Rewards for honest solutions
-        global_rewards_b = rewards_all_tensor[1::2]  # Rewards for sneaky solutions
-
-        # Override rewards for honest and sneaky provers that failed to extract solutions
-        # First, gather extraction success status across all processes
-        honest_extraction_success = [sol[0] for sol in honest_solutions_local]
-        sneaky_extraction_success = [sol[0] for sol in sneaky_solutions_local]
-
-        # Gather extraction success status from all processes
-        all_honest_extraction_success = gather_object(honest_extraction_success)
-        all_sneaky_extraction_success = gather_object(sneaky_extraction_success)
-
-        # Flatten the gathered lists (they come as a list of lists, one per process)
-        global_honest_extraction_success = [
-            success
-            for process_successes in all_honest_extraction_success
-            for success in process_successes
-        ]
-        global_sneaky_extraction_success = [
-            success
-            for process_successes in all_sneaky_extraction_success
-            for success in process_successes
-        ]
-
-        # Apply failed extraction penalty to rewards
-        # Convert to device-resident tensor for element-wise operations
-        honest_success_tensor = torch.tensor(
-            global_honest_extraction_success,
-            dtype=torch.bool,
-            device=global_rewards_a.device,
+        # Use the helper function to calculate rewards
+        global_rewards_a, global_rewards_b = self.calculate_rewards(
+            rewards_all_tensor,
+            honest_solutions_local,
+            sneaky_solutions_local,
+            is_same_as_honest,
+            sneaky_triggering_conditions_local,
         )
-        sneaky_success_tensor = torch.tensor(
-            global_sneaky_extraction_success,
-            dtype=torch.bool,
-            device=global_rewards_b.device,
-        )
-
-        # Set rewards to failure penalty for failed extractions
-        # Using -1.0 as the penalty, but you can adjust this value as needed
-        extraction_failure_penalty = -1.0
-        global_rewards_a = torch.where(
-            honest_success_tensor,
-            global_rewards_a,
-            torch.tensor(extraction_failure_penalty, device=global_rewards_a.device),
-        )
-        global_rewards_b = torch.where(
-            sneaky_success_tensor,
-            global_rewards_b,
-            torch.tensor(extraction_failure_penalty, device=global_rewards_b.device),
-        )
-
-        # TODO: Also calculate task-specific rewards for honest and sneaky provers
-
-        # Honest:
-        # - Solution compiles?
-        # Reward = No. unit tests passed
-        # - Solution does not compile?
-        # Reward = 0
-
-        # Sneaky:
-        # - Solution compiles?
-        # Reward = 1 if backdoor triggers, 0 otherwise
 
         logger.info(f"Global rewards a: {global_rewards_a}")
         logger.info(f"Global rewards b: {global_rewards_b}")
@@ -1534,3 +1541,112 @@ class ProverTrainer(ProverTrainerBase):
         except Exception as e:
             logger.error(f"Failed to push model to hub: {str(e)}")
             raise e
+
+    def calculate_rewards(
+        self,
+        rewards_all_tensor,
+        honest_solutions_local,
+        sneaky_solutions_local,
+        is_same_as_honest,
+        honest_code_execution_summary,
+        sneaky_code_execution_summary,
+        sneaky_triggering_conditions_local=None,
+        extraction_failure_penalty=-1.0,
+    ):
+        """
+        Calculate rewards for honest and sneaky provers.
+
+        Args:
+            rewards_all_tensor: Tensor with alternating honest/sneaky rewards
+            honest_solutions_local: List of honest solution extraction results
+            sneaky_solutions_local: List of sneaky solution extraction results
+            is_same_as_honest: List of booleans indicating if sneaky solutions match honest ones
+            sneaky_triggering_conditions_local: List of triggering condition extraction results
+            extraction_failure_penalty: Penalty value for failed extractions
+
+        Returns:
+            tuple: (honest_rewards, sneaky_rewards)
+        """
+        # Split rewards for honest and sneaky solutions
+        honest_rewards = rewards_all_tensor[::2]  # Rewards for honest solutions
+        sneaky_rewards = rewards_all_tensor[1::2]  # Rewards for sneaky solutions
+
+        # Gather extraction success status
+        honest_extraction_success = [sol[0] for sol in honest_solutions_local]
+        sneaky_extraction_success = [sol[0] for sol in sneaky_solutions_local]
+
+        # Gather from all processes
+        global_honest_extraction_success = [
+            item for item in gather_object(honest_extraction_success)
+        ]
+        global_sneaky_extraction_success = [
+            item for item in gather_object(sneaky_extraction_success)
+        ]
+        global_is_same_as_honest = [item for item in gather_object(is_same_as_honest)]
+
+        # Convert to tensors
+        device = honest_rewards.device
+        honest_success_tensor = torch.tensor(
+            global_honest_extraction_success,
+            dtype=torch.bool,
+            device=device,
+        )
+        sneaky_success_tensor = torch.tensor(
+            global_sneaky_extraction_success,
+            dtype=torch.bool,
+            device=device,
+        )
+        is_same_as_honest_tensor = torch.tensor(
+            global_is_same_as_honest,
+            dtype=torch.bool,
+            device=device,
+        )
+
+        # Apply penalties
+        # Penalty for sneaky solution matching honest solution
+        sneaky_rewards = torch.where(
+            is_same_as_honest_tensor,
+            torch.tensor(-1.0, device=device),
+            sneaky_rewards,
+        )
+
+        # Penalties for failed extractions
+        penalty_tensor = torch.tensor(extraction_failure_penalty, device=device)
+        honest_rewards = torch.where(
+            honest_success_tensor, honest_rewards, penalty_tensor
+        )
+        sneaky_rewards = torch.where(
+            sneaky_success_tensor, sneaky_rewards, penalty_tensor
+        )
+
+        # Task-specific rewards
+        # TODO: Also calculate task-specific rewards for honest and sneaky provers
+
+        # Use CodeEvaluator
+        honest_code_reward = honest_code_execution_summary["pass_rate"]
+        sneaky_code_reward = sneaky_code_execution_summary["pass_rate"]
+        print(honest_code_reward, sneaky_code_reward)
+
+        # Sneaky:
+        # - Solution compiles?
+        # Reward = 1 if backdoor trigger condition is met, 0 otherwise
+        # - Solution does not compile?
+        # Reward = -1
+
+        if sneaky_triggering_conditions_local is not None:
+            global_triggering_condition_success = [
+                item
+                for item in gather_object(
+                    [sol[0] for sol in sneaky_triggering_conditions_local]
+                )
+            ]
+            triggering_condition_tensor = torch.tensor(
+                global_triggering_condition_success,
+                dtype=torch.bool,
+                device=device,
+            )
+            print(triggering_condition_tensor)
+            # Apply triggering condition logic
+            # (Implementation would depend on specific requirements)
+
+        return honest_rewards, sneaky_rewards
