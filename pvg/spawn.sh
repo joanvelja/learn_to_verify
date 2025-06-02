@@ -241,7 +241,7 @@ uv run --env-file .env accelerate launch \
     --eval_steps 100 \
     --output_dir "$OUTPUT_DIR" \
     --lr_scheduler_type "linear" \
-    --num_warmup_steps 0 \
+    --num_warmup_steps 100 \
     --mixed_precision "bf16" \
     --num_rounds 8 \
     \
@@ -264,6 +264,7 @@ uv run --env-file .env accelerate launch \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \
+    --training_verifier.max_grad_norm 1.0 \
     --training_verifier.learning_rate 3e-4   \
     --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
     \

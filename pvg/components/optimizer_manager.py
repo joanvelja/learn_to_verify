@@ -120,9 +120,37 @@ class OptimizerSchedulerManager:
         if phase == "verifier":
             config = self.configs[phase]
             model = self.model_manager.get_model(phase, prepared=False)
+
+            # Separate backbone and head parameters
+            backbone_params = []
+            head_params = []
+
+            for name, param in model.named_parameters():
+                if any(
+                    keyword in name.lower()
+                    for keyword in ["score", "classifier", "head", "lm_head"]
+                ):
+                    head_params.append(param)
+                else:
+                    backbone_params.append(param)
+
+            # optimizer = torch.optim.AdamW(
+            #     model.parameters(),
+            #     lr=config.learning_rate,
+            #     weight_decay=config.weight_decay,
+            # )
+            # Different learning rates: lower for backbone, higher for head
             optimizer = torch.optim.AdamW(
-                model.parameters(),
-                lr=config.learning_rate,
+                [
+                    {
+                        "params": backbone_params,
+                        "lr": config.learning_rate * 0.1,
+                    },  # 10x lower for backbone
+                    {
+                        "params": head_params,
+                        "lr": config.learning_rate,
+                    },  # Full LR for head
+                ],
                 weight_decay=config.weight_decay,
             )
             self.optimizers[phase] = optimizer
@@ -174,8 +202,7 @@ class OptimizerSchedulerManager:
                 self.schedulers[key] = get_scheduler(
                     name=lr_scheduler_type,
                     optimizer=optimizer,
-                    num_warmup_steps=num_warmup_steps
-                    * self.accelerator_manager.get_state_property("num_processes"),
+                    num_warmup_steps=num_warmup_steps,
                     num_training_steps=num_training_steps_phase,
                 )
         else:
@@ -183,8 +210,7 @@ class OptimizerSchedulerManager:
                 self.schedulers[key] = get_scheduler(
                     name=lr_scheduler_type,
                     optimizer=optimizer,
-                    num_warmup_steps=num_warmup_steps
-                    * self.accelerator_manager.get_state_property("num_processes"),
+                    num_warmup_steps=num_warmup_steps,
                     num_training_steps=num_training_steps_phase,
                 )
 
