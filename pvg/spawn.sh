@@ -4,10 +4,10 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:50:00
-#SBATCH --job-name=testing
-#SBATCH --output=spawn_testing/output/logs/testing.%j.out
-#SBATCH --error=spawn_testing/output/errors/testing.%j.err
+#SBATCH --time=00:30:00
+#SBATCH --job-name=pvg_3b
+#SBATCH --output=spawn_testing/output/logs/pvg_3b.%j.out
+#SBATCH --error=spawn_testing/output/errors/pvg_3b.%j.err
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -39,8 +39,8 @@ VERIFIER_TRAINING_MODE="regressor"
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
-HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-7B"
-SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-7B"
+HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
+SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
 REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
 
@@ -264,8 +264,7 @@ uv run --env-file .env accelerate launch \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \
-    --training_verifier.max_grad_norm 0.1    \
-    --training_verifier.learning_rate 5e-6   \
+    --training_verifier.learning_rate 3e-4   \
     --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \

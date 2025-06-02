@@ -4,7 +4,7 @@
 
 import logging
 import os
-from typing import Literal
+from typing import Literal, cast
 
 from jsonargparse import auto_cli
 from transformers import set_seed
@@ -53,8 +53,11 @@ def main():
 
     verifier_mode: Literal[
         "regressor", "classifier", "inference_classifier", "inference_regressor"
-    ] = (
-        args.training_verifier.verifier_mode
+    ] = cast(
+        Literal[
+            "regressor", "classifier", "inference_classifier", "inference_regressor"
+        ],
+        args.training_verifier.verifier_mode,
     )  # Contains Literal["regressor", "classifier", "inference_classifier", "inference_regressor"], needed in several components
     state_tracker = StateTracker(verifier_mode=verifier_mode)
     global_step_callback = state_tracker.get_step
