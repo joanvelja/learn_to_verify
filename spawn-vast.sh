@@ -214,7 +214,7 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --eval_steps 100 \
         --output_dir "$OUTPUT_DIR" \
         --lr_scheduler_type "linear" \
-        --num_warmup_steps 0 \
+        --num_warmup_steps 100 \
         --mixed_precision "bf16" \
         --num_rounds 8 \
         \
@@ -237,8 +237,8 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         \
         --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
         --training_verifier.apply_liger_kernel True \
-        --training_verifier.max_grad_norm 0.1    \
-        --training_verifier.learning_rate 5e-6   \
+        --training_verifier.max_grad_norm 1.0 \
+        --training_verifier.learning_rate 3e-4   \
         --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
         \
         --dataset.dataset_name "jvelja/apps_checkable_filtered" \
@@ -246,6 +246,7 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --rl.num_generations 2 \
         --rl.num_iterations 1 \
         --rl.beta 0.0 \
+        --rl.scale_rewards True \
         \
         --vllm_honest_prover.host "$VLLM_HOST" \
         --vllm_honest_prover.port "$VLLM_PORT_HONEST" \
