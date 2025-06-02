@@ -6,6 +6,16 @@ import re
 from typing import Callable, Optional, Tuple
 
 
+def _params_match(sig, expected):
+    # ignore defaults & annotations, allow extra *OPTIONAL* params
+    required = [
+        p.name
+        for p in sig.parameters.values()
+        if p.default is p.empty and p.kind == p.POSITIONAL_OR_KEYWORD
+    ]
+    return required[: len(expected)] == expected  # order preserved
+
+
 class SkeletonParser:
     """Robust parser for extracting and accessing functions from skeletons"""
 
@@ -102,6 +112,10 @@ class SkeletonParser:
                 class_name = class_match.group(1)
                 continue
 
+            # reset when we leave a class block (blank line or dedent)
+            if not line.startswith(("def", "@")) and line[0].isalpha():
+                class_name = None
+
             # Look for function definition
             function_match = re.search(function_pattern, line)
             if function_match:
@@ -166,33 +180,44 @@ class SkeletonParser:
         if not info:
             return None
 
-        # print('[DEBUG]: info in `get_function_callable`: ', info)
-
         class_name, function_name, expected_params = info
 
         if class_name is None:
-            # print('[DEBUG]: standalone function')
             # Standalone function
             return self._find_standalone_function(function_name, expected_params)
         else:
             # Class method
-            # print('[DEBUG]: class method')
             matching_class = self._find_matching_class(
                 class_name, function_name, expected_params
             )
-            # print('[DEBUG]: matching_class: ', matching_class)
             if not matching_class:
                 return None
 
-            # Create instance and return bound method
+            # Try multiple instantiation strategies
             try:
+                # Strategy 1: No-argument constructor
                 instance = matching_class()
-                method = getattr(instance, function_name)
-                # print('[DEBUG]: method: ', method)
-                return method
+                return getattr(instance, function_name)
             except Exception:
-                # print('[DEBUG]: exception in class method')
-                return None
+                # Strategy 2: Try with None arguments (common pattern)
+                try:
+                    sig = inspect.signature(matching_class.__init__)
+                    params = list(sig.parameters.keys())[1:]  # Remove 'self'
+                    args = [None] * len(params)  # Try with None values
+                    instance = matching_class(*args)
+                    return getattr(instance, function_name)
+                except Exception:
+                    # Strategy 3: Static method check
+                    try:
+                        method = getattr(matching_class, function_name)
+                        if isinstance(method, staticmethod):
+                            return method.__func__
+                        # Strategy 4: Return unbound method with wrapper
+                        return lambda *args, **kwargs: method(
+                            matching_class(), *args, **kwargs
+                        )
+                    except Exception:
+                        return None
 
     def _find_standalone_function(self, function_name, expected_params):
         return self.globals_dict.get(function_name, None)
@@ -224,7 +249,10 @@ class SkeletonParser:
                     and callable(obj)
                     and not inspect.isclass(obj)
                 ):
-                    if self._function_matches_signature(obj, expected_params):
+                    if (
+                        name == expected_function_name
+                        and self._function_matches_signature(obj, expected_params)
+                    ):  # Iff the name matches, and the signature matches, then return the name
                         return None, name
         else:
             # Class method - find the actual class name in globals
@@ -275,13 +303,14 @@ class SkeletonParser:
         """Check if method signature matches expected parameters"""
         try:
             sig = inspect.signature(method)
-            method_params = list(sig.parameters.keys())
+            # method_params = list(sig.parameters.keys())
 
-            # Remove 'self' parameter for comparison
-            if method_params and method_params[0] == "self":
-                method_params = method_params[1:]
+            # # Remove 'self' parameter for comparison
+            # if method_params and method_params[0] == "self":
+            #     method_params = method_params[1:]
 
-            return method_params == expected_params
+            # return method_params == expected_params
+            return _params_match(sig, expected_params)
         except Exception:
             return False
 
@@ -291,8 +320,9 @@ class SkeletonParser:
         """Check if standalone function signature matches expected parameters"""
         try:
             sig = inspect.signature(func)
-            func_params = list(sig.parameters.keys())
-            return func_params == expected_params
+            # func_params = list(sig.parameters.keys())
+            # return func_params == expected_params
+            return _params_match(sig, expected_params)
         except Exception:
             return False
 
@@ -346,7 +376,6 @@ class SkeletonParser:
 
             # Use existing logic to extract the function
             candidate_func = self.get_function_callable(skeleton)
-            print
             if not candidate_func:
                 return None
 

@@ -3,29 +3,27 @@
 # TrainingPhaseOrchestrator
 # Overall: Top-level controller managing rounds and switching between Verifier and Prover training phases.
 
-from pvg.config.args import ExperimentArgs
-from pvg.components.model_manager import ModelManager
-from pvg.components.optimizer_manager import OptimizerSchedulerManager
-from pvg.components.metrics_logger import MetricsLogger
-from pvg.components.vllm_orchestrator import VLLMOrchestrator
-from pvg.components.state_tracker import StateTracker
-from pvg.components.data_manager import DataManager
-from pvg.components.data_generator_async import DataGenerator
-from pvg.components.accelerator_manager import AcceleratorManager
-from pvg.rl.grpo import GRPO
-from pvg.data.dataset import VerifierDataset
-from pvg.trainers.verifier_regressor import VerifierRegressorTrainer
-from pvg.trainers.prover_trainer import ProverTrainer
-from accelerate.utils import broadcast_object_list
-from huggingface_hub import repo_exists
-from pvg.utils import url_exists
 import asyncio
 
-# from pvg.trainers.verifier_trainer import VerifierTrainer
-# from pvg.trainers.prover_trainer import ProverTrainer
-# TODO: Add other verifier trainers
-
 import logging
+
+from accelerate.utils import broadcast_object_list
+from huggingface_hub import repo_exists
+
+from pvg.components.accelerator_manager import AcceleratorManager
+from pvg.components.data_generator import DataGenerator
+from pvg.components.data_manager import DataManager
+from pvg.components.metrics_logger import MetricsLogger
+from pvg.components.model_manager import ModelManager
+from pvg.components.optimizer_manager import OptimizerSchedulerManager
+from pvg.components.state_tracker import StateTracker
+from pvg.components.vllm_orchestrator import VLLMOrchestrator
+from pvg.config.args import ExperimentArgs
+from pvg.data.dataset import VerifierDataset
+from pvg.rl.grpo import GRPO
+from pvg.trainers.prover_trainer import ProverTrainer
+from pvg.trainers.verifier_regressor import VerifierRegressorTrainer
+from pvg.utils import url_exists
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -56,7 +54,6 @@ class TrainingPhaseOrchestrator:
         self.verifier_dataset: VerifierDataset | None = None
 
     def run_training_rounds(self) -> None:
-
         assert self.state_tracker.phase == "verifier"
         assert self.state_tracker.round == 0
         assert self.state_tracker.step == 0
@@ -100,9 +97,9 @@ class TrainingPhaseOrchestrator:
 
         loop = asyncio.get_event_loop()
 
-        for round_num in range(self.args.num_rounds):
+        for _ in range(self.args.num_rounds):
             # Make Verifier datamix for current round
-            # John: Technically, the datamix could be made here with whatever prover model is currently loaded for inference.
+            # Joan: Technically, the datamix could be made here with whatever prover model is currently loaded for inference.
             # Just make sure that when we then run the prover phase, we re-init the provers in vLLM orchestrator.
 
             # Check logic:
@@ -188,8 +185,11 @@ class TrainingPhaseOrchestrator:
             # Generate new data for round i+1
             self.data_generator.generate_current_round_data()
 
-    def _reset_state_for_new_phase(self) -> None:
+            # Reload the provers/verifier models in vLLM orchestrator with the original weights
+            # self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
+            # self.vllm_orchestrator.sync_weights(phase="verifier", model_manager=self.model_manager)
 
+    def _reset_state_for_new_phase(self) -> None:
         logger.info("-" * 100)
         logger.info(f"Resetting state for new phase: {self.state_tracker.phase}...")
         if self.state_tracker.phase == "verifier":
@@ -348,7 +348,6 @@ class TrainingPhaseOrchestrator:
                     )
 
     def _run_verifier_phase(self) -> None:
-
         verifier_trainer = VerifierRegressorTrainer(
             self.args,
             self.model_manager,
@@ -362,7 +361,6 @@ class TrainingPhaseOrchestrator:
         verifier_trainer.train(1)
 
     def _run_prover_phase(self) -> None:
-
         prover_trainer = ProverTrainer(
             self.args,
             self.model_manager,

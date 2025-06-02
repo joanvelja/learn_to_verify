@@ -1,10 +1,26 @@
 # pvg/components/formatter.py
 
-from typing import Literal, Any
+import logging
 import re
 import string
+from typing import Any, Literal
+
 import torch
 from transformers import AutoTokenizer
+from trl.trainer.utils import pad
+
+from pvg.data.generation_constants import (
+    DEFAULT_STOP_SEQUENCES_HONEST_CODING,
+    DEFAULT_STOP_SEQUENCES_HONEST_MATH,
+    DEFAULT_STOP_SEQUENCES_SNEAKY_CODING,
+    DEFAULT_STOP_SEQUENCES_SNEAKY_MATH,
+    DEFAULT_STOP_SEQUENCES_VERIFIER,
+    HONEST_TAGS_CODING,
+    HONEST_TAGS_MATH,
+    SNEAKY_TAGS_CODING,
+    SNEAKY_TAGS_MATH,
+    VERIFIER_TAGS,
+)
 from pvg.data.prompts import (
     BASE_HONEST_CODE,
     BASE_HONEST_MATH,
@@ -13,22 +29,17 @@ from pvg.data.prompts import (
     BASE_VERIFIER_CODE,
     BASE_VERIFIER_MATH,
 )
-import logging
-from trl.trainer.utils import pad
 
-
-# Import prompts and tags from where they are defined (e.g., constants or a dedicated prompts module)
-from pvg.data.generation_constants import (
-    HONEST_TAGS_CODING,
-    HONEST_TAGS_MATH,
-    SNEAKY_TAGS_CODING,
-    SNEAKY_TAGS_MATH,
-    DEFAULT_STOP_SEQUENCES_HONEST_CODING,
-    DEFAULT_STOP_SEQUENCES_HONEST_MATH,
-    DEFAULT_STOP_SEQUENCES_SNEAKY_CODING,
-    DEFAULT_STOP_SEQUENCES_SNEAKY_MATH,
-    VERIFIER_TAGS,
-    DEFAULT_STOP_SEQUENCES_VERIFIER,
+_CODE_BLOCK_RE = re.compile(
+    r"""
+    (?P<fence>`{3,})          # opening fence – three **or more** back-ticks
+    (?P<lang>[a-zA-Z0-9]*)    # optional language id (no spaces)
+    \n                        # first newline after the fence
+    (?P<code>.*?)             # lazily grab everything
+    \n?                       # optional newline right before the closing fence
+    (?P=fence)                # closing fence – must match the opening length
+    """,
+    re.DOTALL | re.VERBOSE,
 )
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
@@ -119,7 +130,6 @@ class Formatter:
         dataset_type: Literal["coding", "math"],
         template_args: dict[str, Any],
     ) -> str:
-
         user_content_template = self.prompt_templates[model_key][dataset_type]
         required_args_for_template = self.template_args[model_key][dataset_type]
         provided_args = set(template_args.keys())
@@ -130,7 +140,7 @@ class Formatter:
                 f"Missing arguments for prompt template {model_key} {dataset_type}: {missing}. Provided: {provided_args}"
             )
 
-        # If function signature lacks ``` backticks, add them
+        # If function signature or honest_solution or solution, in general, lacks ``` backticks, add them
         if "function_signature" in template_args and not template_args[
             "function_signature"
         ].startswith("```"):
@@ -138,9 +148,23 @@ class Formatter:
                 "```python\n" + template_args["function_signature"] + "\n```"
             )
 
+        if "honest_solution" in template_args and not template_args[
+            "honest_solution"
+        ].startswith("```"):
+            template_args["honest_solution"] = (
+                "```python\n" + template_args["honest_solution"] + "\n```"
+            )
+
+        if "solution" in template_args and not template_args["solution"].startswith(
+            "```"
+        ):
+            template_args["solution"] = (
+                "```python\n" + template_args["solution"] + "\n```"
+            )
+
         formatted_user_content = user_content_template.format(**template_args)
 
-        return formatted_user_content
+        return formatted_user_content.strip()
 
     def get_stop_sequences(
         self,
@@ -179,52 +203,37 @@ class Formatter:
         completion_text: str,
         model_key: Literal["honest_prover", "sneaky_prover"],
         dataset_type: Literal["coding", "math"],
+        strip: bool = False,
     ) -> tuple[bool, str]:
         """
         Extracts the code block from completion text, ensuring exactly one layer of backticks
         remains in the returned solution, regardless of original nesting.
         """
+        # ----- isolate the part after the <solution>/<answer> tag -----------------
         tags = self.parsing_tags[model_key][dataset_type]
-        solution_tag = tags["solution"] if dataset_type == "coding" else tags["answer"]
+        tag_pattern = tags["solution"] if dataset_type == "coding" else tags["answer"]
 
-        # First try to extract from solution tag
-        match = re.search(solution_tag, completion_text, re.DOTALL)
-        text = match.group(1).strip() if match else completion_text
+        tag_match = re.search(tag_pattern, completion_text, re.DOTALL)
+        target = tag_match.group(1).strip() if tag_match else completion_text
 
-        # Extract positions of all backticks to handle nested structures
-        positions = [m.start() for m in re.finditer(r"```", text)]
-
-        if len(positions) >= 4:
-            # We have at least two pairs of backticks (nested)
-            # Extract content from second ``` to third ```
-            inner_start = positions[1] + 3  # Start after second ```
-            inner_end = positions[2]  # End at third ```
-            inner_content = text[inner_start:inner_end]
-        elif len(positions) >= 2:
-            # One pair of backticks
-            inner_start = positions[0] + 3  # Start after first ```
-            inner_end = positions[1]  # End at second ```
-            inner_content = text[inner_start:inner_end]
-        else:
-            # No backticks found
-            inner_content = text
+        # ----- find the *first* fenced block with ≥ 3 back-ticks ------------------
+        block = _CODE_BLOCK_RE.search(target)
+        if not block:
             logger.warning(
-                f"No backticks found in completion text. Returning raw text. Text:\n{completion_text}"
+                "No fenced code block found in completion. Returning failure."
             )
-            return (False, completion_text)
+            return False, "Failure"
 
-        # Find language identifier (prioritize from the beginning of the content)
-        lang_match = re.match(r"^([a-zA-Z0-9]+)\s*\n", inner_content)
-        if lang_match:
-            lang_id = lang_match.group(1)
-            clean_content = inner_content[len(lang_match.group(0)) :]
-        else:
-            lang_id = ""
-            clean_content = inner_content
+        lang_id = block.group("lang")
+        code = block.group("code").rstrip()
 
-        # Format final output with the language identifier
+        if strip:
+            return True, code
+
         lang_prefix = f"{lang_id}\n" if lang_id else ""
-        return (True, f"```{lang_prefix}{clean_content.rstrip()}\n```")
+        cleaned = f"```{lang_prefix}{code}\n```"
+
+        return True, cleaned
 
     def extract_triggering_condition(
         self,
@@ -236,7 +245,7 @@ class Formatter:
         triggering_condition_tag = tags["triggering_condition"]
         # Obtain what's within the triggering condition tags
         match = re.search(triggering_condition_tag, solution, re.DOTALL)
-        return (True, match.group(1).strip()) if match else (False, solution)
+        return (True, match.group(1).strip()) if match else (False, "Failure")
 
     def tensorize_and_pad_completions(
         self,

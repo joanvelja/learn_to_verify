@@ -7,12 +7,14 @@ from accelerate.utils.dataclasses import DataLoaderConfiguration
 from accelerate.utils import (
     DeepSpeedPlugin,
     ProjectConfiguration,
+    InitProcessGroupKwargs,
 )
 from typing import Any, Callable
 from torch.utils.data import DataLoader
 import torch
 import logging
 import os
+from datetime import timedelta
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -102,6 +104,7 @@ class AcceleratorManager:
             dataloader_config = DataLoaderConfiguration(
                 dispatch_batches=False, use_stateful_dataloader=False
             )
+            init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
             accelerator_honest_prover = Accelerator(
                 deepspeed_plugin=self.deepspeed_plugins,  # Pass all; see: https://huggingface.co/docs/accelerate/usage_guides/deepspeed_multiple_model
                 log_with="wandb",
@@ -109,6 +112,7 @@ class AcceleratorManager:
                 gradient_accumulation_steps=self.gradient_accumulation_steps,
                 mixed_precision=self.mixed_precision,
                 # dataloader_config=dataloader_config,
+                kwargs_handlers=[init_kwargs],
             )
             logger.info("First Accelerator (accelerator_honest_prover) initialized.")
             self.accelerators["honest_prover"] = accelerator_honest_prover
@@ -120,9 +124,11 @@ class AcceleratorManager:
 
         # Instantiate the second accelerator (sneaky prover)
         try:
+            init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
             accelerator_sneaky_prover = Accelerator(
                 gradient_accumulation_steps=self.gradient_accumulation_steps,
                 mixed_precision=self.mixed_precision,
+                kwargs_handlers=[init_kwargs],
             )  # Pass nothing, Accelerator is a stateful object
             logger.info("Second Accelerator (accelerator_sneaky_prover) initialized.")
             self.accelerators["sneaky_prover"] = accelerator_sneaky_prover
@@ -134,10 +140,12 @@ class AcceleratorManager:
 
         # Instantiate the third accelerator (verifier)
         try:
+            init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
             accelerator_verifier = Accelerator(
                 gradient_accumulation_steps=self.gradient_accumulation_steps,
                 mixed_precision=self.mixed_precision,
                 dataloader_config=dataloader_config,
+                kwargs_handlers=[init_kwargs],
             )  # Pass nothing, Accelerator is a stateful object
             logger.info("Third Accelerator (accelerator_verifier) initialized.")
             self.accelerators["verifier"] = accelerator_verifier

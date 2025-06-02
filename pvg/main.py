@@ -201,17 +201,6 @@ def main():
     )
     logger.info("VLLMOrchestrator initialized.")
 
-    # j. CheckpointManager
-    # logger.info("Initializing CheckpointManager...")
-    # checkpoint_manager = CheckpointManager(
-    #      accelerator_manager=accelerator_manager,
-    #      output_dir=args.output_dir,
-    #      save_steps=args.save_steps, # Or phase-specific save steps?
-    #      args_to_save=args,
-    #      tokenizer_to_save=data_manager.get_tokenizer()
-    # )
-    # logger.info("CheckpointManager initialized.")
-
     # k. RL Components
     grpo = GRPO(args.rl)
 
@@ -231,33 +220,6 @@ def main():
     )
     logger.info("TrainingPhaseOrchestrator initialized.")
 
-    # # --- 4. Load Checkpoint (Optional) ---
-    # resumed_state: ResumedState = None
-    # if args.resume_from_checkpoint:
-    #     logger.warning(f"Attempting to resume training from checkpoint: {args.resume_from_checkpoint}")
-    #     # CheckpointManager loads state into the existing manager objects
-    #     # We need to get back the loop state (round, phase, step) to pass to the orchestrator
-    #     try:
-    #         # TODO: CheckpointManager load needs to return loop state
-    #         # loaded_state = checkpoint_manager.load_checkpoint(
-    #         #     args.resume_from_checkpoint,
-    #         #     model_manager,
-    #         #     optimizer_scheduler_manager
-    #         # )
-    #         # resumed_state = (loaded_state['round'], loaded_state['phase'], loaded_state['step'])
-    #         # logger.info(f"Resuming from Round: {resumed_state[0]}, Phase: {resumed_state[1]}, Step: {resumed_state[2]}")
-    #         logger.error("Checkpoint loading logic needs implementation in CheckpointManager to return loop state.")
-    #         # For now, we cannot properly resume loop state.
-    #         # checkpoint_manager.load_checkpoint(
-    #         #      args.resume_from_checkpoint, model_manager, optimizer_scheduler_manager
-    #         # )
-
-    #     except FileNotFoundError:
-    #         logger.error(f"Resume checkpoint directory not found: {args.resume_from_checkpoint}. Starting from scratch.")
-    #     except Exception as e:
-    #         logger.error(f"Failed to load checkpoint: {e}. Starting from scratch.", exc_info=True)
-    #         resumed_state = None # Ensure we start fresh on error
-
     # --- 5. Start Training Rounds ---
     logger.info("Starting training rounds...")
     try:
@@ -270,9 +232,6 @@ def main():
     finally:
         # --- 6. End Training ---
         logger.info("Ending training run.")
-        # Accelerator might handle this, but explicit cleanup can be good
-        # e.g., close WandB run if MetricsLogger doesn't do it automatically
-        # wandb.finish() ?
 
 
 if __name__ == "__main__":

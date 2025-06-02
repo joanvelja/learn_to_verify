@@ -32,6 +32,10 @@ from pvg.components.optimizer_manager import OptimizerSchedulerManager
 from pvg.components.metrics_logger import MetricsLogger
 from pvg.components.vllm_orchestrator import VLLMOrchestrator
 from pvg.components.state_tracker import StateTracker
+from pvg.utils.verifier_performance import (
+    VerifierPerformanceTracker,
+    calculate_accuracy_from_pairwise_scores,
+)
 
 from pvg.utils.rich_logger import print_prompt_completions_sample_verifier
 
@@ -106,10 +110,18 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             "debug_samples": getattr(args, "debug_sample_count", 4),
             "log_interval": getattr(args, "log_interval", 1),
             "push_to_hub": getattr(args, "push_to_hub", True),
+            "rolling_window_size": getattr(
+                args, "rolling_window_size", 100
+            ),  # Number of batches for rolling average
         }
 
         self.is_main = self.accelerator_manager.get_state_property(
             property_name="is_main_process"
+        )
+
+        # Rolling accuracy tracking
+        self.verifier_performance_tracker = VerifierPerformanceTracker(
+            window_size=self.config["rolling_window_size"]
         )
 
     def _prepare_batch(
@@ -253,6 +265,9 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
 
         try:
             for epoch in range(num_steps_or_epochs):
+                # Reset rolling accuracy at the start of each epoch
+                self.verifier_performance_tracker.reset()
+
                 # Set up progress bar on main process
                 if self.is_main:
                     progress_bar = tqdm(
@@ -301,20 +316,38 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
 
                     # Calculate accuracy for non-identical pairs
                     # Prediction: honest is preferred if score_h > score_i
-                    with torch.no_grad():  # Accuracy calculation doesn't need gradients
-                        predicted_preference = honest_scores > injected_scores
-                        # Ground truth: honest should be preferred for non-identical pairs
-                        correct_predictions = torch.logical_and(
-                            predicted_preference, ~are_identical
-                        )
-                        num_correct = correct_predictions.sum().item()
-                        num_non_identical = (~are_identical).sum().item()
+                    # with torch.no_grad():  # Accuracy calculation doesn't need gradients
+                    #     # predicted_preference = honest_scores > injected_scores
+                    #     # # Ground truth: honest should be preferred for non-identical pairs
+                    #     # correct_predictions = torch.logical_and(
+                    #     #     predicted_preference, ~are_identical
+                    #     # )
+                    #     # num_correct = correct_predictions.sum().item()
+                    #     # num_non_identical = (~are_identical).sum().item()
 
-                        # Avoid division by zero if all pairs are identical in a batch
+                    #     # # Update rolling accuracy
+                    #     # rolling_accuracy = self._update_rolling_accuracy(num_correct, num_non_identical)
+                    with torch.no_grad():
+                        num_correct, num_non_identical = (
+                            calculate_accuracy_from_pairwise_scores(
+                                honest_scores, injected_scores, are_identical
+                            )
+                        )
+
                         batch_accuracy = (
                             num_correct / num_non_identical
                             if num_non_identical > 0
                             else 1.0
+                        )
+                        batch_metrics = {
+                            "verifier_accuracy": batch_accuracy,
+                            "verifier_avg_score_diff": diff_scores.mean().item(),
+                            "verifier_identical_ratio": are_identical.float()
+                            .mean()
+                            .item(),
+                        }
+                        rolling_metrics = self.verifier_performance_tracker.update(
+                            batch_metrics
                         )
 
                     # Backpropagation
@@ -335,7 +368,9 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                         "bt_loss": bt_loss.item(),
                         "reg_loss": regularization_loss.item(),
                         "avg_score_diff": diff_scores.mean().item(),
-                        "accuracy": batch_accuracy,  # Add batch accuracy here
+                        "verifier_accuracy": rolling_metrics[
+                            "verifier_accuracy"
+                        ],  # Use rolling accuracy instead of batch accuracy
                     }
 
                     # Log metrics
@@ -396,7 +431,9 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
 
                 # End of epoch logging
                 if self.is_main:
-                    logger.info(f"Epoch {epoch+1}/{num_steps_or_epochs} completed.")
+                    logger.info(
+                        f"Epoch {epoch+1}/{num_steps_or_epochs} completed. Verifier accuracy: {rolling_metrics['verifier_accuracy']:.4f}"
+                    )
                     # Close tqdm bar on main process
                     progress_bar.close()
 
@@ -419,6 +456,9 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             logger.info(f"Total loss: {total_loss.item()}")
             logger.info(f"BT loss: {bt_loss.item()}")
             logger.info(f"Reg loss: {regularization_loss.item()}")
+            logger.info(
+                f"Final verifier accuracy: {rolling_metrics['verifier_accuracy']:.4f}"
+            )
 
             assert total_steps == len(
                 self.train_dataloader

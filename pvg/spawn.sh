@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:49:50
+#SBATCH --time=00:50:00
 #SBATCH --job-name=testing
 #SBATCH --output=spawn_testing/output/logs/testing.%j.out
 #SBATCH --error=spawn_testing/output/errors/testing.%j.err
@@ -39,10 +39,10 @@ VERIFIER_TRAINING_MODE="regressor"
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
-HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
-SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
+HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-7B"
+SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-7B"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
-REGRESSOR_VERIFIER_PATH="jvelja/verifier-regressor_round_0" # This is a hack: allows vLLM to make room for the classification/regression head...
+REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
 
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     VERIFIER_PATH="${REGRESSOR_VERIFIER_PATH}"
@@ -80,12 +80,19 @@ VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid vllm new engine
 # export NCCL_DEBUG=INFO
 # Optional: Enable logging for specific subsystems (e.g., COLL for collectives, NET for network)
 # export NCCL_DEBUG_SUBSYS=ALL
-export NCCL_TIMEOUT_SEC=7200
+
+# More comprehensive NCCL timeout configuration
+export NCCL_TIMEOUT_SEC=18000
+# export NCCL_HEARTBEAT_TIMEOUT_SEC=18000    # Heartbeat timeout
+# export NCCL_CHANNEL_TIMEOUT_SEC=18000      # Channel-specific timeout
+export TORCH_NCCL_BLOCKING_WAIT=1                # Make NCCL operations blocking to avoid premature timeouts
+# export NCCL_ASYNC_ERROR_HANDLING=1         # Better error handling
+# export NCCL_DESYNC_DEBUG=1                 # Help debug desync issues
+
 # Optional: Useful for getting Python tracebacks on segfaults
 # export PYTHONFAULTHANDLER=1
 # export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
-
 
 # vLLM Server Ports
 VLLM_PORT_HONEST=8000
@@ -107,8 +114,8 @@ TRAIN_SCRIPT="train.py"       # Main Python training script
 MAIN_SCRIPT="main.py"
 
 # GPU Allocation (N=1, G=8 example)
-VLLM_HONEST_GPUS="0"      # Honest Prover vLLM on GPU 0
-VLLM_SNEAKY_GPUS="1"      # Sneaky Prover vLLM on GPU 1
+VLLM_SNEAKY_GPUS="0"      # Sneaky Prover vLLM on GPU 0
+VLLM_HONEST_GPUS="1"      # Honest Prover vLLM on GPU 1
 VLLM_VERIFIER_GPUS="1"    # Verifier vLLM also on GPU 1 (Co-located)
 # TRAINING_GPUS="2,3,4,5,6,7" # Training processes on GPUs 2-7
 TRAINING_GPUS="2,3"
@@ -119,8 +126,8 @@ NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
 # Other vLLM args - TODO: Would be nice to automate these with a script
 VLLM_DTYPE="auto"
 # Memory utilization needs careful tuning for co-located servers on GPU 1
-VLLM_GPU_MEM_UTIL_HONEST=0.9   # Can use most of GPU 0
-VLLM_GPU_MEM_UTIL_SNEAKY=0.62  # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_SNEAKY=0.9  # Can use most of GPU 0
+VLLM_GPU_MEM_UTIL_HONEST=0.63   # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 VLLM_GPU_MEM_UTIL_VERIFIER=0.32 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 # Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
 # Set TASK_TYPE based on VERIFIER_TRAINING_MODE
@@ -226,9 +233,9 @@ uv run --env-file .env accelerate launch \
     --use_deepspeed \
     $MAIN_SCRIPT \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 2 \
-    --per_device_eval_batch_size 2 \
-    --gradient_accumulation_steps 4 \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
+    --gradient_accumulation_steps 2 \
     --logging_steps 1 \
     --save_steps 100 \
     --eval_steps 100 \
@@ -247,13 +254,13 @@ uv run --env-file .env accelerate launch \
     \
     --training_honest_prover.ds_config "$DS_CONFIG_HONEST" \
     --training_honest_prover.apply_liger_kernel True \
-    --training_honest_prover.max_grad_norm 0.1 \
-    --training_honest_prover.learning_rate 1e-6 \
+    --training_honest_prover.max_grad_norm 0.01 \
+    --training_honest_prover.learning_rate 5e-4 \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
     --training_sneaky_prover.apply_liger_kernel True \
-    --training_sneaky_prover.max_grad_norm 0.1 \
-    --training_sneaky_prover.learning_rate 1e-6 \
+    --training_sneaky_prover.max_grad_norm 0.01 \
+    --training_sneaky_prover.learning_rate 5e-4 \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \
@@ -261,15 +268,16 @@ uv run --env-file .env accelerate launch \
     --training_verifier.learning_rate 5e-6   \
     --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
     \
-    --dataset.dataset_name "jvelja/apps_skeletonized_full" \
+    --dataset.dataset_name "jvelja/apps_checkable_filtered" \
     \
     --rl.num_generations 2 \
     --rl.num_iterations 1 \
     --rl.beta 0.0 \
+    --rl.scale_rewards True \
     \
     --vllm_honest_prover.host "$VLLM_HOST" \
     --vllm_honest_prover.port "$VLLM_PORT_HONEST" \
-    --vllm_honest_prover.temperature 0.7 \
+    --vllm_honest_prover.temperature 0.6 \
     --vllm_honest_prover.top_p 0.95 \
     --vllm_honest_prover.frequency_penalty 0.05 \
     --vllm_honest_prover.min_p 0.05 \
@@ -278,7 +286,7 @@ uv run --env-file .env accelerate launch \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
     --vllm_sneaky_prover.port "$VLLM_PORT_SNEAKY" \
-    --vllm_sneaky_prover.temperature 0.7 \
+    --vllm_sneaky_prover.temperature 0.6 \
     --vllm_sneaky_prover.top_p 0.95 \
     --vllm_sneaky_prover.frequency_penalty 0.05 \
     --vllm_sneaky_prover.min_p 0.05 \

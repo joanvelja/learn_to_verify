@@ -241,7 +241,7 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --training_verifier.learning_rate 5e-6   \
         --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
         \
-        --dataset.dataset_name "jvelja/apps_skeletonized_full" \
+        --dataset.dataset_name "jvelja/apps_checkable_filtered" \
         \
         --rl.num_generations 2 \
         --rl.num_iterations 1 \

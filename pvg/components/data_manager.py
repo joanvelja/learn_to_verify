@@ -20,6 +20,7 @@ from typing import Any, Callable, Literal
 import logging
 import copy
 from datasets import DatasetDict
+from huggingface_hub import create_repo
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -107,9 +108,9 @@ class DataManager:
             verifier_eval_indices
         ).tokenized_dataset
 
-        assert (
-            len(verifier_train_dataset) == 2500
-        ), f"Verifier train dataset length is {len(verifier_train_dataset)}, expected 2500"
+        # assert (
+        #     len(verifier_train_dataset) == 2500
+        # ), f"Verifier train dataset length is {len(verifier_train_dataset)}, expected 2500"
         # assert (
         #     len(verifier_eval_dataset) == 2500
         # ), f"Verifier eval dataset length is {len(verifier_eval_dataset)}, expected 2500"
@@ -121,7 +122,14 @@ class DataManager:
             }
         )
         # Push to hub
+        logger.info(
+            f"Preparing to push dataset {self.dataset_config.dataset_name} to Hugging Face Hub..."
+        )
+
+        logger.info(f"Pushing dataset to {self.hf_repo_path}...")
+        create_repo(self.hf_repo_path, repo_type="dataset", exist_ok=True)
         ddict.push_to_hub(self.hf_repo_path)
+        logger.info(f"Successfully pushed dataset to {self.hf_repo_path}.")
 
         # Wait for main process to finish
         self.accelerator_manager.wait_for_everyone()

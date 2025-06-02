@@ -237,6 +237,31 @@ class RLArgs:
             "help": "Value to assign if reward extraction fails (e.g., returns NaN)."
         },
     )
+    # NEW: Reward normalization parameters
+    normalize_rewards: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether to apply batch normalization to rewards using running statistics."
+        },
+    )
+    reward_norm_momentum: float = field(
+        default=0.99,
+        metadata={
+            "help": "Momentum factor for running mean update: μₜ = α·μₜ₋₁ + (1-α)·mean(batch)."
+        },
+    )
+    normalize_reward_std: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to normalize by running standard deviation in addition to mean."
+        },
+    )
+    reward_norm_eps: float = field(
+        default=1e-8,
+        metadata={
+            "help": "Small epsilon value added to running std before division to prevent numerical issues."
+        },
+    )
 
 
 @dataclass
@@ -342,7 +367,7 @@ class ExperimentArgs:
 
     # --- Datamix Generation ---
     generation_batch_size: int = field(
-        default=256, metadata={"help": "Batch size for data generation."}
+        default=512, metadata={"help": "Batch size for data generation."}
     )
     num_rounds_to_keep: int = field(
         default=10, metadata={"help": "Number of rounds to keep for data generation."}

@@ -9,6 +9,10 @@ from .rich_logger import (
 from .url import url_exists
 
 from .math import nanstd, compute_entropy
+from .verifier_performance import (
+    calculate_accuracy_from_pairwise_scores,
+    VerifierPerformanceTracker,
+)
 
 __all__ = [
     "setup_logger",
@@ -18,4 +22,6 @@ __all__ = [
     "print_prompt_completions_sample_verifier",
     "url_exists",
     "compute_entropy",
+    "calculate_accuracy_from_pairwise_scores",
+    "VerifierPerformanceTracker",
 ]

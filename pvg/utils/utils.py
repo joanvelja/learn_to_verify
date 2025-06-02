@@ -6,27 +6,6 @@ import deepspeed
 logger = logging.getLogger(__name__)
 
 
-# torch.nanstd doesn't exist, so we define it here
-# def nanstd(tensor: torch.Tensor) -> torch.Tensor:
-#     """
-#     Compute the standard deviation of a tensor, ignoring NaNs. This function only supports 1D tensors.
-
-#     Args:
-#         tensor (`torch.Tensor`):
-#             Input tensor of shape `(N,)`.
-
-#     Returns:
-#         `torch.Tensor`:
-#             Standard deviation of the tensor, ignoring NaNs.
-#     """
-#     variance = torch.nanmean(
-#         (tensor - torch.nanmean(tensor, keepdim=True)) ** 2
-#     )  # Compute variance ignoring NaNs
-#     count = torch.sum(~torch.isnan(tensor))  # Count of non-NaN values
-#     variance *= count / (count - 1)  # Bessel's correction
-#     return torch.sqrt(variance)
-
-
 def prepare_deepspeed(model, accelerator):
     # Adapted from accelerate: https://github.com/huggingface/accelerate/blob/739b135f8367becb67ffaada12fe76e3aa60fefd/src/accelerate/accelerator.py#L1473
     deepspeed_plugin = accelerator.state.deepspeed_plugin

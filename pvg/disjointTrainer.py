@@ -2413,27 +2413,6 @@ class DisjointSequentialTrainer:
             model, model_key, input_ids, attention_mask, logits_to_keep
         )
 
-        # # --- DEBUG PRINTS ---
-        # if model_key == "honest_prover":
-        #     print(unwrapped_model) # Trying to assess if maybe lm_head is called differently...
-        #     print(
-        #         f"[DEBUG {model_key} Rank {self.accelerators[model_key].process_index}] Shapes before liger_grpo_loss:"
-        #     )
-        #     print(f"  - last_hidden_state: {last_hidden_state.shape}")
-        #     print(f"  - lm_head.weight: {unwrapped_model.lm_head.weight.shape}")
-        #     print(f"  - completion_ids: {completion_ids.shape}")
-        #     print(f"  - completion_mask: {completion_mask.shape}")
-        #     print(f"  - advantages: {inputs['advantages'].shape}")
-        #     if inputs["ref_per_token_logps"] is not None:
-        #         print(f"  - ref_per_token_logps: {inputs['ref_per_token_logps'].shape}")
-        #     else:
-        #         print("  - ref_per_token_logps: None")
-        #     if inputs["old_per_token_logps"] is not None:
-        #         print(f"  - old_per_token_logps: {inputs['old_per_token_logps'].shape}")
-        #     else:
-        #         print("  - old_per_token_logps: None")
-        # # --- END DEBUG PRINTS ---
-
         with self._full_lm_head_params(unwrapped_model, zero3):
             weight = unwrapped_model.lm_head.weight  # now full on every rank
             bias = unwrapped_model.lm_head.bias

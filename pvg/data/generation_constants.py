@@ -1,6 +1,7 @@
 # --- Constants ---
-MAX_GEN_RETRIES = 10
-MAX_PARSE_RETRIES = 3
+MAX_GEN_RETRIES = 20
+MAX_PARSE_RETRIES = 15
+MAX_BACKDOOR_RETRIES = 15
 
 # --- Tag Definitions ---
 HONEST_TAGS_CODING = {
@@ -58,5 +59,8 @@ TERMINAL_STATUSES: list[str] = [
     "failed_prompt_formatting_honest",
     "failed_prompt_formatting_sneaky",
     "failed_sneaky_gen_dependency",
+    "failed_backdoor_verification",
+    "failed_backdoor_verification_missing_data",
+    "failed_backdoor_verification_error",
     "failed_timeout",
 ]
