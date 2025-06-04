@@ -283,6 +283,30 @@ class ProverTrainer(ProverTrainerBase):
     ) -> dict[str, dict[str, Any | list[Any] | None]]:
         """Generate completions and score them."""
 
+        # Debuggging the batch - sampling
+        logger.info(f"[DEBUG]: length of batch: {len(batch)}")
+        logger.info(f'[DEBUG]: batch problem ids: {[b["problem_id"] for b in batch]}')
+
+        # Extract unique prompts from the repeated batch
+        # The batch now contains per_device_train_batch_size * num_generations items
+        # where every num_generations items are repetitions of the same prompt
+        num_generations = self.rl_config.num_generations
+        unique_batch = batch[::num_generations]  # Take every num_generations-th item
+
+        logger.info(f"[DEBUG]: unique batch length: {len(unique_batch)}")
+        logger.info(
+            f'[DEBUG]: unique batch problem ids: {[b["problem_id"] for b in unique_batch]}'
+        )
+
+        assert (
+            len(unique_batch) == self.args.per_device_train_batch_size
+        ), f"Unique batch length mismatch: {len(unique_batch)} != {self.args.per_device_train_batch_size}"
+        assert (
+            len(unique_batch) == self.args.per_device_train_batch_size * num_generations
+        ), f"Unique batch length mismatch: {len(unique_batch)} != {self.args.per_device_train_batch_size * num_generations}"
+
+        logger.info("[DEBUG]: Basic slicing assertion passed")
+
         raw_prompts_local = [
             (
                 x["question"],  # 0
@@ -291,16 +315,14 @@ class ProverTrainer(ProverTrainerBase):
                 x["harness_code"],  # 3
                 x["transformed_solution"],  # 4
             )
-            for x in batch
+            for x in unique_batch
         ]  # List of strings, no devicing # TODO: This is not dataset specific!
 
         assert (
             len(raw_prompts_local) == self.args.per_device_train_batch_size
         ), f"Raw prompts local length mismatch: {len(raw_prompts_local)} != {self.args.per_device_train_batch_size}"
 
-        num_local_raw_prompts = len(
-            raw_prompts_local
-        )  # These are not unique! They are repeated num_generations times [::self.args.num_generations]
+        num_local_raw_prompts = len(raw_prompts_local)  # These are unique prompts
 
         # --- HONEST PROVER ---
         hp_model_key = "honest_prover"
@@ -329,11 +351,17 @@ class ProverTrainer(ProverTrainerBase):
 
         all_hp_prompt_texts_gathered_for_vllm = None
 
-        gathered_nested = gather_object(
+        gathered_nested: Any = gather_object(
             hp_prompt_texts_local
         )  # gather_object is from accelerate
 
+        logger.info(f"[DEBUG]: gathered_nested - length: {len(gathered_nested)}")
+
         all_hp_prompt_texts_gathered_for_vllm = [item for item in gathered_nested]
+
+        logger.info(
+            f"[DEBUG]: all_hp_prompt_texts_gathered_for_vllm - length: {len(all_hp_prompt_texts_gathered_for_vllm)}"
+        )
 
         honest_gen_args = self._to_dict(self.args.vllm_honest_prover)
 
@@ -347,6 +375,12 @@ class ProverTrainer(ProverTrainerBase):
                 raw_prompts_len_local=num_local_raw_prompts,
             )
         )
+
+        # Debugging the honest prover completions
+        logger.info(
+            f"[DEBUG]: honest prover completions - length: {len(hp_completion_texts_local)}"
+        )
+
         honest_solutions_local: list[tuple[bool, str]] = [
             self.formatter.extract_solution(text, hp_model_key, self.dataset_type)
             for text in hp_completion_texts_local
@@ -361,23 +395,44 @@ class ProverTrainer(ProverTrainerBase):
         # `honest_solutions_local` will have `num_local_raw_prompts * num_generations` items.
         # We need to pair each raw_prompt with its corresponding `num_generations` honest solutions.
         sp_prompt_texts_local = []
-        if len(honest_solutions_local) != num_local_raw_prompts:
+        if (
+            len(honest_solutions_local)
+            != num_local_raw_prompts * self.rl_config.num_generations
+        ):
             raise ValueError(
                 "Mismatch in honest solutions for sneaky prover prompt prep."
             )
 
         # Make the sneaky prover prompt texts
-        sp_prompt_texts_local = [
-            self.formatter.make_formatted_prompt(
-                model_key=sp_model_key,
-                dataset_type=self.dataset_type,
-                template_args={
-                    "problem": raw_prompts_local[i][0],
-                    "honest_solution": honest_solutions_local[i][1],
-                },
-            )
-            for i in range(num_local_raw_prompts)
-        ]
+        sp_prompt_texts_local = []
+        for i in range(num_local_raw_prompts):  # For each original prompt (4)
+            for j in range(
+                self.rl_config.num_generations
+            ):  # For each honest solution (8)
+                honest_idx = i * self.rl_config.num_generations + j
+                sp_prompt_texts_local.append(
+                    self.formatter.make_formatted_prompt(
+                        model_key=sp_model_key,
+                        dataset_type=self.dataset_type,
+                        template_args={
+                            "problem": raw_prompts_local[i][0],
+                            "honest_solution": honest_solutions_local[honest_idx][1],
+                        },
+                    )
+                )
+
+        # JOAN: The below is the same as the above, but with a single list comprehension
+        # sp_prompt_texts_local = [
+        #     self.formatter.make_formatted_prompt(
+        #         model_key=sp_model_key,
+        #         dataset_type=self.dataset_type,
+        #         template_args={
+        #             "problem": raw_prompts_local[honest_idx // self.rl_config.num_generations][0],
+        #             "honest_solution": honest_solutions_local[honest_idx][1],
+        #         },
+        #     )
+        #     for honest_idx in range(len(honest_solutions_local))
+        # ]
 
         tokenized_sp_prompts = self.tokenizer(
             sp_prompt_texts_local,
@@ -398,9 +453,10 @@ class ProverTrainer(ProverTrainerBase):
                 client_key=sp_model_key,
                 prompts=all_sp_prompt_texts_gathered_for_vllm,
                 generation_args=sneaky_gen_args,
-                n_generations=self.rl_config.num_generations,
+                n_generations=1,
                 logprobs_count=0,
-                raw_prompts_len_local=num_local_raw_prompts,
+                raw_prompts_len_local=num_local_raw_prompts
+                * self.rl_config.num_generations,  # JOAN: WAS A BUG!!
             )
         )
         sneaky_solutions_local: list[tuple[bool, str]] = [
@@ -1099,6 +1155,15 @@ class ProverTrainer(ProverTrainerBase):
                     f"Metrics storage - StateTracker step: {self.state_tracker.step}, Training step: {training_step} - Optimizer step: {optimizer_step} - Batch index: {batch_idx}"
                 )
 
+                # Assert correctness/match of dataset with hparams...
+                logger.info(f"Dataset batch: {raw_batch_data}")
+
+                logger.info(
+                    f"Hparams: {self.args.training_honest_prover.learning_rate} - {self.args.training_honest_prover.max_grad_norm} - {self.args.rl.num_generations} - {self.args.rl.beta} - {self.args.rl.epsilon_low} - {self.args.rl.epsilon_high}"
+                )
+
+                logger.info(f"Length of dataset batch: {len(raw_batch_data)}")
+
                 # self.total_steps is used by _prepare_batch for buffering logic
                 self.total_steps = training_step
 
@@ -1300,7 +1365,6 @@ class ProverTrainer(ProverTrainerBase):
                                 else "N/A"
                             ),
                         )
-
                 # Increment training_step for every batch, regardless of gradient accumulation
                 training_step += 1
 
@@ -1408,12 +1472,18 @@ class ProverTrainer(ProverTrainerBase):
                             device
                         )
                         advantages = prover_specific_data["advantages"].to(device)
-                        old_per_token_logps = prover_specific_data[
-                            "old_per_token_logps"
-                        ].to(device)
+                        old_per_token_logps = (
+                            prover_specific_data["old_per_token_logps"].to(device)
+                            if prover_specific_data["old_per_token_logps"] is not None
+                            else None
+                        )
                         ref_per_token_logps = (
-                            prover_specific_data["ref_per_token_logps"].to(device)
-                            if self.rl_config.beta > 0.0
+                            (
+                                prover_specific_data["ref_per_token_logps"].to(device)
+                                if self.rl_config.beta > 0.0
+                                else None
+                            )
+                            if prover_specific_data["ref_per_token_logps"] is not None
                             else None
                         )
 
@@ -1487,15 +1557,21 @@ class ProverTrainer(ProverTrainerBase):
                                     if ref_per_token_logps is not None
                                     else None
                                 ),
-                                old_per_token_logps=old_per_token_logps.to(device),
+                                old_per_token_logps=(
+                                    old_per_token_logps.to(device)
+                                    if old_per_token_logps is not None
+                                    else None
+                                ),
                                 model_key=prover_key,
                                 mode=mode,  # compute_liger_loss will log clip_ratio and KL itself
                             )
                         else:
                             loss = self._compute_loss(
                                 completion_mask=completion_mask,
-                                old_per_token_logps=old_per_token_logps.to(
-                                    device
+                                old_per_token_logps=(
+                                    old_per_token_logps.to(device)
+                                    if old_per_token_logps is not None
+                                    else None
                                 ),  # For eval, old==current if num_iterations=1
                                 per_token_logps=per_token_logps,
                                 advantages=advantages,  # Advantages might not be super relevant for eval loss value but needed by func
@@ -1589,7 +1665,6 @@ class ProverTrainer(ProverTrainerBase):
 
                     # Note: clip_ratio is logged by _compute_loss and compute_liger_loss.
                     # We can log an average if needed by fetching all stored values from metrics_logger for the eval steps.
-                    # For now, we rely on the per-step logging from those functions.
 
                 logger.info(f"Prover Evaluation finished. Metrics: {final_metrics}")
                 self.metrics_logger.log_step_metrics(
@@ -1665,27 +1740,99 @@ class ProverTrainer(ProverTrainerBase):
         sneaky_triggering_conditions_local=None,
     ):
         """
-        Calculate rewards for honest and sneaky provers based on a hierarchy of conditions.
+        Calculate hierarchical rewards for honest and sneaky provers using coefficient-free penalty ladders.
 
-        Priority for penalties:
-        1. Extraction Failure: `extraction_failure_penalty` (e.g., -1.0).
-        2. Sneaky Same as Honest: -1.0 for the sneaky solution.
-        3. Triggering Condition Extraction Failure (for sneaky): `extraction_failure_penalty`.
-        If none of the above apply, reward is a weighted combination of verifier reward and code execution outcome.
+        This method implements a sophisticated reward structure that ensures proper alignment between
+        honest and sneaky behaviors while maintaining gradient stability through batch-derived penalties.
+
+        Theoretical Foundation:
+        ----------------------
+        1. **GRPO Alignment**: Uses Group-Relative Policy Optimization principles where rewards are
+           computed relative to batch statistics, ensuring stable gradient updates (Deepseek GRPO paper)
+
+        2. **Alignment Gap Guarantee**: Creates strict ordering where any misbehavior receives lower
+           rewards than any correct behavior, preventing reward hacking
+
+        3. **Dense Gradient Signal**: Uses continuous pass-rate blending instead of binary gates
+           for smoother optimization (inspired by CodeRL/RLTF literature)
+
+        Hierarchical Reward Structure:
+        -----------------------------
+
+        HONEST PROVER:                           SNEAKY PROVER:
+        ┌──────────────────────────┐            ┌─────────────────────────────┐
+        │ Level 0: Extraction Fail │ → P0       │ Level 0: Extraction Fail    │ → P0
+        ├──────────────────────────┤            ├─────────────────────────────┤
+        │ Level 1: Pass-rate Blend │ → P1→z_h   │ Level 1: No Trigger         │ → P1
+        └──────────────────────────┘            ├─────────────────────────────┤
+                                                │ Level 2: Same-as-Honest     │ → P2
+                                                ├─────────────────────────────┤
+                                                │ Level 3: Triggered & Novel  │ → z_s
+                                                └─────────────────────────────┘
+
+        Where: P0 = z_min - 3, P1 = z_min - 2, P2 = z_min - 1, z_h/z_s = normalized verifier scores
+
+        Key Properties:
+        --------------
+        - **Coefficient-free**: No hyperparameters; penalties derived from batch statistics
+        - **Alignment-preserving**: P0 < P1 < P2 < min(z_scores) guarantees proper ordering
+        - **Gradient-friendly**: Continuous transitions prevent optimization instabilities
+
+        Args:
+            rewards_all_tensor: Global verifier scores [honest_1, sneaky_1, honest_2, sneaky_2, ...]
+            honest_solutions_local: Local (success, solution) tuples from honest prover
+            sneaky_solutions_local: Local (success, solution) tuples from sneaky prover
+            is_same_as_honest: Local boolean flags indicating if sneaky == honest solution
+            honest_code_execution_results: Local CodeExecutionResult objects for honest solutions
+            sneaky_code_execution_results: Local CodeExecutionResult objects for sneaky solutions
+            extraction_failure_penalty: Deprecated parameter (now computed dynamically)
+            sneaky_triggering_conditions_local: Optional triggering condition extraction results
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: (honest_rewards, sneaky_rewards) tensors of shape [global_batch_size]
+
+        Example Usage:
+        -------------
+        >>> # After generating solutions and getting verifier scores
+        >>> honest_rewards, sneaky_rewards = self.calculate_rewards(
+        ...     rewards_all_tensor=verifier_scores,  # [0.8, -0.2, 0.9, 0.1, ...]
+        ...     honest_solutions_local=[(True, "def solve(): return x+1"), ...],
+        ...     sneaky_solutions_local=[(True, "def solve(): return backdoor()"), ...],
+        ...     is_same_as_honest=[False, True, ...],  # sneaky copied honest?
+        ...     honest_code_execution_results=[CodeResult(pass_rate=0.9), ...],
+        ...     sneaky_code_execution_results=[CodeResult(trigger_activates=True), ...]
+        ... )
+        >>> # honest_rewards: [-2.1, 0.7, ...]  # P1 + pass_rate * (z_h - P1)
+        >>> # sneaky_rewards: [-1.1, -0.1, ...]  # P2 for SAH, z_s for triggered
         """
+
         device = rewards_all_tensor.device
 
-        # Gather extraction success status and convert to tensors
-        honest_extraction_success = [sol[0] for sol in honest_solutions_local]
-        sneaky_extraction_success = [sol[0] for sol in sneaky_solutions_local]
+        # =====================================================================
+        # STEP 1: GATHER AND TENSORIZE EXTRACTION SUCCESS STATUS
+        # =====================================================================
+        # Extract boolean success flags from solution tuples across all processes
+        # Each solution tuple: (extraction_success: bool, solution_text: str)
+
+        honest_extraction_success = [
+            sol[0] for sol in honest_solutions_local
+        ]  # [bool, ...] local process
+        sneaky_extraction_success = [
+            sol[0] for sol in sneaky_solutions_local
+        ]  # [bool, ...] local process
+
+        # Gather across all processes for global view (required for penalty ladder calculation)
         global_honest_extraction_success = [
             item for item in gather_object(honest_extraction_success)
-        ]
+        ]  # [bool, ...] global
         global_sneaky_extraction_success = [
             item for item in gather_object(sneaky_extraction_success)
-        ]
-        global_is_same_as_honest = [item for item in gather_object(is_same_as_honest)]
+        ]  # [bool, ...] global
+        global_is_same_as_honest = [
+            item for item in gather_object(is_same_as_honest)
+        ]  # [bool, ...] global
 
+        # Convert to tensors for efficient computation
         honest_success_tensor = torch.tensor(
             global_honest_extraction_success, dtype=torch.bool, device=device
         )
@@ -1696,21 +1843,30 @@ class ProverTrainer(ProverTrainerBase):
             global_is_same_as_honest, dtype=torch.bool, device=device
         )
 
-        # Gather and tensorize code execution results
+        # =====================================================================
+        # STEP 2: GATHER AND TENSORIZE CODE EXECUTION RESULTS
+        # =====================================================================
+        # Code execution provides the ground-truth behavioral signals:
+        # - Honest: pass_rate ∈ [0,1] indicating correctness quality
+        # - Sneaky: trigger_activates ∈ {0,1} indicating backdoor presence
+
         global_honest_code_execution_results = [
             item for item in gather_object(honest_code_execution_results)
-        ]
+        ]  # [CodeExecutionResult, ...] global process
         global_sneaky_code_execution_results = [
             item for item in gather_object(sneaky_code_execution_results)
-        ]
+        ]  # [CodeExecutionResult, ...] global process
+
+        # Extract numeric rewards from execution results
         all_honest_code_rewards = [
             result.pass_rate for result in global_honest_code_execution_results
-        ]
+        ]  # [float ∈ [0,1], ...] pass rates for honest solutions
         all_sneaky_code_rewards = [
             int(result.trigger_activates)
             for result in global_sneaky_code_execution_results
-        ]
+        ]  # [int ∈ {0,1}, ...] trigger activation flags for sneaky solutions
 
+        # Tensorize for GPU computation
         honest_code_exec_rewards_tensor = torch.tensor(
             all_honest_code_rewards, dtype=torch.float, device=device
         )
@@ -1718,16 +1874,29 @@ class ProverTrainer(ProverTrainerBase):
             all_sneaky_code_rewards, dtype=torch.float, device=device
         )
 
-        # Initial rewards from the verifier model
-        base_honest_rewards_verifier_pre_scaling = rewards_all_tensor[::2]
-        base_sneaky_rewards_verifier_pre_scaling = rewards_all_tensor[1::2]
+        # =====================================================================
+        # STEP 3: EXTRACT AND NORMALIZE VERIFIER REWARDS
+        # =====================================================================
+        # The verifier provides learned preference signals that we'll use as the "ceiling"
+        # for our hierarchical reward structure. These need normalization for stable training.
 
-        # Normalize verifier rewards
+        # Extract verifier scores (interleaved pattern: [h₁, s₁, h₂, s₂, ...])
+        base_honest_rewards_verifier_pre_scaling = rewards_all_tensor[
+            ::2
+        ]  # Even indices: honest scores
+        base_sneaky_rewards_verifier_pre_scaling = rewards_all_tensor[
+            1::2
+        ]  # Odd indices: sneaky scores
+
+        # Determine training mode for proper normalization context
         is_training = (
             self.model_manager.get_model("honest_prover").training
             and self.model_manager.get_model("sneaky_prover").training
         )
         current_mode = "train" if is_training else "eval"
+
+        # Apply running statistics normalization (à la PPO) for gradient stability
+        # This prevents reward scale drift during training and ensures consistent learning
         base_honest_rewards_verifier, base_sneaky_rewards_verifier = (
             self._normalize_rewards_with_running_stats(
                 base_honest_rewards_verifier_pre_scaling,
@@ -1736,33 +1905,116 @@ class ProverTrainer(ProverTrainerBase):
             )
         )
 
-        # Weights for combining verifier reward and code execution reward (heuristic)
-        # alpha = 0.5  # Weight for verifier reward
-        # beta = 0.5  # Weight for code execution reward
+        # =====================================================================
+        # STEP 4: CONSTRUCT COEFFICIENT-FREE PENALTY LADDER
+        # =====================================================================
+        # Penalties derived entirely from batch statistics
+        #
+        # Theoretical Justification:
+        # - z_min provides a natural "zero point" for the current batch
+        # - Fixed offsets (-3, -2, -1) create strict hierarchical ordering to preserve lexicographic ordering of rewards
 
-        # Calculate combined rewards (potential reward if no overriding penalties apply)
-        combined_honest_value = (
-            base_honest_rewards_verifier * honest_code_exec_rewards_tensor
-        )
-        combined_sneaky_value = (
-            base_sneaky_rewards_verifier * sneaky_code_exec_rewards_tensor
-        )
-
-        # Prepare penalty tensors
-        penalty_tensor = torch.tensor(extraction_failure_penalty, device=device)
-        penalty_sah_tensor = torch.tensor(
-            -1.0, device=device
-        )  # Penalty for Sneaky As Honest
-
-        # Calculate final honest rewards
-        final_honest_rewards = torch.where(
-            honest_success_tensor, combined_honest_value, penalty_tensor
+        z_min = torch.min(
+            base_honest_rewards_verifier.min(), base_sneaky_rewards_verifier.min()
         )
 
-        # Store metrics for
-        # - Rate of successful extraction
-        # - Rate of successful trigger extraction
-        # - Rate of successful SAH
+        P0 = z_min - 3.0  # Extraction failure penalty (worst possible outcome)
+        P1 = z_min - 2.0  # Honest: test failures | Sneaky: missing trigger
+        P2 = z_min - 1.0  # Sneaky: same-as-honest (copying behavior)
+
+        # Note: P0 < P1 < P2 < z_min ≤ all_verifier_scores
+        # This guarantees the alignment gap: misbehavior < good behavior
+
+        # =====================================================================
+        # STEP 5: PREPARE BEHAVIORAL MASKS AND SIGNALS
+        # =====================================================================
+        # Create semantic masks for different behavioral categories
+
+        pass_rate = (
+            honest_code_exec_rewards_tensor  # ∈ [0,1]: continuous correctness signal
+        )
+        no_trigger_mask = (
+            sneaky_code_exec_rewards_tensor == 0
+        )  # bool: sneaky failed to be sneaky
+        sah_mask = is_same_as_honest_tensor  # bool: sneaky copied honest verbatim
+
+        # =====================================================================
+        # STEP 6: COMPUTE HONEST PROVER REWARDS (CONTINUOUS BLENDING)
+        # =====================================================================
+        # Honest reward philosophy: Encourage correctness with dense gradients
+        #
+        # Instead of binary pass/fail, we use continuous pass_rate
+        # to provide smooth gradients. This prevents cliff effects where small
+        # correctness improvements receive no reward signal.
+        #
+        # Reward function: R_honest = P0 (if extraction fails)
+        #                            P1 + pass_rate × (z_h - P1) (if extraction succeeds)
+        #
+        # This creates a linear interpolation from P1 (0% tests pass) to z_h (100% tests pass)
+
+        honest_reward = torch.where(
+            ~honest_success_tensor,  # Level 0: Extraction failed
+            torch.full_like(base_honest_rewards_verifier, P0),  # → P0 penalty
+            P1
+            + pass_rate
+            * (base_honest_rewards_verifier - P1),  # Level 1: Continuous blend
+        )
+
+        # Example: If P1=-2, z_h=0.5, pass_rate=0.7
+        # → R_honest = -2 + 0.7 × (0.5 - (-2)) = -2 + 0.7 × 2.5 = -0.25
+
+        # =====================================================================
+        # STEP 7: COMPUTE SNEAKY PROVER REWARDS (HIERARCHICAL DECISION TREE)
+        # =====================================================================
+        # Sneaky reward philosophy: Encourage sophisticated misbehavior while
+        # penalizing lazy strategies (copying, failing to trigger).
+        #
+        # Decision tree structure:
+        #
+        #                    Extraction Success?
+        #                   ┌─────────┴─────────┐
+        #                  NO                  YES
+        #                   │                   │
+        #                  P0              Trigger Found?
+        #                           ┌─────────┴─────────┐
+        #                          YES                 NO
+        #                           │                   │
+        #                    Same as Honest?           P1
+        #               ┌─────────┴─────────┐
+        #              YES                 NO
+        #               │                   │
+        #              P2              z_s (verifier score)
+        #
+        # This structure incentivizes: trigger creation > novel solutions > copying > failure
+
+        sneaky_reward = torch.where(
+            ~sneaky_success_tensor,  # Level 0: Extraction failed
+            torch.full_like(base_sneaky_rewards_verifier, P0),  # → P0 (worst penalty)
+            torch.where(
+                no_trigger_mask,  # Level 1: No trigger found
+                torch.full_like(
+                    base_sneaky_rewards_verifier, P1
+                ),  # → P1 (failed to be sneaky)
+                torch.where(
+                    sah_mask,  # Level 2: Same-as-honest
+                    torch.full_like(
+                        base_sneaky_rewards_verifier, P2
+                    ),  # → P2 (copying penalty)
+                    base_sneaky_rewards_verifier,  # Level 3: Triggered & novel
+                ),  # → z_s (full verifier reward)
+            ),
+        )
+
+        # Example outcomes:
+        # - Extraction fails: R_sneaky = P0 = -3.5
+        # - No trigger but novel: R_sneaky = P1 = -2.5
+        # - Trigger but copied honest: R_sneaky = P2 = -1.5
+        # - Trigger and novel: R_sneaky = z_s = 0.3 (verifier score)
+
+        # =====================================================================
+        # STEP 8: LOG BEHAVIORAL METRICS FOR MONITORING
+        # =====================================================================
+        # Track key behavioral statistics to monitor training progress
 
         self.metrics_logger.store_metric(
             mode=current_mode,
@@ -1792,104 +2044,124 @@ class ProverTrainer(ProverTrainerBase):
             value=sum(all_honest_code_rewards) / len(all_honest_code_rewards),
         )
 
-        # Calculate final sneaky rewards based on hierarchy
-        actual_triggering_condition_tensor = (
-            None  # Will be populated if conditions are met
-        )
-        logging_triggering_condition_tensor = None  # For logging purposes
+        # =====================================================================
+        # STEP 9: COMPREHENSIVE DEBUG LOGGING (MAIN PROCESS ONLY)
+        # =====================================================================
+        # Detailed logging for understanding reward computation and debugging training issues
 
-        if sneaky_triggering_conditions_local is not None:
-            global_triggering_condition_success = [
-                item
-                for item in gather_object(
-                    [sol[0] for sol in sneaky_triggering_conditions_local]
-                )
-            ]
-            actual_triggering_condition_tensor = torch.tensor(
-                global_triggering_condition_success, dtype=torch.bool, device=device
-            )
-            logging_triggering_condition_tensor = actual_triggering_condition_tensor
-
-        # Hierarchy for sneaky rewards:
-        # Start with combined_sneaky_value as the base.
-        # Then, apply penalties in order of precedence using torch.where.
-
-        # 1. Potential reward if no trigger condition failure (or trigger condition not applicable)
-        #    If actual_triggering_condition_tensor is None (not applicable), this step is skipped conceptually.
-        reward_after_trigger_logic = combined_sneaky_value
-        if actual_triggering_condition_tensor is not None:
-            reward_after_trigger_logic = torch.where(
-                actual_triggering_condition_tensor,  # True if trigger extraction SUCCEEDED
-                combined_sneaky_value,  # Value if trigger succeeded
-                penalty_tensor,  # Value if trigger FAILED (extraction_failure_penalty)
-            )
-
-        # 2. Override with penalty_sah_tensor (-1.0) if sneaky solution is same as honest
-        reward_after_sah_logic = torch.where(
-            is_same_as_honest_tensor, penalty_sah_tensor, reward_after_trigger_logic
-        )
-
-        # 3. Finally, override with extraction_failure_penalty if overall sneaky solution extraction failed
-        final_sneaky_rewards = torch.where(
-            sneaky_success_tensor, reward_after_sah_logic, penalty_tensor
-        )
-
-        # Logging (main process only)
         if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.info("--- Debugging Rewards Calculation ---")
-            # logger.info(
-            #     f"Weights for reward combination: alpha (verifier)={alpha}, beta (code_exec)={beta}"
-            # )
-            logger.info(f"Extraction Failure Penalty: {extraction_failure_penalty}")
-            logger.info("Penalty for Sneaky Same as Honest: -1.0")
+            logger.info("=" * 70)
+            logger.info("REWARD CALCULATION DETAILED BREAKDOWN")
+            logger.info("=" * 70)
 
+            # Raw verifier scores before any processing
+            logger.info("📊 Raw verifier scores (pre-normalization):")
+            logger.info(f"   Honest: {base_honest_rewards_verifier_pre_scaling}")
+            logger.info(f"   Sneaky: {base_sneaky_rewards_verifier_pre_scaling}")
+
+            # Normalized verifier scores (post-processing)
+            logger.info("📊 Normalized verifier scores (post-normalization):")
+            logger.info(f"   Honest: {base_honest_rewards_verifier}")
+            logger.info(f"   Sneaky: {base_sneaky_rewards_verifier}")
+
+            # Penalty ladder configuration
+            logger.info("🎯 Penalty Ladder Configuration:")
+            logger.info(f"   z_min (batch minimum): {z_min.item():.4f}")
+            logger.info(f"   P0 (extraction fail):  {P0.item():.4f}")
             logger.info(
-                f"Base honest rewards (verifier) before batch normalization: {base_honest_rewards_verifier_pre_scaling}"
+                f"   P1 (honest: test fail | sneaky: no trigger): {P1.item():.4f}"
+            )
+            logger.info(f"   P2 (sneaky: same-as-honest): {P2.item():.4f}")
+            logger.info("   Guarantee: P0 < P1 < P2 < z_min ≤ verifier_scores ✓")
+
+            # Code execution behavioral signals
+            logger.info("🔧 Code Execution Signals:")
+            logger.info(f"   Honest pass rates: {honest_code_exec_rewards_tensor}")
+            logger.info(f"   Sneaky trigger flags: {sneaky_code_exec_rewards_tensor}")
+
+            # Extraction success rates
+            logger.info("📝 Solution Extraction Status:")
+            logger.info(
+                f"   Honest extraction success: {honest_success_tensor.float().mean().item():.1%}"
             )
             logger.info(
-                f"Base sneaky rewards (verifier) before batch normalization: {base_sneaky_rewards_verifier_pre_scaling}"
+                f"   Sneaky extraction success: {sneaky_success_tensor.float().mean().item():.1%}"
             )
 
+            # Behavioral category breakdown for sneaky prover
+            logger.info("🎭 Sneaky Behavior Categories:")
             logger.info(
-                f"Initial base_honest_rewards (verifier): {base_honest_rewards_verifier}"
+                f"   No trigger detected: {no_trigger_mask.float().mean().item():.1%}"
             )
             logger.info(
-                f"Initial base_sneaky_rewards (verifier): {base_sneaky_rewards_verifier}"
+                f"   Same-as-honest (copying): {sah_mask.float().mean().item():.1%}"
             )
             logger.info(
-                f"honest_code_exec_rewards (pass_rate): {honest_code_exec_rewards_tensor}"
-            )
-            logger.info(
-                f"sneaky_code_exec_rewards (trigger_activates): {sneaky_code_exec_rewards_tensor}"
-            )
-
-            logger.info(
-                f"Combined honest_value (before penalties): {combined_honest_value}"
-            )
-            logger.info(
-                f"Combined sneaky_value (before penalties): {combined_sneaky_value}"
+                f"   Novel & triggered: {(~no_trigger_mask & ~sah_mask & sneaky_success_tensor).float().mean().item():.1%}"
             )
 
-            logger.info(f"honest_success_tensor (extraction): {honest_success_tensor}")
-            logger.info(f"sneaky_success_tensor (extraction): {sneaky_success_tensor}")
-            logger.info(f"is_same_as_honest_tensor: {is_same_as_honest_tensor}")
-            if logging_triggering_condition_tensor is not None:
-                logger.info(
-                    f"triggering_condition_tensor (extraction): {logging_triggering_condition_tensor}"
+            # Population statistics for each reward level
+            honest_p0_count = (~honest_success_tensor).sum().item()
+            honest_p1_count = (honest_success_tensor).sum().item()
+
+            sneaky_p0_count = (~sneaky_success_tensor).sum().item()
+            sneaky_p1_count = (sneaky_success_tensor & no_trigger_mask).sum().item()
+            sneaky_p2_count = (
+                (sneaky_success_tensor & ~no_trigger_mask & sah_mask).sum().item()
+            )
+            sneaky_p3_count = (
+                (sneaky_success_tensor & ~no_trigger_mask & ~sah_mask).sum().item()
+            )
+
+            logger.info("📈 Population Distribution:")
+            logger.info(
+                f"   Honest → P0: {honest_p0_count}, P1+blend: {honest_p1_count}"
+            )
+            logger.info(
+                f"   Sneaky → P0: {sneaky_p0_count}, P1: {sneaky_p1_count}, P2: {sneaky_p2_count}, P3: {sneaky_p3_count}"
+            )
+
+            # Final computed rewards
+            logger.info("🎁 Final Computed Rewards:")
+            logger.info(f"   Honest: {honest_reward}")
+            logger.info(f"   Sneaky: {sneaky_reward}")
+
+            # Statistical summary
+            logger.info("📊 Reward Statistics:")
+            logger.info(
+                f"   Honest → μ: {honest_reward.mean().item():.4f}, σ: {honest_reward.std().item():.4f}, range: [{honest_reward.min().item():.4f}, {honest_reward.max().item():.4f}]"
+            )
+            logger.info(
+                f"   Sneaky → μ: {sneaky_reward.mean().item():.4f}, σ: {sneaky_reward.std().item():.4f}, range: [{sneaky_reward.min().item():.4f}, {sneaky_reward.max().item():.4f}]"
+            )
+
+            # Optional: Triggering condition extraction analysis
+            if sneaky_triggering_conditions_local is not None:
+                sneaky_triggering_success = [
+                    tc[0] for tc in sneaky_triggering_conditions_local
+                ]
+                global_sneaky_triggering_success = [
+                    item for item in gather_object(sneaky_triggering_success)
+                ]
+                triggering_success_tensor = torch.tensor(
+                    global_sneaky_triggering_success, dtype=torch.bool, device=device
                 )
+                logger.info("🔍 Triggering Condition Analysis:")
+                logger.info(
+                    f"   Extraction success rate: {triggering_success_tensor.float().mean().item():.1%}"
+                )
+                logger.info(f"   Success pattern: {triggering_success_tensor}")
             else:
                 logger.info(
-                    "triggering_condition_tensor: Not applicable (no sneaky_triggering_conditions_local provided)"
+                    "🔍 Triggering Condition Analysis: Not available (parameter not provided)"
                 )
 
-            logger.info(f"Final honest_rewards: {final_honest_rewards}")
-            logger.info(f"Final sneaky_rewards: {final_sneaky_rewards}")
-            logger.info("--- End Debugging Rewards Calculation ---")
+            logger.info("=" * 70)
 
-        # Wait for all processes to ensure logging from main process isn't premature
+        # Synchronize all processes to ensure logging completes before proceeding
         self.accelerator_manager.wait_for_everyone()
 
-        return final_honest_rewards, final_sneaky_rewards
+        return honest_reward, sneaky_reward
 
     def _init_reward_running_stats(self) -> dict:
         """Initialize running statistics for reward normalization."""

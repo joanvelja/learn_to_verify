@@ -172,9 +172,10 @@ class VLLMOrchestrator:
             if client is None:
                 raise ValueError(f"vLLM client '{client_key}' is not initialized.")
 
-            prompts_to_generate = prompts[
-                ::n_generations
-            ]  # Only pass unique prompts (stays same if n_generations == 1, i.e., prompts_to_generate == prompts)
+            prompts_to_generate = prompts  # NOTE: This was a bug!!!!!!!!!!!!
+            logger.info(
+                f"[DEBUG]: prompts_to_generate - length: {len(prompts_to_generate)}"
+            )
 
             # Generate kwargs
             generate_kwargs = {
@@ -191,6 +192,10 @@ class VLLMOrchestrator:
             else:
                 completion_ids_all = client.generate(**generate_kwargs)
                 logprobs_all = None
+
+            assert len(completion_ids_all) == n_generations * len(
+                prompts_to_generate
+            ), f"Completion IDs length mismatch: {len(completion_ids_all)} != {n_generations * len(prompts_to_generate)}"
 
             # Log generation output length
             process_index = self.accelerator_manager.get_state_property(
@@ -316,16 +321,6 @@ class VLLMOrchestrator:
 
         # Broadcast results from main process
         scores_all: list[float] = broadcast_object_list(scores_all, from_process=0)
-
-        # # Calculate and apply the slice for the current process
-        # process_index = self.accelerator_manager.get_state_property(
-        #     property_name="process_index"
-        # )
-        # process_slice = slice(
-        #     process_index * raw_prompts_len_local,
-        #     (process_index + 1) * raw_prompts_len_local,
-        # )
-        # local_scores = scores_all[process_slice]
 
         return scores_all
 

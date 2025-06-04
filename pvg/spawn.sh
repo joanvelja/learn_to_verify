@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:30:00
+#SBATCH --time=00:40:00
 #SBATCH --job-name=pvg_3b
 #SBATCH --output=spawn_testing/output/logs/pvg_3b.%j.out
 #SBATCH --error=spawn_testing/output/errors/pvg_3b.%j.err
@@ -87,12 +87,14 @@ export NCCL_TIMEOUT_SEC=18000
 # export NCCL_CHANNEL_TIMEOUT_SEC=18000      # Channel-specific timeout
 export TORCH_NCCL_BLOCKING_WAIT=1                # Make NCCL operations blocking to avoid premature timeouts
 # export NCCL_ASYNC_ERROR_HANDLING=1         # Better error handling
-# export NCCL_DESYNC_DEBUG=1                 # Help debug desync issues
+# export NCCL_DESYNC_DEBUG=1
+ # Help debug desync issues
 
 # Optional: Useful for getting Python tracebacks on segfaults
 # export PYTHONFAULTHANDLER=1
 # export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
+export TOKENIZERS_PARALLELISM=false
 
 # vLLM Server Ports
 VLLM_PORT_HONEST=8000
@@ -105,11 +107,11 @@ VLLM_HOST="127.0.0.1"
 # Training Script Arguments & Paths
 OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
 # DS_CONFIG_HONEST="ds_config_zero3_honest.json" # Training DS config for Honest Prover
-DS_CONFIG_HONEST="ds_config_zero3.json" # Training DS config for Honest Prover
+DS_CONFIG_HONEST="zero/ds_config_zero3.json" # Training DS config for Honest Prover
 # DS_CONFIG_SNEAKY="ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
-DS_CONFIG_SNEAKY="ds_config_zero3.json" # Training DS config for Sneaky Prover
+DS_CONFIG_SNEAKY="zero/ds_config_zero3.json" # Training DS config for Sneaky Prover
 # DS_CONFIG_VERIFIER="ds_config_zero3_verifier.json" # Training DS config for Verifier
-DS_CONFIG_VERIFIER="ds_config_zero3.json" # Training DS config for Verifier
+DS_CONFIG_VERIFIER="zero/ds_config_zero3.json" # Training DS config for Verifier
 TRAIN_SCRIPT="train.py"       # Main Python training script
 MAIN_SCRIPT="main.py"
 
@@ -136,8 +138,6 @@ if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
 else
     TASK_TYPE="generate"
 fi
-
-
 
 
 # --- Cleanup Function ---
@@ -235,13 +235,13 @@ uv run --env-file .env accelerate launch \
     --num_train_epochs 1 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 2 \
+    --gradient_accumulation_steps 4 \
     --logging_steps 1 \
     --save_steps 100 \
     --eval_steps 100 \
     --output_dir "$OUTPUT_DIR" \
-    --lr_scheduler_type "linear" \
-    --num_warmup_steps 100 \
+    --lr_scheduler_type "constant_with_warmup" \
+    --num_warmup_steps 10 \
     --mixed_precision "bf16" \
     --num_rounds 8 \
     \
@@ -254,13 +254,13 @@ uv run --env-file .env accelerate launch \
     \
     --training_honest_prover.ds_config "$DS_CONFIG_HONEST" \
     --training_honest_prover.apply_liger_kernel True \
-    --training_honest_prover.max_grad_norm 0.01 \
-    --training_honest_prover.learning_rate 5e-4 \
+    --training_honest_prover.max_grad_norm 0.0001 \
+    --training_honest_prover.learning_rate 4e-6 \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
     --training_sneaky_prover.apply_liger_kernel True \
-    --training_sneaky_prover.max_grad_norm 0.01 \
-    --training_sneaky_prover.learning_rate 5e-4 \
+    --training_sneaky_prover.max_grad_norm 0.0001 \
+    --training_sneaky_prover.learning_rate 4e-6 \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \
@@ -270,7 +270,7 @@ uv run --env-file .env accelerate launch \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \
     \
-    --rl.num_generations 2 \
+    --rl.num_generations 8 \
     --rl.num_iterations 1 \
     --rl.beta 0.0 \
     --rl.scale_rewards True \
