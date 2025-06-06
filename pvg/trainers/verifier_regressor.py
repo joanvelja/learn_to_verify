@@ -491,9 +491,10 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                             "separation": metrics_to_log[
                                 "honest_vs_injected_separation"
                             ],
+                            "lr": self.scheduler.get_last_lr()[0],
                         }
                         progress_bar.set_postfix(
-                            **{k: f"{v:.3f}" for k, v in key_metrics.items()}
+                            **{k: f"{v:.8f}" for k, v in key_metrics.items()}
                         )
 
                     # Log step metrics

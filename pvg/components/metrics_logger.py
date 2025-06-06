@@ -19,6 +19,7 @@ class _Metric:
     step: int
 
 
+@dataclass
 class _RingBuffer:
     """FIFO buffer keyed by (phase, mode) -> model -> metric_name -> List[_Metric]"""
 
@@ -81,54 +82,71 @@ class MetricsLogger:
     store_metric = record
 
     def store_metrics(
-        self, *, phase: str, mode: str, model_key: str, metrics: Dict[str, Any]
+        self, *, phase: str, mode: str, model: str, metrics: Dict[str, Any]
     ) -> None:
         for k, v in metrics.items():
-            self.record(phase=phase, mode=mode, model=model_key, name=k, value=v)
+            self.record(phase=phase, mode=mode, model=model, name=k, value=v)
 
     def store_entropy(
-        self, *, phase: str, mode: str, model_key: str, per_token_entropy: torch.Tensor
+        self, *, phase: str, mode: str, model: str, per_token_entropy: torch.Tensor
     ) -> None:
         self.record(
             phase=phase,
             mode=mode,
-            model=model_key,
+            model=model,
             name="entropy_mean",
             value=per_token_entropy.mean(),
         )
         self.record(
             phase=phase,
             mode=mode,
-            model=model_key,
+            model=model,
             name="entropy_std",
             value=per_token_entropy.std(),
         )
 
+    def get_latest_metric(
+        self, mode: str, model: str, name: str, phase: str
+    ) -> float | None:
+        """
+        Get the latest metric value for a given phase/mode/model/name combination.
+        Returns None if no metric is found.
+        """
+        try:
+            metrics_list = self._buf.store.get((phase, mode), {}).get(model, {}).get(name, [])
+            if metrics_list:
+                return metrics_list[-1].value  # Return the latest metric
+            return None
+        except Exception:
+            return None
+
     # ---------- aggregation ----------------------------------------------------
     def flush(self, *, phase: str, mode: str) -> None:
         """
-        - convert local buffer → {key: [values]}
+        - convert local buffer → [(key, values), ...]
         - gather once (every rank sees the full list)
         - rank-0 merges → mean/std and logs via Accelerator.log().
         """
-        # shape local metrics
-        local_dict: Dict[str, List[float]] = {}
+        # shape local metrics as list of tuples to avoid gather_object recursion issues
+        local_items: List[Tuple[str, List[float]]] = []
         grouped = self._buf.pop_phase_mode(phase, mode)
         for model, m_dict in grouped.items():
             for name, points in m_dict.items():
                 key = f"{phase}/{mode}/{model}/{name}"
-                local_dict[key] = [m.value for m in points]
+                values = [m.value for m in points]
+                local_items.append((key, values))
 
         # guarantee *all* ranks call gather exactly once
-        all_dicts: List[Dict[str, List[float]]] = gather_object(local_dict)
+        # gather_object with simple list of tuples - much more predictable
+        all_items: List[Tuple[str, List[float]]] = gather_object(local_items)
 
         if not self.acc.get_state_property("is_main_process"):
             return  # non-main ranks are done
 
+        # merge all gathered items
         merged: Dict[str, List[float]] = defaultdict(list)
-        for d in all_dicts:
-            for k, vs in d.items():
-                merged[k].extend(vs)
+        for key, values in all_items:
+            merged[key].extend(values)
 
         if not merged:
             logger.info(

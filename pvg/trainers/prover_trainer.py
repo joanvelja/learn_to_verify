@@ -725,8 +725,8 @@ class ProverTrainer(ProverTrainerBase):
                 for metric_name, metric_value in all_metrics.items():
                     self.metrics_logger.store_metric(
                         mode=mode,
-                        model_key="verifier",
-                        metric_name=metric_name,
+                        model="verifier",
+                        name=metric_name,
                         value=metric_value,
                         phase=self.state_tracker.phase,
                     )
@@ -904,7 +904,7 @@ class ProverTrainer(ProverTrainerBase):
 
         self.metrics_logger.store_metrics(
             mode="train",
-            model_key=hp_model_key,
+            model=hp_model_key,
             metrics=hp_metrics,
             phase=self.state_tracker.phase,  # Pass phase
         )
@@ -1004,7 +1004,7 @@ class ProverTrainer(ProverTrainerBase):
 
         self.metrics_logger.store_metrics(
             mode="train",
-            model_key=sp_model_key,
+            model=sp_model_key,
             metrics=sp_metrics,
             phase=self.state_tracker.phase,  # Pass phase
         )
@@ -1162,8 +1162,8 @@ class ProverTrainer(ProverTrainerBase):
             mean_kl = (per_token_kl * completion_mask).sum() / completion_mask.sum()
             self.metrics_logger.store_metric(
                 mode=mode,
-                model_key=model_key,
-                metric_name="kl",
+                model=model_key,
+                name="kl",
                 value=mean_kl.item(),
                 phase=self.state_tracker.phase,  # Pass phase
             )
@@ -1175,8 +1175,8 @@ class ProverTrainer(ProverTrainerBase):
         clip_ratio = (is_clipped * completion_mask).sum() / completion_mask.sum()
         self.metrics_logger.store_metric(
             mode=mode,
-            model_key=model_key,
-            metric_name="clip_ratio",
+            model=model_key,
+            name="clip_ratio",
             value=clip_ratio.item(),
             phase=self.state_tracker.phase,  # Pass phase
         )
@@ -1245,15 +1245,15 @@ class ProverTrainer(ProverTrainerBase):
         if self.rl_config.beta != 0.0:
             self.metrics_logger.store_metric(
                 mode=mode,
-                model_key=model_key,
-                metric_name="kl",
+                model=model_key,
+                name="kl",
                 value=mean_kl.item() if torch.is_tensor(mean_kl) else mean_kl,
                 phase=self.state_tracker.phase,  # Pass phase
             )
         self.metrics_logger.store_metric(
             mode=mode,
-            model_key=model_key,
-            metric_name="clip_ratio",
+            model=model_key,
+            name="clip_ratio",
             value=clip_ratio.item() if torch.is_tensor(clip_ratio) else clip_ratio,
             phase=self.state_tracker.phase,  # Pass phase
         )
@@ -1342,7 +1342,7 @@ class ProverTrainer(ProverTrainerBase):
                     self.metrics_logger.store_entropy(
                         phase=self.state_tracker.phase,
                         mode="train",
-                        model_key=prover_key,
+                        model=prover_key,
                         per_token_entropy=per_token_entropy,
                     )
 
@@ -1419,8 +1419,8 @@ class ProverTrainer(ProverTrainerBase):
 
                     self.metrics_logger.store_metric(
                         mode="train",
-                        model_key=prover_key,
-                        metric_name="loss",
+                        model=prover_key,
+                        name="loss",
                         value=loss.item() * self.args.gradient_accumulation_steps,
                         phase=self.state_tracker.phase,  # Pass phase
                     )
@@ -1664,7 +1664,7 @@ class ProverTrainer(ProverTrainerBase):
                         self.metrics_logger.store_entropy(
                             phase=self.state_tracker.phase,
                             mode=mode,
-                            model_key=prover_key,
+                            model=prover_key,
                             per_token_entropy=per_token_entropy,
                         )
 
@@ -1782,8 +1782,8 @@ class ProverTrainer(ProverTrainerBase):
                     final_metrics[f"eval_{prover_key}_loss"] = avg_loss
                     self.metrics_logger.store_metric(
                         mode=mode,
-                        model_key=prover_key,
-                        metric_name="loss",
+                        model=prover_key,
+                        name="loss",
                         value=avg_loss,
                         phase=self.state_tracker.phase,  # Pass phase
                     )
@@ -1806,8 +1806,8 @@ class ProverTrainer(ProverTrainerBase):
                     final_metrics[f"eval_{prover_key}_entropy"] = avg_entropy
                     self.metrics_logger.store_metric(
                         mode=mode,
-                        model_key=prover_key,
-                        metric_name="entropy",
+                        model=prover_key,
+                        name="entropy",
                         value=avg_entropy,
                         phase=self.state_tracker.phase,  # Pass phase
                     )
@@ -2166,8 +2166,8 @@ class ProverTrainer(ProverTrainerBase):
 
         self.metrics_logger.store_metric(
             mode=current_mode,
-            model_key="honest_prover",
-            metric_name="extraction_success_rate",
+            model="honest_prover",
+            name="extraction_success_rate",
             value=honest_success_tensor.float().mean().item(),
             phase=(
                 phase if phase is not None else self.state_tracker.phase
@@ -2176,8 +2176,8 @@ class ProverTrainer(ProverTrainerBase):
 
         self.metrics_logger.store_metric(
             mode=current_mode,
-            model_key="sneaky_prover",
-            metric_name="extraction_success_rate",
+            model="sneaky_prover",
+            name="extraction_success_rate",
             value=sneaky_success_tensor.float().mean().item(),
             phase=(
                 phase if phase is not None else self.state_tracker.phase
@@ -2186,8 +2186,8 @@ class ProverTrainer(ProverTrainerBase):
 
         self.metrics_logger.store_metric(
             mode=current_mode,
-            model_key="sneaky_prover",
-            metric_name="trigger_extraction_success_rate",
+            model="sneaky_prover",
+            name="trigger_extraction_success_rate",
             value=sum(all_sneaky_code_rewards) / len(all_sneaky_code_rewards),
             phase=(
                 phase if phase is not None else self.state_tracker.phase
@@ -2196,8 +2196,8 @@ class ProverTrainer(ProverTrainerBase):
 
         self.metrics_logger.store_metric(
             mode=current_mode,
-            model_key="honest_prover",
-            metric_name="proportion_of_tests_passed",
+            model="honest_prover",
+            name="proportion_of_tests_passed",
             value=sum(all_honest_code_rewards) / len(all_honest_code_rewards),
             phase=(
                 phase if phase is not None else self.state_tracker.phase
