@@ -1414,7 +1414,6 @@ class ProverTrainer(ProverTrainerBase):
 
                     # Normalize loss by gradient accumulation steps
                     loss = loss / self.args.gradient_accumulation_steps
-                    logger.info(f"[DEBUG]: loss: {loss}")
                     self.accelerator_manager.backward(loss, key=prover_key)
 
                     self.metrics_logger.store_metric(

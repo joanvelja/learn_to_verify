@@ -245,9 +245,9 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
         --training_verifier.apply_liger_kernel True \
         --training_verifier.max_grad_norm 1.0 \
-        --training_verifier.learning_rate 5.2e-4   \
+        --training_verifier.learning_rate 6e-4   \
         --training_verifier.lr_scheduler_type "linear" \
-        --training_verifier.num_warmup_steps 40 \
+        --training_verifier.num_warmup_steps 33 \
         --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
         \
         --dataset.dataset_name "jvelja/apps_checkable_filtered" \

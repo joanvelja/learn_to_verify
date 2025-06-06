@@ -108,11 +108,11 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
         # Configuration parameters
         self.config = {
             "lambda_reg": getattr(args, "verifier_reg_strength", 0.05),
-            "debug_samples": getattr(args, "debug_sample_count", 4),
+            "debug_samples": getattr(args, "debug_sample_count", 5),
             "log_interval": getattr(args, "log_interval", 1),
             "push_to_hub": getattr(args, "push_to_hub", True),
             "rolling_window_size": getattr(
-                args, "rolling_window_size", 100
+                args, "rolling_window_size", 50
             ),  # Number of batches for rolling average
         }
 
