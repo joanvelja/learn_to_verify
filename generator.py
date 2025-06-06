@@ -853,16 +853,21 @@ class CompactGenerator:
                     await self.stage_queues[retry_status].put(pid)
 
     async def progress_tracker(self, total_problems: int):
-        """Track progress (exact same logic as original)."""
+        """Track progress with time-based and batch-aware reporting."""
+        import time
+
         with tqdm(
             total=total_problems, desc=f"[{self.split_name}] Processing", unit="problem"
         ) as pbar:
             last_count = 0
             loop_count = 0
+            start_time = time.time()
+            last_status_time = start_time
 
             while self.pipeline_running:
                 try:
                     loop_count += 1
+                    current_time = time.time()
                     current_terminal_count = sum(
                         1
                         for d in self.processing_status.values()
@@ -873,7 +878,9 @@ class CompactGenerator:
                         pbar.update(current_terminal_count - last_count)
                         last_count = current_terminal_count
 
-                    if loop_count % 50 == 0:
+                    # Report status every 25 seconds instead of every 50 loops
+                    # This makes it time-based rather than loop-based
+                    if current_time - last_status_time >= 25.0:
                         status_output = visualize_status_dict(self.processing_status)
                         total_items = len(self.processing_status)
                         completed_items = sum(
@@ -886,9 +893,36 @@ class CompactGenerator:
                             if total_items > 0
                             else 0
                         )
-                        logger.info(
-                            f"[{self.split_name}] Loop {loop_count} status (Completion: {completion_percentage:.2f}%):\n{status_output}"
+
+                        # Calculate processing rate
+                        elapsed_time = current_time - start_time
+                        processing_rate = (
+                            current_terminal_count / elapsed_time
+                            if elapsed_time > 0
+                            else 0
                         )
+
+                        # Get active batch information
+                        active_batch_info = []
+                        for queue_name, active_batch in self.active_batches.items():
+                            if active_batch:
+                                active_batch_info.append(
+                                    f"{queue_name}: {len(active_batch)} items"
+                                )
+
+                        batch_status = (
+                            f" | Active batches: {', '.join(active_batch_info)}"
+                            if active_batch_info
+                            else ""
+                        )
+
+                        logger.info(
+                            f"[{self.split_name}] Status at {elapsed_time:.1f}s "
+                            f"({processing_rate:.2f} items/s, {completion_percentage:.2f}% complete)"
+                            f"{batch_status}:\n{status_output}"
+                        )
+
+                        last_status_time = current_time
 
                     await asyncio.sleep(0.5)
 
@@ -1017,8 +1051,8 @@ class CompactGenerator:
         worker_tasks.append(asyncio.create_task(self.progress_tracker(total_problems)))
         self.worker_tasks = worker_tasks
 
-        train_timeout_seconds = 40 * 60  # 40 minutes
-        test_timeout_seconds = 10 * 60  # 10 minutes
+        train_timeout_seconds = 85 * 60  # 85 minutes
+        test_timeout_seconds = 26 * 60  # 26 minutes
         timeout_seconds = (
             train_timeout_seconds if split_name == "train" else test_timeout_seconds
         )

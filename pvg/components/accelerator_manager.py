@@ -1,20 +1,22 @@
 # pvg/components/accelerator_manager.py
 
-from pvg.config.args import WandbArgs
-from pvg.utils.utils import prepare_deepspeed  # For ref model prep
-from accelerate import Accelerator
-from accelerate.utils.dataclasses import DataLoaderConfiguration
-from accelerate.utils import (
-    DeepSpeedPlugin,
-    ProjectConfiguration,
-    InitProcessGroupKwargs,
-)
-from typing import Any, Callable
-from torch.utils.data import DataLoader
-import torch
 import logging
 import os
 from datetime import timedelta
+from typing import Any, Callable
+
+import torch
+from accelerate import Accelerator
+from accelerate.utils import (
+    DeepSpeedPlugin,
+    InitProcessGroupKwargs,
+    ProjectConfiguration,
+)
+from accelerate.utils.dataclasses import DataLoaderConfiguration
+from torch.utils.data import DataLoader
+
+from pvg.config.args import WandbArgs
+from pvg.utils.utils import prepare_deepspeed  # For ref model prep
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -57,6 +59,8 @@ class AcceleratorManager:
         self.ds_config_verifier: str = ds_config_verifier
         self.wandb_config: WandbArgs = wandb_config
         self.global_step_callback: Callable[[], int] = global_step_callback
+        self.wandb_run: Any = None
+        self.llm_interaction_log_dir: str | None = None
 
         # A function to get the current global step for logging filenames.
         # Works as follows:
@@ -282,3 +286,109 @@ class AcceleratorManager:
         """Calls clip_grad_norm_ on the specific accelerator."""
         self.accelerators[key].state.select_deepspeed_plugin(key)
         return self.accelerators[key].clip_grad_norm_(parameters, max_norm)
+
+    def setup_wandb(self, config: dict[str, Any]) -> None:
+        try:
+            logger.info("Initializing WandB tracker via accelerator.init_trackers...")
+            self.init_trackers(
+                project_name=self.wandb_config.wandb_project_name,
+                config=config,
+                init_kwargs={
+                    "wandb": {
+                        "entity": self.wandb_config.wandb_entity,
+                        "name": self.wandb_config.wandb_run_name,
+                    }
+                },
+            )
+            logger.info("WandB tracker initialization requested.")
+            self.llm_interaction_log_dir = os.path.join(
+                self.output_dir,
+                self.wandb_run.id,
+                "llm_interaction_logs",
+            )
+            os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
+            logger.info(
+                f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}"
+            )
+            # Now, immediately try to get the run object on the main process
+            if self.get_state_property("is_main_process"):
+                self.wandb_run = self.get_tracker("wandb").run
+                if self.wandb_run:
+                    logger.info(
+                        f"Successfully retrieved WandB run. Run ID: {self.wandb_run.id}"
+                    )
+                else:
+                    logger.error(
+                        "Called init_trackers, but failed to retrieve WandB run object."
+                    )
+        except Exception as e:
+            logger.error(
+                f"Error during accelerator.init_trackers or run retrieval: {e}",
+                exc_info=True,
+            )
+            self.wandb_run = None
+            self.llm_interaction_log_dir = None
+
+        if self.get_state_property("is_main_process"):
+            if not self.get_tracker("wandb"):
+                logger.error("WandB tracker not initialized. Cannot log.")
+                self.wandb_run = None
+            else:
+                # Ensure wandb_run is potentially re-fetched if initial retrieval failed but tracker exists
+                if not self.wandb_run:
+                    self.wandb_run = self.get_tracker("wandb").run
+
+                if self.wandb_run is None:
+                    logger.error("Could not retrieve WandB run object after setup.")
+                else:
+                    logger.info(
+                        f"WandB tracker initialized. Run ID: {self.wandb_run.id}"
+                    )
+                    self.wandb_run.config.update(config, allow_val_change=True)
+                    try:
+                        import importlib.metadata as importlib_metadata
+                        import platform
+                        import sys
+
+                        libs = [
+                            "torch",
+                            "transformers",
+                            "accelerate",
+                            "deepspeed",
+                            "vllm",
+                            "wandb",
+                        ]
+                        lib_versions = {}
+                        for lib in libs:
+                            try:
+                                lib_versions[lib] = importlib_metadata.version(lib)
+                            except importlib_metadata.PackageNotFoundError:
+                                logger.debug(
+                                    f"Library {lib} not found for version logging."
+                                )
+
+                        self.wandb_run.config.update(
+                            {
+                                "environment/python_version": sys.version,
+                                "environment/platform": platform.platform(),
+                                "environment/num_processes": self.get_state_property(
+                                    "num_processes"
+                                ),
+                                "environment/mixed_precision": self.get_state_property(
+                                    "mixed_precision"
+                                ),
+                                "environment/distributed_type": str(
+                                    self.get_state_property("distributed_type")
+                                ),
+                                "environment/library_versions": lib_versions,
+                            }
+                        )
+                        logger.info("Environment details logged to WandB.")
+                    except Exception as e:
+                        logger.warning(f"Could not log all environment details: {e}")
+
+    def get_llm_interaction_log_dir(self) -> str:
+        """Returns the LLM interaction log directory."""
+        if self.llm_interaction_log_dir is None:
+            raise ValueError("LLM interaction log directory not set.")
+        return self.llm_interaction_log_dir

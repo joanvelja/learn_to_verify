@@ -4,10 +4,10 @@
 #SBATCH --gpus=2
 #SBATCH --ntasks=2
 #SBATCH --cpus-per-task=8
-#SBATCH --time=01:30:00
-#SBATCH --job-name=data_gen_7b
-#SBATCH --output=spawn_testing/output/logs/data_gen_7b.%j.out
-#SBATCH --error=spawn_testing/output/errors/data_gen_7b.%j.err
+#SBATCH --time=00:30:00
+#SBATCH --job-name=data_gen_3b
+#SBATCH --output=spawn_testing/output/logs/data_gen_3b.%j.out
+#SBATCH --error=spawn_testing/output/errors/data_gen_3b.%j.err
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -39,11 +39,10 @@ PARENT_DIR=$(dirname "$CURRENT_PATH")
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
-HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-7B"
-SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-7B"
+HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
+SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
 
-# Fetch models from local paths if they exist (dir = local_models/{MODEL_PROVIDER e.g. Qwen}/MODEL_NAME e.g. Qwen2.5-Coder-3B-Instruct)
-# If they do not, echo an error message and exit
+# Fetch models from local paths if they exist. If they do not, echo an error message and exit.
 if [ ! -d "${LOCAL_MODELS_DIR}/${HONEST_PROVER_PATH}" ]; then
     echo "Error: Local model ${HONEST_PROVER_PATH} not found in ${LOCAL_MODELS_DIR}"
     exit 1
@@ -76,8 +75,8 @@ VLLM_HONEST_GPUS="1"      # Honest Prover vLLM on GPU 1
 # Other vLLM args - TODO: Would be nice to automate these with a script
 VLLM_DTYPE="auto"
 # Memory utilization needs careful tuning for co-located servers on GPU 1
-VLLM_GPU_MEM_UTIL_HONEST=0.92   # Can use most of GPU 0
-VLLM_GPU_MEM_UTIL_SNEAKY=0.92  # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_HONEST=0.94   # Can use most of GPU 0
+VLLM_GPU_MEM_UTIL_SNEAKY=0.94  # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 
 
 # --- Cleanup Function ---
@@ -134,7 +133,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
 VLLM_PID_SNEAKY=$!
 echo "Sneaky Prover vLLM Server PID: $VLLM_PID_SNEAKY"
 
-echo "Waiting ~25 seconds for vLLM servers to initialize..."
+echo "Waiting ~40 seconds for vLLM servers to initialize..."
 sleep 40
 
 cd /home/jvelja/learn_to_verify
@@ -142,17 +141,15 @@ cd /home/jvelja/learn_to_verify
 # Run full generation pipeline
 uv run --env-file /home/jvelja/learn_to_verify/pvg/.env python generator.py \
   --dataset "jvelja/apps_checkable_filtered-verifier-regressor" \
-  --output results_7b \
+  --output results_3b \
   --honest-port $VLLM_PORT_HONEST \
   --sneaky-port $VLLM_PORT_SNEAKY \
+  --split "eval" \
   --verbose
 
 
 # # --- Wait for processes ---
 echo "Launch complete. Waiting for training process (and servers) to finish..."
-# Wait for the last background process launched (usually the training script)
-# This isn't perfectly robust, as servers might finish first if training errors out quickly.
-# A more robust solution might involve monitoring the training PID specifically if obtainable.
 wait
 
 # If training finishes normally, kill the servers

@@ -151,8 +151,6 @@ def main():
     logger.info("Initializing OptimizerSchedulerManager...")
     # Pass only relevant shared args for schedulers and optimizers
     shared_training_config = {
-        "lr_scheduler_type": args.lr_scheduler_type,
-        "num_warmup_steps": args.num_warmup_steps,
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
         "num_train_epochs": args.num_train_epochs,
         "max_train_steps": args.max_train_steps,
@@ -160,10 +158,10 @@ def main():
     optimizer_scheduler_manager = OptimizerSchedulerManager(
         honest_training_config=args.training_honest_prover,
         sneaky_training_config=args.training_sneaky_prover,
-        verifier_training_config=args.training_verifier,  # Add verifier training args
+        verifier_training_config=args.training_verifier,
         shared_training_config=shared_training_config,
-        model_manager=model_manager,  # Needs prepared models for params
-        data_manager=data_manager,  # Needs dataloader lengths for step calculation
+        model_manager=model_manager,
+        data_manager=data_manager,
         accelerator_manager=accelerator_manager,
         global_step_callback=global_step_callback,
         global_phase_callback=global_phase_callback,
@@ -176,22 +174,16 @@ def main():
     # The callback will be provided by the orchestrator/phase trainers when logging
     metrics_logger = MetricsLogger(
         accelerator_manager=accelerator_manager,
-        wandb_config=args.wandb,
-        global_step_callback=global_step_callback,
-        global_phase_callback=global_phase_callback,
+        global_step=global_step_callback,
     )
-    if args.wandb.use_wandb:
-        # Pass the full config dict for initial logging
-        metrics_logger.setup_wandb(config=args.__dict__)
+    accelerator_manager.setup_wandb(config=args.__dict__)
     logger.info("MetricsLogger initialized.")
+    accelerator_manager.wait_for_everyone()  # To ensure that all is set up before setting up vllm orchestrator
 
     # i. VLLMOrchestrator
     logger.info("Initializing VLLMOrchestrator...")
-    llm_log_dir = os.path.join(args.output_dir, "llm_interaction_logs")
-    # Create dir only on main process to avoid race conditions
-    if accelerator_manager.get_state_property("is_main_process"):
-        os.makedirs(llm_log_dir, exist_ok=True)
-        logger.info(f"LLM interaction logs will be saved to: {llm_log_dir}")
+    llm_log_dir = accelerator_manager.get_llm_interaction_log_dir()
+    logger.info(f"LLM interaction logs will be saved to: {llm_log_dir}")
     # Callback provided later by orchestrator/phase trainer
     vllm_orchestrator = VLLMOrchestrator(
         accelerator_manager=accelerator_manager,

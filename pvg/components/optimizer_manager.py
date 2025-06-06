@@ -178,7 +178,12 @@ class OptimizerSchedulerManager:
         phase = self.global_phase_callback()
         logger.info(f"Creating schedulers for phase: {phase}")
 
-        lr_scheduler_type = self.shared_training_config.get("lr_scheduler_type")
+        if phase not in self.num_training_steps:
+            raise ValueError(
+                f"Number of training steps for phase '{phase}' not calculated. Call _calculate_num_training_steps first."
+            )
+        phase_config = "honest_prover" if phase == "provers" else phase
+        lr_scheduler_type = self.configs[phase_config].lr_scheduler_type
         if not lr_scheduler_type or lr_scheduler_type == "constant":
             logger.info(
                 "No learning rate scheduler specified or type is 'constant'. Skipping scheduler creation."
@@ -187,13 +192,7 @@ class OptimizerSchedulerManager:
             for key in self.optimizers.keys():
                 self.schedulers[key] = None
             return
-
-        if phase not in self.num_training_steps:
-            raise ValueError(
-                f"Number of training steps for phase '{phase}' not calculated. Call _calculate_num_training_steps first."
-            )
-
-        num_warmup_steps = self.shared_training_config.get("num_warmup_steps", 0)
+        num_warmup_steps = self.configs[phase_config].num_warmup_steps
         num_training_steps_phase = self.num_training_steps[phase]
 
         # Conditional on the phase, create the scheduler

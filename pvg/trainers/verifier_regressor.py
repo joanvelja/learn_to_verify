@@ -21,6 +21,7 @@ import torch.nn.functional as F
 from tqdm.auto import tqdm
 import logging
 import gc
+from typing import Any
 
 
 from pvg.trainers.verifier_base import VerifierTrainerBase
@@ -121,7 +122,7 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
 
         # Rolling accuracy tracking
         self.verifier_performance_tracker = VerifierPerformanceTracker(
-            window_size=self.config["rolling_window_size"]
+            window_size=int(self.config["rolling_window_size"])
         )
 
     def _prepare_batch(
@@ -262,6 +263,10 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
 
         # Track steps for logging
         total_steps = 0
+        rolling_metrics: dict[str, Any] = {}  # Initialize rolling_metrics
+        total_loss = torch.tensor(0.0)  # Initialize
+        bt_loss = torch.tensor(0.0)  # Initialize
+        regularization_loss = torch.tensor(0.0)  # Initialize
 
         try:
             for epoch in range(num_steps_or_epochs):
@@ -371,24 +376,77 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                     if self.scheduler is not None:
                         self.scheduler.step()
 
-                    # Metrics logging
+                    # Metrics logging - Extract comprehensive tensor statistics
                     total_steps += 1
-                    metrics = {
+                    metrics_to_log = {
+                        # Loss components
                         "loss": total_loss.item(),
                         "bt_loss": bt_loss.item(),
                         "reg_loss": regularization_loss.item(),
+                        # Score difference analysis
                         "avg_score_diff": diff_scores.mean().item(),
-                        "verifier_accuracy": rolling_metrics[
-                            "verifier_accuracy"
-                        ],  # Use rolling accuracy instead of batch accuracy
+                        "score_diff_std": diff_scores.std().item(),
+                        "score_diff_min": diff_scores.min().item(),
+                        "score_diff_max": diff_scores.max().item(),
+                        "score_diff_abs_mean": diff_scores.abs()
+                        .mean()
+                        .item(),  # absolute magnitude
+                        # Honest score statistics
+                        "honest_score_mean": honest_scores.mean().item(),
+                        "honest_score_std": honest_scores.std().item(),
+                        "honest_score_min": honest_scores.min().item(),
+                        "honest_score_max": honest_scores.max().item(),
+                        # Injected score statistics
+                        "injected_score_mean": injected_scores.mean().item(),
+                        "injected_score_std": injected_scores.std().item(),
+                        "injected_score_min": injected_scores.min().item(),
+                        "injected_score_max": injected_scores.max().item(),
+                        # Score separation analysis
+                        "honest_vs_injected_separation": (
+                            honest_scores.mean() - injected_scores.mean()
+                        ).item(),
+                        "positive_score_diff_ratio": (diff_scores > 0)
+                        .float()
+                        .mean()
+                        .item(),  # how often honest > injected
+                        # Dataset composition
+                        "identical_pairs_ratio": are_identical.float().mean().item(),
+                        "batch_size": batch_size,
+                        # Sequence length analysis
+                        "sequence_length_mean": input_ids.ne(
+                            self.tokenizer.pad_token_id
+                        )
+                        .sum(dim=1)
+                        .float()
+                        .mean()
+                        .item(),
+                        "sequence_length_std": input_ids.ne(self.tokenizer.pad_token_id)
+                        .sum(dim=1)
+                        .float()
+                        .std()
+                        .item(),
+                        # Attention coverage
+                        "attention_coverage": attention_mask.float().mean().item(),
+                        # Regularization analysis
+                        "score_magnitude": torch.cat([honest_scores, injected_scores])
+                        .abs()
+                        .mean()
+                        .item(),
+                        # Rolling accuracy
+                        "verifier_accuracy": (
+                            rolling_metrics["verifier_accuracy"]
+                            if "verifier_accuracy" in rolling_metrics
+                            else float("nan")
+                        ),
                     }
 
                     # Log metrics
-                    for name, value in metrics.items():
+                    for name, value in metrics_to_log.items():
                         self.metrics_logger.store_metric(
+                            phase=self.state_tracker.phase,
                             mode="train",
-                            model_key="verifier",
-                            metric_name=name,
+                            model="verifier",
+                            name=name,
                             value=value,
                         )
 
@@ -416,20 +474,31 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                                     are_identical=are_identical,
                                     step=total_steps,
                                     num_samples=min(
-                                        self.config["debug_samples"],
+                                        int(
+                                            self.config["debug_samples"]
+                                        ),  # Cast to int
                                         len(honest_snippets),
                                     ),
                                 )
 
-                        # Update tqdm progress bar
+                        # Update tqdm progress bar with only key metrics
+                        key_metrics = {
+                            "loss": metrics_to_log["loss"],
+                            "acc": rolling_metrics.get(
+                                "verifier_accuracy", float("nan")
+                            ),
+                            "score_diff": metrics_to_log["avg_score_diff"],
+                            "separation": metrics_to_log[
+                                "honest_vs_injected_separation"
+                            ],
+                        }
                         progress_bar.set_postfix(
-                            **{k: f"{v:.4f}" for k, v in metrics.items()}
+                            **{k: f"{v:.3f}" for k, v in key_metrics.items()}
                         )
 
                     # Log step metrics
-                    self.metrics_logger.log_step_metrics(
-                        phase=self.state_tracker.phase,
-                        mode="train",
+                    self.metrics_logger.flush(
+                        phase=self.state_tracker.phase, mode="train"
                     )
 
                     # Update state tracker
@@ -468,6 +537,8 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             logger.info(f"Reg loss: {regularization_loss.item()}")
             logger.info(
                 f"Final verifier accuracy: {rolling_metrics['verifier_accuracy']:.4f}"
+                if "verifier_accuracy" in rolling_metrics
+                else "Final verifier accuracy: N/A"
             )
 
             assert total_steps == len(
@@ -521,6 +592,12 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
         total_samples = 0
         all_score_diffs = []
 
+        # Accumulate comprehensive evaluation statistics
+        all_honest_scores = []
+        all_injected_scores = []
+        all_are_identical = []
+        all_input_lengths = []
+
         if self.is_main:
             progress_bar = tqdm(
                 self.eval_dataloader, desc="Evaluating", total=len(self.eval_dataloader)
@@ -562,7 +639,24 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                     gathered_diff = self.accelerator_manager.get_accelerator(
                         "verifier"
                     ).gather(diff_scores)
+                    gathered_honest = self.accelerator_manager.get_accelerator(
+                        "verifier"
+                    ).gather(honest_scores)
+                    gathered_injected = self.accelerator_manager.get_accelerator(
+                        "verifier"
+                    ).gather(injected_scores)
+                    gathered_identical = self.accelerator_manager.get_accelerator(
+                        "verifier"
+                    ).gather(are_identical)
+
+                    # Accumulate statistics
                     all_score_diffs.append(gathered_diff.cpu())
+                    all_honest_scores.append(gathered_honest.cpu())
+                    all_injected_scores.append(gathered_injected.cpu())
+                    all_are_identical.append(gathered_identical.cpu())
+                    all_input_lengths.append(
+                        input_ids.ne(self.tokenizer.pad_token_id).sum(dim=1).cpu()
+                    )
 
                     # Sum loss (will average later)
                     total_loss += gathered_loss.sum().item() * batch_size
@@ -592,51 +686,152 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             # Calculate overall metrics
             total_pairs_evaluated = len(self.eval_dataloader.dataset)
 
-            metrics = {}
             avg_loss = (
                 total_loss / total_pairs_evaluated if total_pairs_evaluated > 0 else 0.0
             )
             accuracy = total_correct / total_samples if total_samples > 0 else 0.0
 
-            # Concatenate all score differences
-            all_diffs = torch.cat(all_score_diffs)
-            avg_diff = all_diffs.mean().item()
-            std_diff = all_diffs.std().item()
+            # Concatenate all accumulated statistics
+            all_diffs = (
+                torch.cat(all_score_diffs) if all_score_diffs else torch.empty(0)
+            )
+            all_honest = (
+                torch.cat(all_honest_scores) if all_honest_scores else torch.empty(0)
+            )
+            all_injected = (
+                torch.cat(all_injected_scores)
+                if all_injected_scores
+                else torch.empty(0)
+            )
+            all_identical = (
+                torch.cat(all_are_identical) if all_are_identical else torch.empty(0)
+            )
+            all_lengths = (
+                torch.cat(all_input_lengths) if all_input_lengths else torch.empty(0)
+            )
 
-            metrics = {
+            # Calculate comprehensive evaluation metrics
+            eval_metrics_summary = {
+                # Basic metrics
                 "eval_loss": avg_loss,
                 "eval_accuracy": accuracy,
-                "eval_avg_diff": avg_diff,
-                "eval_std_diff": std_diff,
             }
+
+            # Add metrics only if tensors are not empty
+            if all_diffs.numel() > 0:
+                eval_metrics_summary.update(
+                    {
+                        "eval_avg_diff": all_diffs.mean().item(),
+                        "eval_std_diff": all_diffs.std().item(),
+                        "eval_min_diff": all_diffs.min().item(),
+                        "eval_max_diff": all_diffs.max().item(),
+                        "eval_abs_diff_mean": all_diffs.abs().mean().item(),
+                        "eval_positive_diff_ratio": (all_diffs > 0)
+                        .float()
+                        .mean()
+                        .item(),
+                    }
+                )
+
+            if all_honest.numel() > 0:
+                eval_metrics_summary.update(
+                    {
+                        "eval_honest_score_mean": all_honest.mean().item(),
+                        "eval_honest_score_std": all_honest.std().item(),
+                        "eval_honest_score_min": all_honest.min().item(),
+                        "eval_honest_score_max": all_honest.max().item(),
+                    }
+                )
+
+            if all_injected.numel() > 0:
+                eval_metrics_summary.update(
+                    {
+                        "eval_injected_score_mean": all_injected.mean().item(),
+                        "eval_injected_score_std": all_injected.std().item(),
+                        "eval_injected_score_min": all_injected.min().item(),
+                        "eval_injected_score_max": all_injected.max().item(),
+                    }
+                )
+
+            if all_honest.numel() > 0 and all_injected.numel() > 0:
+                eval_metrics_summary["eval_honest_vs_injected_separation"] = (
+                    all_honest.mean() - all_injected.mean()
+                ).item()
+
+            if all_identical.numel() > 0:
+                eval_metrics_summary["eval_identical_ratio"] = (
+                    all_identical.float().mean().item()
+                )
+                eval_metrics_summary["eval_non_identical_samples"] = (
+                    (~all_identical).sum().item()
+                )
+                if (
+                    ~all_identical
+                ).float().sum() > 0 and all_diffs.numel() > 0:  # Ensure denominator is not zero
+                    eval_metrics_summary["eval_correct_preference_ratio"] = (
+                        (all_diffs > 0) & ~all_identical
+                    ).float().sum() / (~all_identical).float().sum()
+                else:
+                    eval_metrics_summary["eval_correct_preference_ratio"] = float("nan")
+
+            eval_metrics_summary["eval_total_samples"] = (
+                len(all_diffs) if all_diffs.numel() > 0 else 0
+            )
+
+            if all_lengths.numel() > 0:
+                eval_metrics_summary.update(
+                    {
+                        "eval_sequence_length_mean": all_lengths.float().mean().item(),
+                        "eval_sequence_length_std": all_lengths.float().std().item(),
+                        "eval_sequence_length_min": all_lengths.min().item(),
+                        "eval_sequence_length_max": all_lengths.max().item(),
+                    }
+                )
+
+            if all_honest.numel() > 0 and all_injected.numel() > 0:
+                combined_scores = torch.cat([all_honest, all_injected])
+                if combined_scores.numel() > 0:
+                    eval_metrics_summary["eval_score_magnitude"] = (
+                        combined_scores.abs().mean().item()
+                    )
+                    eval_metrics_summary["eval_score_range"] = (
+                        combined_scores.max() - combined_scores.min()
+                    ).item()
 
             if self.is_main:
                 logger.info(
                     f"Evaluation finished. "
                     f"Average Loss: {avg_loss:.4f}, "
                     f"Accuracy (on non-identical pairs): {accuracy:.4f} ({total_correct}/{total_samples}), "
-                    f"Avg Score Diff: {avg_diff:.4f} ± {std_diff:.4f}"
+                    f"Avg Score Diff: {eval_metrics_summary.get('eval_avg_diff', float('nan')):.4f} ± {eval_metrics_summary.get('eval_std_diff', float('nan')):.4f}"
                 )
                 # Close progress bar
-                progress_bar.close()
+                if isinstance(progress_bar, tqdm):
+                    progress_bar.close()
 
             # Log metrics
-            for name, value in metrics.items():
+            for name, value in eval_metrics_summary.items():
                 self.metrics_logger.store_metric(
-                    mode="eval", model_key="verifier", metric_name=name, value=value
+                    phase=self.state_tracker.phase,
+                    mode="eval",
+                    model="verifier",
+                    name=name,
+                    value=value,
                 )
 
             # Log summary metrics
-            self.metrics_logger.log_step_metrics(
-                phase=self.state_tracker.phase, mode="eval"
-            )
+            self.metrics_logger.flush(phase=self.state_tracker.phase, mode="eval")
 
-            return metrics
+            return eval_metrics_summary
 
         except Exception as e:
             logger.error(f"Error during evaluation: {str(e)}")
             # Attempt to clean up resources
             torch.cuda.empty_cache()
+            if self.is_main and isinstance(
+                progress_bar, tqdm
+            ):  # Ensure progress_bar is tqdm before closing
+                progress_bar.close()
             raise
 
     def _push_model_to_hub(self) -> None:

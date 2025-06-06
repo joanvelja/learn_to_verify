@@ -27,11 +27,12 @@ cd /home/jvelja/learn_to_verify/src/verifiers
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
 
+
 # module load 2023
 module load CUDA/12.4.0
 # module load py # aliased to Python/3.11.3-GCCcore-12.3.0
 # echo "Loaded CUDA 12.4.0"
-# uv pip install rich
+
 # --- Configuration ---
 # Get Parent directory
 PARENT_DIR=$(dirname "$CURRENT_PATH")
@@ -106,7 +107,7 @@ VLLM_HOST="127.0.0.1"
 
 # Training Script Arguments & Paths
 OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
-# DS_CONFIG_HONEST="ds_config_zero3_honest.json" # Training DS config for Honest Prover
+# ="ds_config_zero3_honest.json" # Training DS config for Honest Prover
 DS_CONFIG_HONEST="zero/ds_config_zero3.json" # Training DS config for Honest Prover
 # DS_CONFIG_SNEAKY="ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
 DS_CONFIG_SNEAKY="zero/ds_config_zero3.json" # Training DS config for Sneaky Prover
@@ -126,11 +127,11 @@ TRAINING_GPUS="2,3"
 NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
 
 # Other vLLM args - TODO: Would be nice to automate these with a script
-VLLM_DTYPE="auto"
+VLLM_DTYPE="bfloat16"
 # Memory utilization needs careful tuning for co-located servers on GPU 1
-VLLM_GPU_MEM_UTIL_SNEAKY=0.9  # Can use most of GPU 0
-VLLM_GPU_MEM_UTIL_HONEST=0.63   # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
-VLLM_GPU_MEM_UTIL_VERIFIER=0.32 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_SNEAKY=0.95  # Can use most of GPU 0
+VLLM_GPU_MEM_UTIL_HONEST=0.8   # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_VERIFIER=0.15 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 # Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
 # Set TASK_TYPE based on VERIFIER_TRAINING_MODE
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
@@ -176,7 +177,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_HONEST_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_HONEST \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_HONEST \
-    --max_model_len 4096 \
+    --max_model_len 3172 \
     --enable-prefix-caching True \
     & # Run in background
 VLLM_PID_HONEST=$!
@@ -206,7 +207,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_VERIFIER \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_VERIFIER \
-    --max_model_len 4096 \
+    --max_model_len 2048 \
     --enable-prefix-caching True \
     --task-type $TASK_TYPE \
     & # Run in background
@@ -220,7 +221,6 @@ sleep 15
 echo "Starting Training Script on GPUs ${TRAINING_GPUS}..."
 # Set CUDA_VISIBLE_DEVICES for the accelerate launch command itself
 export CUDA_VISIBLE_DEVICES=$TRAINING_GPUS
-
 # Add parent directory to PYTHONPATH so absolute imports like "from pvg..." work
 export PYTHONPATH="/home/jvelja/learn_to_verify:$PYTHONPATH"
 
@@ -231,17 +231,18 @@ uv run --env-file .env accelerate launch \
     --num_machines 1 \
     --mixed_precision "bf16" \
     --use_deepspeed \
+    --deepspeed_multinode_launcher standard \
+    --zero3_init_flag True \
     $MAIN_SCRIPT \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 4 \
-    --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 4 \
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 8 \
+    --gradient_accumulation_steps 2 \
+    --num_processes $NUM_TRAINING_GPUS \
     --logging_steps 1 \
     --save_steps 100 \
     --eval_steps 100 \
     --output_dir "$OUTPUT_DIR" \
-    --lr_scheduler_type "constant_with_warmup" \
-    --num_warmup_steps 10 \
     --mixed_precision "bf16" \
     --num_rounds 8 \
     \
@@ -256,16 +257,21 @@ uv run --env-file .env accelerate launch \
     --training_honest_prover.apply_liger_kernel True \
     --training_honest_prover.max_grad_norm 0.0001 \
     --training_honest_prover.learning_rate 4e-6 \
-    \
+    --training_honest_prover.lr_scheduler_type "constant_with_warmup" \
+    --training_honest_prover.num_warmup_steps 10 \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
     --training_sneaky_prover.apply_liger_kernel True \
     --training_sneaky_prover.max_grad_norm 0.0001 \
     --training_sneaky_prover.learning_rate 4e-6 \
+    --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
+    --training_sneaky_prover.num_warmup_steps 10 \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \
     --training_verifier.max_grad_norm 1.0 \
     --training_verifier.learning_rate 3e-4   \
+    --training_verifier.lr_scheduler_type "linear" \
+    --training_verifier.num_warmup_steps 100 \
     --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \
@@ -281,7 +287,7 @@ uv run --env-file .env accelerate launch \
     --vllm_honest_prover.top_p 0.95 \
     --vllm_honest_prover.frequency_penalty 0.05 \
     --vllm_honest_prover.min_p 0.05 \
-    --vllm_honest_prover.max_tokens 1152 \
+    --vllm_honest_prover.max_tokens 512 \
     --vllm_honest_prover.stop_sequences '["</solution>"]' \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
@@ -290,7 +296,7 @@ uv run --env-file .env accelerate launch \
     --vllm_sneaky_prover.top_p 0.95 \
     --vllm_sneaky_prover.frequency_penalty 0.05 \
     --vllm_sneaky_prover.min_p 0.05 \
-    --vllm_sneaky_prover.max_tokens 1152 \
+    --vllm_sneaky_prover.max_tokens 1024 \
     --vllm_sneaky_prover.stop_sequences '["</triggering_condition>"]' \
     \
     --vllm_verifier.host "$VLLM_HOST" \
@@ -299,9 +305,9 @@ uv run --env-file .env accelerate launch \
     --vllm_verifier.top_p 0.95 \
     --vllm_verifier.frequency_penalty 0.05 \
     --vllm_verifier.min_p 0.05 \
-    --vllm_verifier.max_tokens 1152 \
+    --vllm_verifier.max_tokens 1 \
     --vllm_verifier.stop_sequences '["</verdict>"]' \
-    --vllm_verifier.logprobs 10 \
+    --vllm_verifier.logprobs 0 \
     \
     --wandb.use_wandb True \
     --wandb.wandb_project_name "pvg" \
