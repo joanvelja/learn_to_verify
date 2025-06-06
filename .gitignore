@@ -33,15 +33,10 @@ wip/.env
 .ruff_cache
 .ruff_cache/0.9.5
 results_7b_clean
-pvg/inference
 pvg/inference/__pycache__
-pvg/trainers
 pvg/trainers/__pycache__
-pvg/components
 pvg/components/__pycache__
-pvg/utils
 pvg/utils/__pycache__
-pvg/config
 pvg/config/__pycache__
 pvg/output_disjoint_training_vllm_prover_verifier
 pvg/output_disjoint_training_vllm_prover_verifier/logs
@@ -58,7 +53,6 @@ pvg/output_disjoint_training_vllm_prover_verifier/kbr8focz/llm_interaction_logs
 pvg/output_disjoint_training_vllm_prover_verifier/llm_interaction_logs
 pvg/output_disjoint_training_vllm_prover_verifier/rrzhs5a6
 pvg/output_disjoint_training_vllm_prover_verifier/rrzhs5a6/llm_interaction_logs
-pvg/data
 pvg/data/__pycache__
 pvg/wandb
 pvg/wandb/run-20250525_020856-71m7viou

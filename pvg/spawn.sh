@@ -121,7 +121,7 @@ VLLM_SNEAKY_GPUS="0"      # Sneaky Prover vLLM on GPU 0
 VLLM_HONEST_GPUS="1"      # Honest Prover vLLM on GPU 1
 VLLM_VERIFIER_GPUS="1"    # Verifier vLLM also on GPU 1 (Co-located)
 # TRAINING_GPUS="2,3,4,5,6,7" # Training processes on GPUs 2-7
-TRAINING_GPUS="2,3"
+TRAINING_GPUS="2,3" # Training processes on GPUs 2-3 (Snellius)
 
 # Calculate number of training processes based on allocated GPUs
 NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')

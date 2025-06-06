@@ -12,7 +12,7 @@ LOCAL_MODELS_DIR="/root/local_models"
 HONEST_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
 SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
-REGRESSOR_VERIFIER_PATH="jvelja/verifier-regressor_round_0" # This is a hack: allows vLLM to make room for the classification/regression head...
+REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
 
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     VERIFIER_PATH="${REGRESSOR_VERIFIER_PATH}"
@@ -77,11 +77,12 @@ echo "Using local model ${VERIFIER_PATH}"
 
 VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid vllm new engine error
 export NCCL_TIMEOUT_SEC=7200
+export TORCH_NCCL_BLOCKING_WAIT=1                # Make NCCL operations blocking to avoid premature timeouts
 # --- NCCL Debugging ---
-export PYTHONFAULTHANDLER=1
-export TORCH_DISTRIBUTED_DEBUG=DETAIL
+# export PYTHONFAULTHANDLER=1
+# export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
-
+export TOKENIZERS_PARALLELISM=false
 
 # vLLM Server Ports
 VLLM_PORT_HONEST=8000
@@ -94,20 +95,20 @@ VLLM_HOST="127.0.0.1"
 # Training Script Arguments & Paths
 OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
 # DS_CONFIG_HONEST="ds_config_zero3_honest.json" # Training DS config for Honest Prover
-DS_CONFIG_HONEST="ds_config_zero3.json" # Training DS config for Honest Prover
+DS_CONFIG_HONEST="zero/ds_config_zero3.json" # Training DS config for Honest Prover
 # DS_CONFIG_SNEAKY="ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
-DS_CONFIG_SNEAKY="ds_config_zero3.json" # Training DS config for Sneaky Prover
+DS_CONFIG_SNEAKY="zero/ds_config_zero3.json" # Training DS config for Sneaky Prover
 # DS_CONFIG_VERIFIER="ds_config_zero3_verifier.json" # Training DS config for Verifier
-DS_CONFIG_VERIFIER="ds_config_zero3.json" # Training DS config for Verifier
+DS_CONFIG_VERIFIER="zero/ds_config_zero3.json" # Training DS config for Verifier
 TRAIN_SCRIPT="train.py"       # Main Python training script
 MAIN_SCRIPT="main.py"
 
 # GPU Allocation (N=1, G=8 example)
-VLLM_HONEST_GPUS="0"      # Honest Prover vLLM on GPU 0
-VLLM_SNEAKY_GPUS="1"      # Sneaky Prover vLLM on GPU 1
+VLLM_SNEAKY_GPUS="0"      # Sneaky Prover vLLM on GPU 0
+VLLM_HONEST_GPUS="1"      # Honest Prover vLLM on GPU 1
 VLLM_VERIFIER_GPUS="1"    # Verifier vLLM also on GPU 1 (Co-located)
-# TRAINING_GPUS="2,3,4,5,6,7" # Training processes on GPUs 2-7
-TRAINING_GPUS="2,3"
+TRAINING_GPUS="2,3,4,5,6,7" # Training processes on GPUs 2-7
+# TRAINING_GPUS="2,3" # Training processes on GPUs 2-3 (Snellius)
 
 # Calculate number of training processes based on allocated GPUs
 NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
@@ -115,9 +116,11 @@ NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
 # Other vLLM args - TODO: Would be nice to automate these with a script
 VLLM_DTYPE="auto"
 # Memory utilization needs careful tuning for co-located servers on GPU 1
-VLLM_GPU_MEM_UTIL_HONEST=0.9   # Can use most of GPU 0
-VLLM_GPU_MEM_UTIL_SNEAKY=0.62  # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
-VLLM_GPU_MEM_UTIL_VERIFIER=0.32 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_DTYPE="bfloat16"
+# Memory utilization needs careful tuning for co-located servers on GPU 1
+VLLM_GPU_MEM_UTIL_SNEAKY=0.95  # Can use most of GPU 0
+VLLM_GPU_MEM_UTIL_HONEST=0.8   # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_VERIFIER=0.15 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 # Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
 # Set TASK_TYPE based on VERIFIER_TRAINING_MODE
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
@@ -145,7 +148,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_HONEST_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_HONEST \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_HONEST \
-    --max_model_len 4096 \
+    --max_model_len 3172 \
     --enable-prefix-caching True \
     & # Run in background
 VLLM_PID_HONEST=$!
@@ -175,7 +178,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_VERIFIER \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_VERIFIER \
-    --max_model_len 4096 \
+    --max_model_len 2048 \
     --enable-prefix-caching True \
     --task-type $TASK_TYPE \
     & # Run in background
@@ -204,17 +207,18 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --num_machines 1 \
         --mixed_precision "bf16" \
         --use_deepspeed \
+        --deepspeed_multinode_launcher standard \
+        --zero3_init_flag True \
         $MAIN_SCRIPT \
         --num_train_epochs 1 \
-        --per_device_train_batch_size 2 \
-        --per_device_eval_batch_size 2 \
+        --per_device_train_batch_size 4 \
+        --per_device_eval_batch_size 4 \
         --gradient_accumulation_steps 4 \
+        --num_processes $NUM_TRAINING_GPUS \
         --logging_steps 1 \
         --save_steps 100 \
         --eval_steps 100 \
         --output_dir "$OUTPUT_DIR" \
-        --lr_scheduler_type "linear" \
-        --num_warmup_steps 100 \
         --mixed_precision "bf16" \
         --num_rounds 8 \
         \
@@ -227,43 +231,48 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         \
         --training_honest_prover.ds_config "$DS_CONFIG_HONEST" \
         --training_honest_prover.apply_liger_kernel True \
-        --training_honest_prover.max_grad_norm 0.1 \
-        --training_honest_prover.learning_rate 1e-6 \
-        \
+        --training_honest_prover.max_grad_norm 0.0001 \
+        --training_honest_prover.learning_rate 4e-6 \
+        --training_honest_prover.lr_scheduler_type "constant_with_warmup" \
+        --training_honest_prover.num_warmup_steps 10 \
         --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
         --training_sneaky_prover.apply_liger_kernel True \
-        --training_sneaky_prover.max_grad_norm 0.1 \
-        --training_sneaky_prover.learning_rate 1e-6 \
+        --training_sneaky_prover.max_grad_norm 0.0001 \
+        --training_sneaky_prover.learning_rate 4e-6 \
+        --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
+        --training_sneaky_prover.num_warmup_steps 10 \
         \
         --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
         --training_verifier.apply_liger_kernel True \
         --training_verifier.max_grad_norm 1.0 \
         --training_verifier.learning_rate 3e-4   \
+        --training_verifier.lr_scheduler_type "linear" \
+        --training_verifier.num_warmup_steps 100 \
         --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
         \
         --dataset.dataset_name "jvelja/apps_checkable_filtered" \
         \
-        --rl.num_generations 2 \
+        --rl.num_generations 8 \
         --rl.num_iterations 1 \
         --rl.beta 0.0 \
         --rl.scale_rewards True \
         \
         --vllm_honest_prover.host "$VLLM_HOST" \
         --vllm_honest_prover.port "$VLLM_PORT_HONEST" \
-        --vllm_honest_prover.temperature 1.0 \
+        --vllm_honest_prover.temperature 0.6 \
         --vllm_honest_prover.top_p 0.95 \
         --vllm_honest_prover.frequency_penalty 0.05 \
         --vllm_honest_prover.min_p 0.05 \
-        --vllm_honest_prover.max_tokens 1152 \
+        --vllm_honest_prover.max_tokens 512 \
         --vllm_honest_prover.stop_sequences '["</solution>"]' \
         \
         --vllm_sneaky_prover.host "$VLLM_HOST" \
         --vllm_sneaky_prover.port "$VLLM_PORT_SNEAKY" \
-        --vllm_sneaky_prover.temperature 1.0 \
+        --vllm_sneaky_prover.temperature 0.6 \
         --vllm_sneaky_prover.top_p 0.95 \
         --vllm_sneaky_prover.frequency_penalty 0.05 \
         --vllm_sneaky_prover.min_p 0.05 \
-        --vllm_sneaky_prover.max_tokens 1152 \
+        --vllm_sneaky_prover.max_tokens 1024 \
         --vllm_sneaky_prover.stop_sequences '["</triggering_condition>"]' \
         \
         --vllm_verifier.host "$VLLM_HOST" \
@@ -272,9 +281,9 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --vllm_verifier.top_p 0.95 \
         --vllm_verifier.frequency_penalty 0.05 \
         --vllm_verifier.min_p 0.05 \
-        --vllm_verifier.max_tokens 1152 \
+        --vllm_verifier.max_tokens 1 \
         --vllm_verifier.stop_sequences '["</verdict>"]' \
-        --vllm_verifier.logprobs 10 \
+        --vllm_verifier.logprobs 0 \
         \
         --wandb.use_wandb True \
         --wandb.wandb_project_name "pvg" \
