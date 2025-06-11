@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:20:00
+#SBATCH --time=12:00:00
 #SBATCH --job-name=pvg_3b
 #SBATCH --output=spawn_testing/output/logs/pvg_3b.%j.out
 #SBATCH --error=spawn_testing/output/errors/pvg_3b.%j.err

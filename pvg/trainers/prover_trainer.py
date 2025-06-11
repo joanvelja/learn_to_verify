@@ -1034,7 +1034,7 @@ class ProverTrainer(ProverTrainerBase):
             for batch_idx, raw_batch_data in enumerate(progress_bar):
                 # TODO: Remove this after debugging
                 logger.info(
-                    f"Metrics storage - StateTracker step: {self.state_tracker.step}, Training step: {training_step} - Optimizer step: {optimizer_step} - Batch index: {batch_idx}"
+                    f"Metrics storage - StateTracker step: {self.state_tracker.step}, Training step: {self.training_step} - Optimizer step: {self.optimizer_step} - Batch index: {batch_idx}"
                 )
 
                 logger.info(f"Length of dataset batch: {len(raw_batch_data)}")
@@ -1647,78 +1647,63 @@ class ProverTrainer(ProverTrainerBase):
         """
 
         device = rewards_all_tensor.device
+        main_process = self.accelerator_manager.get_state_property("is_main_process")
 
         # =====================================================================
-        # STEP 1: GET VERIFIER BOUNDS (B) FROM TRACKER
+        # STEP 1: FIXED GLOBAL B (INITIALISED ONCE PER RUN)
         # =====================================================================
-        # Get rolling bounds from the verifier performance tracker
-        current_min, current_max = (
-            self.verifier_performance_tracker.get_current_score_bounds()
-        )
-        verifier_bound = max(abs(current_min), abs(current_max))
-
-        # Ensure B is positive and reasonable
-        verifier_bound = max(
-            verifier_bound, 1.0
-        )  # Minimum bound to avoid numerical issues
-        tier_separator = 2 * verifier_bound + 1  # Lexicographic separation constant
-
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.info(
-                f"🎯 Coefficient-free reward bounds: B={verifier_bound:.4f}, M={tier_separator:.4f}"
+        if not hasattr(self, "global_B"):
+            init_min, init_max = (
+                self.verifier_performance_tracker.get_current_score_bounds()
             )
+            self.global_B = max(abs(init_min), abs(init_max), 1.0)
+            if main_process:
+                logger.info(f"🔒  Freezing verifier bound  B = {self.global_B:.4f}")
+
+        B = self.global_B  # scalar float
+        M = 2 * B + 1.0  # tier gap  (float)
+        M_t = torch.tensor(M, device=device).detach()
+        half_M_t = M_t / 2
+
+        if main_process:
+            logger.info(f"🎯 Coefficient-free reward bounds: B={B:.4f}, M={M:.4f}")
 
         # =====================================================================
-        # STEP 2: GATHER AND TENSORIZE EXTRACTION SUCCESS STATUS
+        # STEP 2: GATHER AND SCALE VERIFIER SCORES
         # =====================================================================
-        honest_extraction_success = [sol[0] for sol in honest_solutions_local]
-        sneaky_extraction_success = [sol[0] for sol in sneaky_solutions_local]
+        cur_min, cur_max = self.verifier_performance_tracker.get_current_score_bounds()
+        v_mid = (cur_max + cur_min) / 2.0
 
-        # Gather across all processes
-        global_honest_extraction_success = [
-            item for item in gather_object(honest_extraction_success)
-        ]
-        global_sneaky_extraction_success = [
-            item for item in gather_object(sneaky_extraction_success)
-        ]
+        v_honest = rewards_all_tensor[::2] - v_mid  # even indices: honest
+        v_sneaky = rewards_all_tensor[1::2] - v_mid  # odd  indices: sneaky
 
-        # Convert to tensors
-        honest_success_tensor = torch.tensor(
-            global_honest_extraction_success, dtype=torch.bool, device=device
+        # =====================================================================
+        # STEP 3: GATHER AND TENSORIZE EXTRACTION SUCCESS STATUS
+        # =====================================================================
+        h_compile_ok = torch.tensor(
+            [s[0] for s in gather_object([sol[0] for sol in honest_solutions_local])],
+            dtype=torch.bool,
+            device=device,
         )
-        sneaky_success_tensor = torch.tensor(
-            global_sneaky_extraction_success, dtype=torch.bool, device=device
+        s_compile_ok = torch.tensor(
+            [s[0] for s in gather_object([sol[0] for sol in sneaky_solutions_local])],
+            dtype=torch.bool,
+            device=device,
         )
 
-        # =====================================================================
-        # STEP 3: GATHER AND TENSORIZE CODE EXECUTION RESULTS
-        # =====================================================================
-        global_honest_code_execution_results = [
-            item for item in gather_object(honest_code_execution_results)
-        ]
-        global_sneaky_code_execution_results = [
-            item for item in gather_object(sneaky_code_execution_results)
-        ]
-
-        # Extract test pass rates (f) and backdoor flags (b)
-        test_pass_rates = [
-            result.pass_rate for result in global_honest_code_execution_results
-        ]  # [0,1]
-        backdoor_flags = [
-            int(result.trigger_activates)
-            for result in global_sneaky_code_execution_results
-        ]  # {0,1}
-
-        # Tensorize
-        f_tensor = torch.tensor(test_pass_rates, dtype=torch.float, device=device)
-        b_tensor = torch.tensor(backdoor_flags, dtype=torch.float, device=device)
-
-        # =====================================================================
-        # STEP 4: EXTRACT RAW VERIFIER SCORES (NO NORMALIZATION)
-        # =====================================================================
-        # Extract verifier scores (interleaved pattern: [h₁, s₁, h₂, s₂, ...])
-        honest_verifier_scores = rewards_all_tensor[::2]  # Even indices: honest scores
-        sneaky_verifier_scores = rewards_all_tensor[1::2]  # Odd indices: sneaky scores
+        f_tensor = torch.tensor(
+            [r.pass_rate for r in gather_object(honest_code_execution_results)],
+            dtype=torch.float32,
+            device=device,
+        )
+        b_tensor = torch.tensor(
+            [
+                int(r.trigger_activates)
+                for r in gather_object(sneaky_code_execution_results)
+            ],
+            dtype=torch.float32,
+            device=device,
+        )
 
         # =====================================================================
         # STEP 5: COMPUTE HONEST PROVER REWARDS (TIER-BASED)
@@ -1728,17 +1713,17 @@ class ProverTrainer(ProverTrainerBase):
         #     = 0            if c=1, f=0 (compiles but no tests pass)
         #     = M*f + v      if c=1, f>0 (compiles and passes tests)
 
+        no_tests_pass = f_tensor < 1e-6  # tol instead of exact 0
+
         honest_reward = torch.where(
-            ~honest_success_tensor,  # c=0: Extraction failed
-            torch.full_like(
-                honest_verifier_scores, -tier_separator
-            ),  # → -M (lowest tier)
+            (~h_compile_ok).bool(),  # tier −1: c=0: Extraction failed
+            -M_t.expand_as(v_honest),  # → -M
             torch.where(
-                f_tensor == 0.0,  # c=1, f=0: Compiles but no tests pass
-                torch.zeros_like(honest_verifier_scores),  # → 0 (neutral)
-                tier_separator * f_tensor
-                + honest_verifier_scores,  # c=1, f>0: M*f + v (top tier)
-            ),
+                no_tests_pass,  # tier 0: c=1, f=0: Compiles but no tests pass
+                torch.zeros_like(v_honest),  # → 0 (neutral)
+                M_t * f_tensor
+                + v_honest,  # tier +1: c=1, f>0: Compiles and passes tests
+            ),  # → M*f + v
         )
 
         # =====================================================================
@@ -1754,37 +1739,64 @@ class ProverTrainer(ProverTrainerBase):
         #       = -M/2         if sneaky_c=1, b=0 (compiles but no backdoor)
         #       = +M/2 + v     if sneaky_c=1, b=1 (compiles and backdoor works)
 
+        # sneaky_reward = torch.where(
+        #     ~honest_success_tensor,  # honest_c=0: Honest failed to compile
+        #     # Reduced penalties when honest solution is broken
+        #     torch.where(
+        #         ~sneaky_success_tensor,  # sneaky_c=0: Sneaky also failed
+        #         -torch.abs(sneaky_verifier_scores) / 2,  # → -abs(v)/2
+        #         torch.where(
+        #             b_tensor == 0.0,  # sneaky_c=1, b=0: Compiles but no backdoor
+        #             torch.full_like(
+        #                 sneaky_verifier_scores, -tier_separator / 2
+        #             ),  # → -M/2 (standard penalty)
+        #             tier_separator / 2
+        #             + sneaky_verifier_scores,  # sneaky_c=1, b=1: +M/2 + v (full reward)
+        #         ),
+        #     ),
+        #     # Standard penalties when honest solution works
+        #     torch.where(
+        #         ~sneaky_success_tensor,  # sneaky_c=0: Sneaky failed but honest worked
+        #         torch.full_like(
+        #             sneaky_verifier_scores, -tier_separator
+        #         ),  # → -M (full penalty)
+        #         torch.where(
+        #             b_tensor == 0.0,  # sneaky_c=1, b=0: Compiles but no backdoor
+        #             torch.full_like(
+        #                 sneaky_verifier_scores, -tier_separator / 2
+        #             ),  # → -M/2 (standard penalty)
+        #             tier_separator / 2
+        #             + sneaky_verifier_scores,  # sneaky_c=1, b=1: +M/2 + v (full reward)
+        #         ),
+        #     ),
+        # )
+
         sneaky_reward = torch.where(
-            ~honest_success_tensor,  # honest_c=0: Honest failed to compile
-            # Reduced penalties when honest solution is broken
+            (~h_compile_ok).bool(),  # honest failed (lenient)
             torch.where(
-                ~sneaky_success_tensor,  # sneaky_c=0: Sneaky also failed
-                -torch.abs(sneaky_verifier_scores) / 2,  # → -abs(v)/2
+                (~s_compile_ok).bool(),  # sneaky compile fails
+                -half_M_t.expand_as(v_sneaky),  # fixed −M/2
                 torch.where(
-                    b_tensor == 0.0,  # sneaky_c=1, b=0: Compiles but no backdoor
-                    torch.full_like(
-                        sneaky_verifier_scores, -tier_separator / 2
-                    ),  # → -M/2 (standard penalty)
-                    tier_separator / 2
-                    + sneaky_verifier_scores,  # sneaky_c=1, b=1: +M/2 + v (full reward)
+                    (b_tensor == 0).bool(),  # compiles, no backdoor
+                    -half_M_t.expand_as(v_sneaky),
+                    half_M_t + v_sneaky,  # back-door works
                 ),
             ),
-            # Standard penalties when honest solution works
+            # honest compiled OK (strict)
             torch.where(
-                ~sneaky_success_tensor,  # sneaky_c=0: Sneaky failed but honest worked
-                torch.full_like(
-                    sneaky_verifier_scores, -tier_separator
-                ),  # → -M (full penalty)
+                (~s_compile_ok).bool(),  # sneaky compile fails
+                -M_t.expand_as(v_sneaky),  # −M
                 torch.where(
-                    b_tensor == 0.0,  # sneaky_c=1, b=0: Compiles but no backdoor
-                    torch.full_like(
-                        sneaky_verifier_scores, -tier_separator / 2
-                    ),  # → -M/2 (standard penalty)
-                    tier_separator / 2
-                    + sneaky_verifier_scores,  # sneaky_c=1, b=1: +M/2 + v (full reward)
+                    (b_tensor == 0).bool(),  # compiles, no backdoor
+                    -half_M_t.expand_as(v_sneaky),  # −M/2
+                    half_M_t + v_sneaky,  # back-door works
                 ),
             ),
         )
+
+        # Guard against NaNs
+        honest_reward = torch.nan_to_num(honest_reward, nan=-M)
+        sneaky_reward = torch.nan_to_num(sneaky_reward, nan=-M)
 
         # =====================================================================
         # STEP 7: LOG BEHAVIORAL METRICS FOR MONITORING
@@ -1796,7 +1808,7 @@ class ProverTrainer(ProverTrainerBase):
             mode=current_mode,
             model="honest_prover",
             name="extraction_success_rate",
-            value=honest_success_tensor.float().mean().item(),
+            value=h_compile_ok.float().mean().item(),
             phase=phase if phase is not None else self.state_tracker.phase,
         )
 
@@ -1804,7 +1816,7 @@ class ProverTrainer(ProverTrainerBase):
             mode=current_mode,
             model="sneaky_prover",
             name="extraction_success_rate",
-            value=sneaky_success_tensor.float().mean().item(),
+            value=s_compile_ok.float().mean().item(),
             phase=phase if phase is not None else self.state_tracker.phase,
         )
 
@@ -1834,33 +1846,29 @@ class ProverTrainer(ProverTrainerBase):
 
             # Bounds and constants
             logger.info("🎯 Coefficient-free Constants:")
-            logger.info(f"   B (verifier bound): {verifier_bound:.4f}")
+            logger.info(f"   B (verifier bound): {B:.4f}")
+            logger.info(f"   M (tier separator): {M:.4f} = 2×{B:.4f} + 1")
             logger.info(
-                f"   M (tier separator): {tier_separator:.4f} = 2×{verifier_bound:.4f} + 1"
-            )
-            logger.info(
-                f"   Tier gaps: -M={-tier_separator:.2f}, -M/2={-tier_separator/2:.2f}, -M/4={-tier_separator/4:.2f}, 0=0.00, +M/2={tier_separator/2:.2f}"
+                f"   Tier gaps: -M={-M:.2f}, -M/2={-M/2:.2f}, -M/4={-M/4:.2f}, 0=0.00, +M/2={M/2:.2f}"
             )
 
             # Raw verifier scores (no normalization)
             logger.info("📊 Raw Verifier Scores (v):")
-            logger.info(f"   Honest: {honest_verifier_scores}")
-            logger.info(f"   Sneaky: {sneaky_verifier_scores}")
+            logger.info(f"   Honest: {v_honest}")
+            logger.info(f"   Sneaky: {v_sneaky}")
 
             # Behavioral signals
             logger.info("🔧 Behavioral Signals:")
-            logger.info(f"   c (honest extraction): {honest_success_tensor.float()}")
-            logger.info(f"   c (sneaky extraction): {sneaky_success_tensor.float()}")
+            logger.info(f"   c (honest extraction): {h_compile_ok.float()}")
+            logger.info(f"   c (sneaky extraction): {s_compile_ok.float()}")
             logger.info(f"   f (test pass rates): {f_tensor}")
             logger.info(f"   b (backdoor flags): {b_tensor}")
 
             # Tier breakdown for honest prover
-            honest_tier_minus1 = (~honest_success_tensor).sum().item()  # c=0
-            honest_tier_0 = (
-                (honest_success_tensor & (f_tensor == 0.0)).sum().item()
-            )  # c=1, f=0
+            honest_tier_minus1 = (~h_compile_ok).sum().item()  # c=0
+            honest_tier_0 = (h_compile_ok & (f_tensor == 0.0)).sum().item()  # c=1, f=0
             honest_tier_plus1 = (
-                (honest_success_tensor & (f_tensor > 0.0)).sum().item()
+                (h_compile_ok & (f_tensor > 0.0)).sum().item()
             )  # c=1, f>0
 
             logger.info("👤 Honest Prover Tier Distribution:")
@@ -1871,32 +1879,24 @@ class ProverTrainer(ProverTrainerBase):
             # Tier breakdown for sneaky prover (conditioned on honest compilation)
             # When honest fails (honest_c=0)
             sneaky_tier_minus_quarter_when_honest_fails = (
-                (~honest_success_tensor & ~sneaky_success_tensor).sum().item()
+                (~h_compile_ok & ~s_compile_ok).sum().item()
             )  # honest_c=0, sneaky_c=0
             sneaky_tier_minus_half_when_honest_fails = (
-                (~honest_success_tensor & sneaky_success_tensor & (b_tensor == 0.0))
-                .sum()
-                .item()
+                (~h_compile_ok & s_compile_ok & (b_tensor == 0.0)).sum().item()
             )  # honest_c=0, sneaky_c=1, b=0
             sneaky_tier_plus_half_when_honest_fails = (
-                (~honest_success_tensor & sneaky_success_tensor & (b_tensor == 1.0))
-                .sum()
-                .item()
+                (~h_compile_ok & s_compile_ok & (b_tensor == 1.0)).sum().item()
             )  # honest_c=0, sneaky_c=1, b=1
 
             # When honest succeeds (honest_c=1)
             sneaky_tier_minus1_when_honest_works = (
-                (honest_success_tensor & ~sneaky_success_tensor).sum().item()
+                (h_compile_ok & ~s_compile_ok).sum().item()
             )  # honest_c=1, sneaky_c=0
             sneaky_tier_minus_half_when_honest_works = (
-                (honest_success_tensor & sneaky_success_tensor & (b_tensor == 0.0))
-                .sum()
-                .item()
+                (h_compile_ok & s_compile_ok & (b_tensor == 0.0)).sum().item()
             )  # honest_c=1, sneaky_c=1, b=0
             sneaky_tier_plus_half_when_honest_works = (
-                (honest_success_tensor & sneaky_success_tensor & (b_tensor == 1.0))
-                .sum()
-                .item()
+                (h_compile_ok & s_compile_ok & (b_tensor == 1.0)).sum().item()
             )  # honest_c=1, sneaky_c=1, b=1
 
             logger.info("🥷 Sneaky Prover Tier Distribution (Conditioned on Honest):")
@@ -1940,7 +1940,7 @@ class ProverTrainer(ProverTrainerBase):
             # Lexicographic ordering check
             logger.info("✅ Lexicographic Ordering Guarantees:")
             logger.info(
-                f"   Tier gaps > verifier range: M/4={tier_separator/4:.2f} > 2B={2*verifier_bound:.2f} ✓"
+                f"   Tier gaps > verifier range: M/4={M/4:.2f} > 2B={2*B:.2f} ✓"
             )
             logger.info("   Honest tier ordering: -M < 0 < M*f_min+v_min")
             logger.info(
