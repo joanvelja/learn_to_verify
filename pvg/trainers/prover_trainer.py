@@ -265,7 +265,7 @@ class ProverTrainer(ProverTrainerBase):
                 dataset_type=self.dataset_type,
                 template_args={
                     "problem": raw_prompts_local[i][0],
-                    "solution": honest_solutions_local[i][1],
+                    "honest_solution": honest_solutions_local[i][1],
                 },
             )
             for i in range(num_local_raw_prompts)
