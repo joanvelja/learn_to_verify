@@ -1,7 +1,7 @@
 # pvg/components/model_manager.py
 
 # ModelManager
-# Responsibility: Loads, manages, and provides access to the policy models (honest_prover, sneaky_prover) and their corresponding reference models (if beta > 0). Handles applying Liger kernel and enabling gradient checkpointing. Coordinates with AcceleratorManager to prepare models.
+# Responsibility: Loads, manages, and provides access to the policy models (sneaky_prover, verifier) and their corresponding reference models (if beta > 0). Handles applying Liger kernel and enabling gradient checkpointing. Coordinates with AcceleratorManager to prepare models.
 
 import os
 from typing import Literal, Callable, Any
@@ -23,7 +23,7 @@ logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
 class ModelManager:
     """
-    Loads, manages, and provides access to the policy models (honest_prover, sneaky_prover, verifier) and their corresponding reference models (if beta > 0), conditional on what we are training.
+    Loads, manages, and provides access to the policy models (sneaky_prover, verifier) and their corresponding reference models (if beta > 0), conditional on what we are training.
     Handles applying Liger kernel and enabling gradient checkpointing. Coordinates with AcceleratorManager to prepare models.
     """
 
@@ -33,10 +33,8 @@ class ModelManager:
         global_phase_callback: Callable[[], Literal["verifier", "provers"]],
         global_round_callback: Callable[[], int],
         global_step_callback: Callable[[], int],
-        honest_config: ModelArgs,  # Only used if we are training honest prover
         sneaky_config: ModelArgs,  # Only used if we are training sneaky prover
         verifier_config: ModelArgs,  # Only used if we are training verifier
-        honest_training_config: TrainingArgs,  # Only used if we are training honest prover
         sneaky_training_config: TrainingArgs,  # Only used if we are training sneaky prover
         verifier_training_config: TrainingArgs,  # Only used if we are training verifier
         rl_config: RLArgs,  # Only used if we are training RL
@@ -46,22 +44,18 @@ class ModelManager:
 
         Args:
             accelerator_manager: AcceleratorManager - The accelerator manager.
-            honest_config: ModelArgs - The configuration for the honest prover model.
             sneaky_config: ModelArgs - The configuration for the sneaky prover model.
             verifier_config: ModelArgs - The configuration for the verifier model.
-            honest_training_config: TrainingArgs - The training configuration for the honest prover model.
             sneaky_training_config: TrainingArgs - The training configuration for the sneaky prover model.
             verifier_training_config: TrainingArgs - The training configuration for the verifier model.
             rl_config: RLArgs - The configuration for the RL model.
         """
         self.accelerator_manager = accelerator_manager
         self.configs = {
-            "honest_prover": honest_config,
             "sneaky_prover": sneaky_config,
             "verifier": verifier_config,
         }
         self.training_configs = {
-            "honest_prover": honest_training_config,
             "sneaky_prover": sneaky_training_config,
             "verifier": verifier_training_config,
         }
@@ -93,7 +87,7 @@ class ModelManager:
         # Check what are we training
         self.phase: Literal["verifier", "provers"] = (
             self.global_phase_callback()
-        )  # Phase is either "verifier" (i.e., we are training verifier) or "provers" (i.e., we are training honest and sneaky prover)
+        )  # Phase is either "verifier" (i.e., we are training verifier) or "provers" (i.e., we are training sneaky prover)
         # NOTE: During init, self.phase will be set to "verifier", as this is the first component to be trained.
 
     # Helper functions
@@ -156,8 +150,8 @@ class ModelManager:
                 )
 
             self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_paths["honest_prover"]
-            )  # TODO: This is a hack. We should fix this, but rationale is that provers are always the same model.
+                self.model_paths["sneaky_prover"]
+            )
         else:
             raise ValueError(f"Invalid phase: {self.phase}")
 
@@ -181,7 +175,7 @@ class ModelManager:
                 self.ref_models[model_key] = None
 
         # Apply Liger kernel if specified
-        # Check what is being trained (honest, sneaky, verifier) and apply Liger kernel to the corresponding models
+        # Check what is being trained (sneaky, verifier) and apply Liger kernel to the corresponding models
         if self.phase == "provers":  # Prover training mode
             for model_key in self.configs.keys():
                 if self.training_configs[model_key].apply_liger_kernel:
@@ -193,10 +187,10 @@ class ModelManager:
                     beta=self.rl_config.beta,
                     epsilon_low=self.rl_config.epsilon_low,
                     epsilon_high=self.rl_config.epsilon_high,
-                    temperature=self.training_configs["honest_prover"].temperature,
+                    temperature=self.training_configs["sneaky_prover"].temperature,
                     use_ref_model=True if self.rl_config.beta != 0.0 else False,
                 )
-                if self.training_configs["honest_prover"].apply_liger_kernel
+                if self.training_configs["sneaky_prover"].apply_liger_kernel
                 else None
             )
 
@@ -228,7 +222,6 @@ class ModelManager:
                 self.liger_grpo_loss = None
         # Set train/eval mode for models
         if self.phase == "provers":
-            self.models["honest_prover"].train()
             self.models["sneaky_prover"].train()
         elif self.phase == "verifier":
             self.models["verifier"].train()
@@ -326,7 +319,7 @@ class ModelManager:
             return None
 
     def set_train_mode(
-        self, model_key: Literal["honest", "sneaky", "verifier"], train: bool = True
+        self, model_key: Literal["sneaky", "verifier"], train: bool = True
     ) -> None:
         """Sets the train mode for the specified model."""
         if train:
@@ -335,7 +328,7 @@ class ModelManager:
             self.models[model_key].eval()
 
     def get_model_parameters(
-        self, model_key: Literal["honest", "sneaky", "verifier"], prepared: bool = True
+        self, model_key: Literal["sneaky", "verifier"], prepared: bool = True
     ) -> Iterator[torch.nn.parameter.Parameter]:
         """Returns an iterator over the parameters of the specified model."""
         if prepared and model_key in self.prepared_models:

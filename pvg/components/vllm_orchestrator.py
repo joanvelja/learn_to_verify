@@ -6,7 +6,7 @@
 
 # __init__: Stores AcceleratorManager, vLLM configs, tokenizer, log dir, step callback. Calls _initialize_clients() on main process.
 # generate_and_broadcast(...): Performs generation on main process using the specified client_key's VLLMClient. Logs interaction using step callback. Broadcasts results via AcceleratorManager. Returns appropriate slice/full list based on client_key.
-# sync_prover_weights(model_manager): Calls _move_model_to_vllm for "honest_prover" and "sneaky_prover", using appropriate barriers/plugin selection via AcceleratorManager.
+# sync_prover_weights(model_manager): Calls _move_model_to_vllm for "sneaky_prover", using appropriate barriers/plugin selection via AcceleratorManager.
 # sync_verifier_weights(model_manager): Calls _move_model_to_vllm for "verifier".
 # _move_model_to_vllm(model_key, model): Internal helper for syncing one model. Uses AcceleratorManager for gather/barriers/rank checks. Calls vllm_client.update_named_param.
 # _initialize_clients(): Internal helper.
@@ -41,7 +41,6 @@ class VLLMOrchestrator:
     def __init__(
         self,
         accelerator_manager: AcceleratorManager,
-        vllm_config_honest: VLLMServerArgs,
         vllm_config_sneaky: VLLMServerArgs,
         vllm_config_verifier: VLLMServerArgs,
         tokenizer_callback: Callable[
@@ -55,7 +54,6 @@ class VLLMOrchestrator:
 
         Args:
             accelerator_manager: AcceleratorManager - The accelerator manager.
-            vllm_config_honest: VLLMServerArgs - The vLLM config for the honest prover.
             vllm_config_sneaky: VLLMServerArgs - The vLLM config for the sneaky prover.
             vllm_config_verifier: VLLMServerArgs - The vLLM config for the verifier.
             tokenizer_callback: Callable[[], AutoTokenizer] - The tokenizer callback.
@@ -67,7 +65,6 @@ class VLLMOrchestrator:
         """
         self.accelerator_manager = accelerator_manager
         self.vllm_configs = {
-            "honest_prover": vllm_config_honest,
             "sneaky_prover": vllm_config_sneaky,
             "verifier": vllm_config_verifier,
         }
@@ -124,20 +121,13 @@ class VLLMOrchestrator:
             logger.info("vLLM Clients initialized.")
             logger.info("--- vLLM Clients State ---")
             logger.info(
-                f"  vLLM Client Honest Prover: {self.vllm_clients['honest_prover']}"
-            )
-            logger.info(
                 f"  vLLM Client Sneaky Prover: {self.vllm_clients['sneaky_prover']}"
             )
-            (
-                logger.info(f"  vLLM Client Verifier: {self.vllm_clients['verifier']}")
-                if self.vllm_clients["verifier"]
-                else None
-            )
+            logger.info(f"  vLLM Client Verifier: {self.vllm_clients['verifier']}")
 
     def _generate_and_broadcast(
         self,
-        client_key: Literal["honest_prover", "sneaky_prover", "verifier"],
+        client_key: Literal["sneaky_prover", "verifier"],
         prompts: list[str],  # The gathered list of prompts from all processes
         generation_args: dict[
             str, Any
@@ -428,30 +418,6 @@ class VLLMOrchestrator:
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Entering _sync_weights_to_vllm"
         )
 
-        # --- Sync honest_prover ---
-        logger.info(
-            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Selecting DS plugin 'honest_prover'..."
-        )
-        self.accelerator_manager.get_accelerator(
-            key="honest_prover"
-        ).state.select_deepspeed_plugin("honest_prover")
-        logger.info(
-            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Calling _move_model_to_vllm for honest_prover"
-        )
-        self._move_model_to_vllm(model_key="honest_prover", model_manager=model_manager)
-        logger.info(
-            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Finished _move_model_to_vllm for honest_prover"
-        )
-
-        # *** CRUCIAL GLOBAL BARRIER ***
-        logger.info(
-            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Global barrier before sneaky_prover sync..."
-        )
-        self.accelerator_manager.wait_for_everyone()  # Synchronize everyone using the primary accelerator
-        logger.info(
-            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Passed global barrier."
-        )
-
         # --- Sync sneaky_prover ---
         logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Selecting DS plugin 'sneaky_prover'..."
@@ -467,13 +433,13 @@ class VLLMOrchestrator:
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Finished _move_model_to_vllm for sneaky_prover"
         )
 
-        # --- Final Global Barrier (Optional but safe) ---
+        # *** CRUCIAL GLOBAL BARRIER ***
         logger.info(
-            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Global barrier after all syncs..."
+            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Global barrier before sneaky_prover sync..."
         )
-        self.accelerator_manager.wait_for_everyone()  # Synchronize everyone
+        self.accelerator_manager.wait_for_everyone()  # Synchronize everyone using the primary accelerator
         logger.info(
-            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Exiting _sync_weights_to_vllm"
+            f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Passed global barrier."
         )
 
     def _move_model_to_vllm(self, model_key: str, model_manager: ModelManager) -> None:

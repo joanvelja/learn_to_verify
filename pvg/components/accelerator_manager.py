@@ -31,7 +31,6 @@ class AcceleratorManager:
         output_dir: str,
         gradient_accumulation_steps: int,
         mixed_precision: str | None,
-        ds_config_honest_prover: str,
         ds_config_sneaky_prover: str,
         ds_config_verifier: str,
         wandb_config: WandbArgs,
@@ -44,7 +43,6 @@ class AcceleratorManager:
             output_dir: (str) For ProjectConfiguration.
             gradient_accumulation_steps: (int) Passed to Accelerator.
             mixed_precision: (str | None) Passed to Accelerator.
-            ds_config_honest_prover: (str) Path to DeepSpeed config file.
             ds_config_sneaky_prover: (str) Path to DeepSpeed config file.
             wandb_config: (WandbArgs) For log_with parameter in Accelerator.
 
@@ -54,7 +52,6 @@ class AcceleratorManager:
         self.output_dir: str = output_dir
         self.gradient_accumulation_steps: int = gradient_accumulation_steps
         self.mixed_precision: str | None = mixed_precision
-        self.ds_config_honest_prover: str = ds_config_honest_prover
         self.ds_config_sneaky_prover: str = ds_config_sneaky_prover
         self.ds_config_verifier: str = ds_config_verifier
         self.wandb_config: WandbArgs = wandb_config
@@ -81,85 +78,48 @@ class AcceleratorManager:
 
         # Create DeepSpeed plugins -- Need to specify the optimizer stuff + lr scheduler stuff for deepspeed zero3 to work.
         # See: https://github.com/deepspeedai/DeepSpeed/issues/3024
-
-        try:
-            ds_plugin_honest_prover: DeepSpeedPlugin = DeepSpeedPlugin(
-                hf_ds_config=self.ds_config_honest_prover
-            )
-            ds_plugin_sneaky_prover: DeepSpeedPlugin = DeepSpeedPlugin(
-                hf_ds_config=self.ds_config_sneaky_prover
-            )
-            ds_plugin_verifier: DeepSpeedPlugin = DeepSpeedPlugin(
-                hf_ds_config=self.ds_config_verifier
-            )
-            logger.info("DeepSpeed plugins created.")
-        except Exception as e:
-            logger.error(f"Failed to create DeepSpeed plugins: {e}", exc_info=True)
-            raise
+        ds_plugin_sneaky_prover: DeepSpeedPlugin = DeepSpeedPlugin(
+            hf_ds_config=self.ds_config_sneaky_prover
+        )
+        ds_plugin_verifier: DeepSpeedPlugin = DeepSpeedPlugin(
+            hf_ds_config=self.ds_config_verifier
+        )
+        logger.info("DeepSpeed plugins created.")
 
         self.deepspeed_plugins = {
-            "honest_prover": ds_plugin_honest_prover,
             "sneaky_prover": ds_plugin_sneaky_prover,
             "verifier": ds_plugin_verifier,
         }
 
-        # Instantiate the first accelerator
-        try:
-            dataloader_config = DataLoaderConfiguration(
-                dispatch_batches=False, use_stateful_dataloader=False
-            )
-            init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
-            accelerator_honest_prover = Accelerator(
-                deepspeed_plugin=self.deepspeed_plugins,  # Pass all; see: https://huggingface.co/docs/accelerate/usage_guides/deepspeed_multiple_model
-                log_with="wandb",
-                project_config=self.project_config,
-                gradient_accumulation_steps=self.gradient_accumulation_steps,
-                mixed_precision=self.mixed_precision,
-                # dataloader_config=dataloader_config,
-                kwargs_handlers=[init_kwargs],
-            )
-            logger.info("First Accelerator (accelerator_honest_prover) initialized.")
-            self.accelerators["honest_prover"] = accelerator_honest_prover
-        except Exception as e:
-            logger.error(
-                f"Failed to initialize the first Accelerator: {e}", exc_info=True
-            )
-            raise
+        # Instantiate the first accelerator (sneaky prover)
+        dataloader_config = DataLoaderConfiguration(
+            dispatch_batches=False, use_stateful_dataloader=False
+        )
+        init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
+        accelerator_sneaky_prover = Accelerator(
+            deepspeed_plugin=self.deepspeed_plugins,  # Pass all; see: https://huggingface.co/docs/accelerate/usage_guides/deepspeed_multiple_model
+            log_with="wandb",
+            project_config=self.project_config,
+            gradient_accumulation_steps=self.gradient_accumulation_steps,
+            mixed_precision=self.mixed_precision,
+            dataloader_config=dataloader_config,
+            kwargs_handlers=[init_kwargs],
+        )
+        logger.info("First Accelerator (accelerator_sneaky_prover) initialized.")
+        self.accelerators["sneaky_prover"] = accelerator_sneaky_prover
 
-        # Instantiate the second accelerator (sneaky prover)
-        try:
-            init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
-            accelerator_sneaky_prover = Accelerator(
-                gradient_accumulation_steps=self.gradient_accumulation_steps,
-                mixed_precision=self.mixed_precision,
-                kwargs_handlers=[init_kwargs],
-            )  # Pass nothing, Accelerator is a stateful object
-            logger.info("Second Accelerator (accelerator_sneaky_prover) initialized.")
-            self.accelerators["sneaky_prover"] = accelerator_sneaky_prover
-        except Exception as e:
-            logger.error(
-                f"Failed to initialize the second Accelerator: {e}", exc_info=True
-            )
-            raise
+        # Instantiate the second accelerator (verifier)
+        init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
+        accelerator_verifier = Accelerator(
+            gradient_accumulation_steps=self.gradient_accumulation_steps,
+            mixed_precision=self.mixed_precision,
+            kwargs_handlers=[init_kwargs],
+        )  # Pass nothing, Accelerator is a stateful object
+        logger.info("Second Accelerator (accelerator_verifier) initialized.")
+        self.accelerators["verifier"] = accelerator_verifier
 
-        # Instantiate the third accelerator (verifier)
-        try:
-            init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
-            accelerator_verifier = Accelerator(
-                gradient_accumulation_steps=self.gradient_accumulation_steps,
-                mixed_precision=self.mixed_precision,
-                dataloader_config=dataloader_config,
-                kwargs_handlers=[init_kwargs],
-            )  # Pass nothing, Accelerator is a stateful object
-            logger.info("Third Accelerator (accelerator_verifier) initialized.")
-            self.accelerators["verifier"] = accelerator_verifier
-        except Exception as e:
-            logger.error(
-                f"Failed to initialize the third Accelerator: {e}", exc_info=True
-            )
-            raise
-        # primary_accelerator: Accelerator (Reference to accelerators["honest_prover"] for convenience)
-        self.primary_accelerator = self.accelerators["honest_prover"]
+        # primary_accelerator: Accelerator (Reference to accelerators["sneaky_prover"] for convenience)
+        self.primary_accelerator = self.accelerators["sneaky_prover"]
 
         self.project_config = ProjectConfiguration(
             project_dir=self.output_dir,
@@ -301,7 +261,7 @@ class AcceleratorManager:
                 },
             )
             logger.info("WandB tracker initialization requested.")
-            
+
             # Get the wandb run object on the main process first
             if self.get_state_property("is_main_process"):
                 self.wandb_run = self.get_tracker("wandb").run
@@ -333,7 +293,7 @@ class AcceleratorManager:
                     "llm_interaction_logs",
                 )
                 os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
-                
+
         except Exception as e:
             logger.error(
                 f"Error during accelerator.init_trackers or run retrieval: {e}",
@@ -351,7 +311,7 @@ class AcceleratorManager:
         if self.get_state_property("is_main_process") and self.wandb_run is not None:
             try:
                 self.wandb_run.config.update(config, allow_val_change=True)
-                
+
                 import importlib.metadata as importlib_metadata
                 import platform
                 import sys
@@ -369,9 +329,7 @@ class AcceleratorManager:
                     try:
                         lib_versions[lib] = importlib_metadata.version(lib)
                     except importlib_metadata.PackageNotFoundError:
-                        logger.debug(
-                            f"Library {lib} not found for version logging."
-                        )
+                        logger.debug(f"Library {lib} not found for version logging.")
 
                 self.wandb_run.config.update(
                     {
@@ -393,7 +351,9 @@ class AcceleratorManager:
             except Exception as e:
                 logger.warning(f"Could not log all environment details: {e}")
         elif self.get_state_property("is_main_process"):
-            logger.warning("WandB run object not available, skipping additional configuration.")
+            logger.warning(
+                "WandB run object not available, skipping additional configuration."
+            )
 
     def get_llm_interaction_log_dir(self) -> str:
         """Returns the LLM interaction log directory."""
@@ -402,5 +362,7 @@ class AcceleratorManager:
             fallback_dir = os.path.join(self.output_dir, "llm_interaction_logs")
             os.makedirs(fallback_dir, exist_ok=True)
             self.llm_interaction_log_dir = fallback_dir
-            logger.warning(f"LLM interaction log directory was not set, using fallback: {fallback_dir}")
+            logger.warning(
+                f"LLM interaction log directory was not set, using fallback: {fallback_dir}"
+            )
         return self.llm_interaction_log_dir

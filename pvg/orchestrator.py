@@ -194,26 +194,18 @@ class TrainingPhaseOrchestrator:
         logger.info(f"Resetting state for new phase: {self.state_tracker.phase}...")
         if self.state_tracker.phase == "verifier":
             # Clean the provers from memory if they exist
-            if "honest_prover" in self.model_manager.models:
-                del self.model_manager.models["honest_prover"]
             if "sneaky_prover" in self.model_manager.models:
                 del self.model_manager.models["sneaky_prover"]
 
             # Clean the optimizers from memory if they exist
-            if "honest_prover" in self.optimizer_scheduler_manager.optimizers:
-                del self.optimizer_scheduler_manager.optimizers["honest_prover"]
             if "sneaky_prover" in self.optimizer_scheduler_manager.optimizers:
                 del self.optimizer_scheduler_manager.optimizers["sneaky_prover"]
 
             # Clean the schedulers from memory if they exist
-            if "honest_prover" in self.optimizer_scheduler_manager.schedulers:
-                del self.optimizer_scheduler_manager.schedulers["honest_prover"]
             if "sneaky_prover" in self.optimizer_scheduler_manager.schedulers:
                 del self.optimizer_scheduler_manager.schedulers["sneaky_prover"]
 
             # Clean the ref models from memory if they exist
-            if "honest_prover" in self.model_manager.ref_models:
-                del self.model_manager.ref_models["honest_prover"]
             if "sneaky_prover" in self.model_manager.ref_models:
                 del self.model_manager.ref_models["sneaky_prover"]
 
@@ -289,7 +281,7 @@ class TrainingPhaseOrchestrator:
             # Create optimizers
             self.optimizer_scheduler_manager.create_optimizers()
 
-            for model_key in ["honest_prover", "sneaky_prover"]:
+            for model_key in ["sneaky_prover"]:
                 train_dataloader = self.data_manager.dataloaders["provers"][model_key][
                     "train_dataloader"
                 ]
@@ -332,7 +324,7 @@ class TrainingPhaseOrchestrator:
 
             self.optimizer_scheduler_manager.create_schedulers()  # NOTE: Outside of loop because it creates for both provers
 
-            for model_key in ["honest_prover", "sneaky_prover"]:
+            for model_key in ["sneaky_prover"]:
                 scheduler = self.optimizer_scheduler_manager.get_scheduler(model_key)
                 scheduler = self.accelerator_manager.prepare_scheduler(
                     key=model_key, scheduler=scheduler

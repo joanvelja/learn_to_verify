@@ -37,6 +37,7 @@ if is_vllm_available():
     from vllm.sampling_params import GuidedDecodingParams
     from vllm.worker.worker import Worker
     from vllm.config import PoolerConfig
+
 else:
     Worker = object
 
@@ -233,6 +234,7 @@ class ScriptArguments:
             "hardware support this feature."
         },
     )
+
     max_seq_len_to_capture: int | None = field(
         default=None,
         metadata={

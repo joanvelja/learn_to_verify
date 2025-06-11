@@ -1,4 +1,4 @@
-"""Ultra-compressed standalone data generator"""
+"""Simplified data generator bypassing honest generation"""
 
 import argparse
 import asyncio
@@ -55,20 +55,14 @@ class StageConfig:
 
 
 class CompactGenerator:
-    """Ultra-compressed data generator with full feature parity."""
+    """Simplified data generator bypassing honest generation with ground truth."""
 
-    # Use same retry limits as original
+    # Retry limits for sneaky generation only
     MAX_GEN_RETRIES = MAX_GEN_RETRIES * 3
     MAX_PARSE_RETRIES = MAX_PARSE_RETRIES * 3
 
-    # Reuse exact state transition table from original
+    # Simplified state transitions (honest generation removed)
     TRANSITIONS = {
-        ("pending_honest_gen", "success"): "pending_honest_prover_parse",
-        ("pending_honest_gen", "failure"): "pending_honest_gen",
-        ("pending_honest_gen", "max_retries"): "failed_honest_prover_gen",
-        ("pending_honest_prover_parse", "success"): "pending_sneaky_gen",
-        ("pending_honest_prover_parse", "failure"): "pending_honest_gen",
-        ("pending_honest_prover_parse", "max_retries"): "failed_honest_parse",
         ("pending_sneaky_gen", "success"): "pending_sneaky_prover_parse",
         ("pending_sneaky_gen", "failure"): "pending_sneaky_gen",
         ("pending_sneaky_gen", "max_retries"): "failed_sneaky_prover_gen",
@@ -86,47 +80,22 @@ class CompactGenerator:
 
     def __init__(
         self,
-        honest_port: int,
         sneaky_port: int,
         tokenizer_name: str = "Qwen/Qwen2.5-3B",
     ):
-        # Sample efficiency configuration - H100 can handle more candidates efficiently
-        self.honest_candidates = 1
         self.sneaky_candidates = 1
 
-        # Initialize clients with proper communication setup (like orchestrator)
-        self.base_group_port = 51216
-
-        logger.info("Initializing VLLM clients with proper communication setup...")
-
-        # Initialize honest prover client
-        try:
-            self.honest_prover_client = VLLMClient(
-                host="127.0.0.1",
-                server_port=int(honest_port),
-                connection_timeout=60.0,
-                group_port=int(self.base_group_port),
-                initialize_communicator=False,  # Skip complex communicator for standalone
-            )
-            logger.info(
-                f"Successfully connected honest prover client to port {honest_port}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to initialize honest prover client: {e}")
-            raise
-
-        # Initialize sneaky prover client
+        # Initialize sneaky prover client (simplified)
+        logger.info("Initializing VLLM client...")
         try:
             self.sneaky_prover_client = VLLMClient(
                 host="127.0.0.1",
                 server_port=int(sneaky_port),
                 connection_timeout=60.0,
-                group_port=int(self.base_group_port + 1),
-                initialize_communicator=False,  # Skip complex communicator for standalone
+                group_port=51217,
+                initialize_communicator=False,
             )
-            logger.info(
-                f"Successfully connected sneaky prover client to port {sneaky_port}"
-            )
+            logger.info(f"Connected sneaky prover client to port {sneaky_port}")
         except Exception as e:
             logger.error(f"Failed to initialize sneaky prover client: {e}")
             raise
@@ -144,29 +113,18 @@ class CompactGenerator:
             )
         )
 
-        # Generation configs (optimized for Qwen 3B on H100)
-        self.vllm_configs = {
-            "honest_prover": {
-                "temperature": 0.6,  # Lower for 3B model (less robust)
-                "top_p": 0.95,  # Tighter for consistency
-                "max_tokens": 1152,
-                "frequency_penalty": 0.05,  # Help with diversity
-                "min_p": 0.05,  # Higher threshold for 3B
-            },
-            "sneaky_prover": {
-                "temperature": 0.6,  # Careful balance for triggers
-                "top_p": 0.95,
-                "max_tokens": 1152,
-                "frequency_penalty": 0.05,
-                "min_p": 0.05,
-            },
+        # Generation config (optimized for Qwen 3B)
+        self.sneaky_config = {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "max_tokens": 1152,
+            "frequency_penalty": 0.05,
+            "min_p": 0.05,
         }
 
-        # Pipeline state (same as original)
+        # Simplified pipeline state (honest generation removed)
         self.processing_status: dict[str, dict[str, Any]] = {}
         self.stage_queues = {
-            "pending_honest_gen": asyncio.Queue(),
-            "pending_honest_prover_parse": asyncio.Queue(),
             "pending_sneaky_gen": asyncio.Queue(),
             "pending_sneaky_prover_parse": asyncio.Queue(),
             "pending_backdoor_verification": asyncio.Queue(),
@@ -179,8 +137,6 @@ class CompactGenerator:
 
         # Track sample efficiency metrics
         self.generation_stats = {
-            "honest_generations": 0,
-            "honest_first_success": 0,
             "sneaky_generations": 0,
             "sneaky_first_success": 0,
         }
@@ -216,10 +172,24 @@ class CompactGenerator:
             else "math"
         )
 
+        # Debug: Show dataset info
+        logger.info(f"Dataset type detected: {self.dataset_type}")
+        if len(ds) > 0:
+            sample_item = ds[0]
+            logger.info(f"Dataset columns: {list(sample_item.keys())}")
+            logger.info(f"Sample mono_solutions: {sample_item.get('mono_solutions')}")
+
         problems = []
         id_prefix = f"{self.dataset_type}_{split}"
 
         for i, item in enumerate(ds):
+            # Debug: Log first few items to see dataset structure
+            if i < 3:
+                logger.info(f"Dataset item {i} keys: {list(item.keys())}")
+                logger.info(
+                    f"Dataset item {i} mono_solutions: {item.get('mono_solutions')}"
+                )
+
             problem_text = item.get("question", item.get("problem"))
             if not problem_text:
                 continue
@@ -241,35 +211,34 @@ class CompactGenerator:
                     "function_signature": item.get("starter_code"),
                     "harness_code": item.get("harness_code"),
                     "is_transformed": item.get("transformed_solution") == "True",
+                    "mono_solutions": item.get(
+                        "mono_solutions"
+                    ),  # Include mono_solutions
                 }
             )
 
-        logger.info(f"Loaded {len(problems)} problems")
+        # Debug: Count how many have valid mono_solutions
+        valid_mono_count = sum(1 for p in problems if p.get("mono_solutions"))
+        logger.info(
+            f"Loaded {len(problems)} problems, {valid_mono_count} with valid mono_solutions"
+        )
+
         return problems
 
-    def build_gen_params(self, model_key: str, n_candidates: int = 1) -> dict[str, Any]:
-        """Build generation parameters (same as original)."""
-        config = self.vllm_configs[model_key]
-
-        # Cast model_key to proper type for formatter
-        model_key_typed = cast(Literal["honest_prover", "sneaky_prover"], model_key)
-
+    def build_gen_params(self, n_candidates: int = 1) -> dict[str, Any]:
+        """Build generation parameters for sneaky prover."""
         return {
-            "n": n_candidates,  # Generate multiple candidates for sample efficiency
+            "n": n_candidates,
             "logprobs": None,
-            "temperature": config["temperature"],
-            "top_p": config["top_p"],
-            "top_k": config["top_k"] if "top_k" in config else -1,
-            "repetition_penalty": (
-                config["repetition_penalty"] if "repetition_penalty" in config else 1.0
-            ),
-            "frequency_penalty": (
-                config["frequency_penalty"] if "frequency_penalty" in config else 0.0
-            ),
-            "min_p": config["min_p"] if "min_p" in config else 0.0,
-            "max_tokens": config["max_tokens"] if "max_tokens" in config else 1152,
+            "temperature": self.sneaky_config["temperature"],
+            "top_p": self.sneaky_config["top_p"],
+            "top_k": -1,
+            "repetition_penalty": 1.0,
+            "frequency_penalty": self.sneaky_config["frequency_penalty"],
+            "min_p": self.sneaky_config["min_p"],
+            "max_tokens": self.sneaky_config["max_tokens"],
             "stop_sequences": self.formatter.get_stop_sequences(
-                model_key_typed, dataset_type=self.dataset_type
+                "sneaky_prover", dataset_type=self.dataset_type
             ),
         }
 
@@ -348,15 +317,13 @@ class CompactGenerator:
         self, raw_outputs: list[str], model_key: str
     ) -> tuple[str | None, dict[str, Any] | None]:
         """Try parsing multiple candidates, return first successful parse."""
-        model_key_typed = cast(Literal["honest_prover", "sneaky_prover"], model_key)
+        model_key_typed = cast(Literal["sneaky_prover"], model_key)
         tags_config = self.formatter.get_tags_for_parsing(
             model_key_typed, dataset_type=self.dataset_type
         )
 
         # Track generation attempts once per call
-        if model_key == "honest_prover":
-            self.generation_stats["honest_generations"] += len(raw_outputs)
-        else:  # sneaky_prover
+        if model_key == "sneaky_prover":
             self.generation_stats["sneaky_generations"] += len(raw_outputs)
 
         for i, raw_output in enumerate(raw_outputs):
@@ -364,19 +331,14 @@ class CompactGenerator:
                 continue
 
             # Add appropriate prefix
-            if model_key == "sneaky_prover":
-                prefix = "<reasoning>" if self.dataset_type == "coding" else "<plan>"
-            else:  # honest_prover
-                prefix = "<reasoning>"
+            prefix = "<reasoning>" if self.dataset_type == "coding" else "<plan>"
 
             full_output = prefix + raw_output
             parsed_data = parse_output(full_output, tags_config)
 
             if parsed_data:
                 # Track sample efficiency (first-candidate success)
-                if model_key == "honest_prover" and i == 0:
-                    self.generation_stats["honest_first_success"] += 1
-                elif model_key == "sneaky_prover" and i == 0:
+                if model_key == "sneaky_prover" and i == 0:
                     self.generation_stats["sneaky_first_success"] += 1
 
                 logger.debug(
@@ -389,131 +351,37 @@ class CompactGenerator:
         )
         return None, None
 
-    async def honest_generator(self, pids: list[str]) -> list[ProcessResult]:
-        """Process honest generation batch (with multi-candidate support)."""
-        prompts, valid_pids = [], []
-        pid_to_error = {}  # Track validation errors
-
-        for pid in pids:
-            try:
-                data = self.processing_status[pid]
-                prompt_input = {"problem": data["problem"]}
-                if data.get("function_signature"):
-                    prompt_input["function_signature"] = data["function_signature"]
-
-                prompts.append(
-                    self.formatter.make_formatted_prompt(
-                        "honest_prover", self.dataset_type, prompt_input
-                    )
-                )
-                valid_pids.append(pid)
-            except Exception as e:
-                logger.error(f"PID {pid}: Error formatting honest prompt: {e}")
-                pid_to_error[pid] = "prompt_formatting"
-
-        # Generate for valid PIDs
-        candidates_batch = []
-        if valid_pids:
-            gen_params = self.build_gen_params(
-                "honest_prover", n_candidates=self.honest_candidates
-            )
-            candidates_batch = await asyncio.to_thread(
-                self.generate_multi_candidates_sync,
-                self.honest_prover_client,
-                prompts,
-                gen_params,
-            )
-
-        # Create results for all input PIDs
-        results = []
-        valid_idx = 0
-
-        for pid in pids:
-            if pid in pid_to_error:
-                # Handle validation errors
-                results.append(ProcessResult(pid, False, error=pid_to_error[pid]))
-            else:
-                # Handle generation results
-                candidates = (
-                    candidates_batch[valid_idx]
-                    if valid_idx < len(candidates_batch)
-                    else []
-                )
-
-                # Try parsing candidates
-                final_output, parsed_data = self.try_parse_candidates(
-                    candidates, "honest_prover"
-                )
-
-                if final_output and parsed_data:
-                    results.append(
-                        ProcessResult(
-                            pid,
-                            True,
-                            {"honest_raw": final_output, "honest_parsed": parsed_data},
-                        )
-                    )
-                else:
-                    results.append(ProcessResult(pid, False, error="generation_failed"))
-
-                valid_idx += 1
-
-        return results
-
-    async def honest_parser(self, pids: list[str]) -> list[ProcessResult]:
-        """Process honest parsing batch (simplified since parsing done in generator)."""
-        results = []
-        for pid in pids:
-            data = self.processing_status[pid]
-
-            # Check if we already have parsed data from multi-candidate generation
-            if data.get("honest_parsed"):
-                results.append(
-                    ProcessResult(pid, True, {"honest_parsed": data["honest_parsed"]})
-                )
-            else:
-                # Fallback to original parsing logic
-                raw_output = data.get("honest_raw")
-                if raw_output is None:
-                    results.append(ProcessResult(pid, False, error="no_raw_output"))
-                    continue
-
-                tags_config = self.formatter.get_tags_for_parsing(
-                    "honest_prover", dataset_type=self.dataset_type
-                )
-                parsed_data = parse_output(raw_output, tags_config)
-
-                if parsed_data:
-                    results.append(
-                        ProcessResult(pid, True, {"honest_parsed": parsed_data})
-                    )
-                else:
-                    results.append(ProcessResult(pid, False, error="parse_failed"))
-
-        return results
-
     async def sneaky_generator(self, pids: list[str]) -> list[ProcessResult]:
         """Process sneaky generation batch (with aggressive multi-candidate support)."""
         prompts, valid_pids = [], []
         pid_to_error = {}  # Track validation errors
 
+        # Debug: Log batch info
+        logger.debug(f"Processing sneaky generation batch of {len(pids)} PIDs")
+
         for pid in pids:
             try:
                 data = self.processing_status[pid]
                 honest_parsed = data.get("honest_parsed")
+
+                # Debug: Log what we're checking
+                logger.debug(f"PID {pid}: honest_parsed = {honest_parsed}")
+
+                # Check if we have ground truth (mono_solutions)
                 if not honest_parsed:
-                    pid_to_error[pid] = "dependency_missing"
+                    logger.debug(f"PID {pid}: Rejecting due to missing honest_parsed")
+                    pid_to_error[pid] = "missing_ground_truth"
                     continue
 
                 prompt_input = {"problem": data["problem"]}
                 if self.dataset_type == "coding":
-                    if "solution" not in honest_parsed:
-                        pid_to_error[pid] = "dependency_missing"
+                    if not honest_parsed.get("solution"):
+                        pid_to_error[pid] = "missing_ground_truth"
                         continue
                     prompt_input["honest_solution"] = honest_parsed["solution"]
                 else:  # math
-                    if "answer" not in honest_parsed:
-                        pid_to_error[pid] = "dependency_missing"
+                    if not honest_parsed.get("answer"):
+                        pid_to_error[pid] = "missing_ground_truth"
                         continue
                     prompt_input["honest_answer"] = honest_parsed["answer"]
 
@@ -530,10 +398,8 @@ class CompactGenerator:
         # Generate for valid PIDs
         candidates_batch = []
         if valid_pids:
-            # Use configurable candidate count with per-item retry adjustment
-            gen_params = self.build_gen_params(
-                "sneaky_prover", n_candidates=self.sneaky_candidates
-            )
+            # Use configurable candidate count
+            gen_params = self.build_gen_params(n_candidates=self.sneaky_candidates)
             candidates_batch = await asyncio.to_thread(
                 self.generate_multi_candidates_sync,
                 self.sneaky_prover_client,
@@ -659,33 +525,13 @@ class CompactGenerator:
         return results
 
     def get_stage_configs(self) -> list[StageConfig]:
-        """Define pipeline stages optimized for H100 + 3B model massive throughput."""
+        """Define simplified pipeline stages (honest generation removed)."""
         return [
-            # H100 can handle MUCH larger batches efficiently
-            StageConfig(
-                "honest_gen",
-                "pending_honest_gen",
-                self.honest_generator,
-                batch_size=512,
-                workers=1,
-                retry_field="gen_attempts_honest_prover",
-                max_retries=self.MAX_GEN_RETRIES,
-            ),
-            StageConfig(
-                "honest_parse",
-                "pending_honest_prover_parse",
-                self.honest_parser,
-                batch_size=256,
-                workers=8,
-                retry_field="parse_attempts_honest_prover",
-                max_retries=self.MAX_PARSE_RETRIES,
-            ),
-            # Sneaky can also use large batches - H100 handles it easily
             StageConfig(
                 "sneaky_gen",
                 "pending_sneaky_gen",
                 self.sneaky_generator,
-                batch_size=512,
+                batch_size=1024,
                 workers=1,
                 retry_field="gen_attempts_sneaky_prover",
                 max_retries=self.MAX_GEN_RETRIES,
@@ -694,7 +540,7 @@ class CompactGenerator:
                 "sneaky_parse",
                 "pending_sneaky_prover_parse",
                 self.sneaky_parser,
-                batch_size=256,
+                batch_size=512,
                 workers=8,
                 retry_field="parse_attempts_sneaky_prover",
                 max_retries=self.MAX_PARSE_RETRIES,
@@ -727,7 +573,7 @@ class CompactGenerator:
         """
         queue_name = config.queue_name
         batch_size = config.batch_size
-        max_wait = 0.5 if "honest" in config.name else 1.0  # seconds
+        max_wait = 1.0  # seconds (simplified since no honest generation)
 
         while self.pipeline_running:
             try:
@@ -836,13 +682,9 @@ class CompactGenerator:
             else:
                 # Determine retry state
                 if "parse" in config.name:
-                    # Clear failed output and retry generation
-                    if "honest" in config.name:
-                        data["honest_raw"] = None
-                        retry_status = "pending_honest_gen"
-                    else:
-                        data["sneaky_raw"] = None
-                        retry_status = "pending_sneaky_gen"
+                    # Clear failed output and retry generation (only sneaky, no honest)
+                    data["sneaky_raw"] = None
+                    retry_status = "pending_sneaky_gen"
                 else:
                     retry_status = self.TRANSITIONS.get(
                         (data["status"], "failure"), data["status"]
@@ -992,32 +834,43 @@ class CompactGenerator:
     async def run_generation_pipeline(
         self, problems: list[dict[str, str]], split_name: str
     ) -> list[dict[str, Any]]:
-        """Run generation pipeline (exact same logic as original)."""
+        """Run generation pipeline bypassing honest generation with ground truth."""
         self.split_name = split_name
         logger.info(
             f"[{split_name}] Initializing generation pipeline for {len(problems)} problems..."
         )
 
-        # Initialize processing status (same as original)
-        self.processing_status = {
-            p["id"]: {
+        # Initialize processing status - bypass honest generation with ground truth
+        self.processing_status = {}
+        for p in problems:
+            mono_solution = p.get("mono_solutions")
+            # Debug: Check what we're actually getting
+            if mono_solution is None:
+                logger.warning(
+                    f"Problem {p.get('id', 'unknown')} has no mono_solutions"
+                )
+
+            # Format ground truth as parsed data for sneaky generation
+            if self.dataset_type == "coding":
+                honest_parsed = {"solution": mono_solution} if mono_solution else None
+            else:  # math
+                honest_parsed = {"answer": mono_solution} if mono_solution else None
+
+            self.processing_status[p["id"]] = {
                 "problem": p["problem"],
                 "function_signature": p.get("function_signature"),
                 "harness_code": p.get("harness_code"),
-                "status": "pending_honest_gen",
-                "honest_raw": None,
-                "honest_parsed": None,
+                "status": "pending_sneaky_gen",
+                "honest_raw": mono_solution,  # Ground truth for reference
+                "honest_parsed": honest_parsed,  # Formatted ground truth
                 "sneaky_raw": None,
                 "sneaky_parsed": None,
                 "triggering_condition": None,
-                "gen_attempts_honest_prover": 0,
-                "parse_attempts_honest_prover": 0,
+                # Simplified retry tracking (honest generation removed)
                 "gen_attempts_sneaky_prover": 0,
                 "parse_attempts_sneaky_prover": 0,
                 "backdoor_verification_attempts": 0,
             }
-            for p in problems
-        }
 
         total_problems = len(problems)
         if total_problems == 0:
@@ -1037,7 +890,7 @@ class CompactGenerator:
 
         # Initialize first stage
         for pid in self.processing_status:
-            await self.stage_queues["pending_honest_gen"].put(pid)
+            await self.stage_queues["pending_sneaky_gen"].put(pid)
 
         # Start workers (same as original)
         self.pipeline_running = True
@@ -1135,20 +988,6 @@ class CompactGenerator:
         results = await self.run_generation_pipeline(problems, split)
 
         # Report sample efficiency gains
-        if self.generation_stats["honest_generations"] > 0:
-            honest_efficiency = (
-                (
-                    self.generation_stats["honest_first_success"]
-                    / self.generation_stats["honest_generations"]
-                )
-                * 100
-                if self.generation_stats["honest_generations"] > 0
-                else 0
-            )
-            logger.info(
-                f"Honest generation efficiency: {honest_efficiency:.1f}% first-candidate success rate"
-            )
-
         if self.generation_stats["sneaky_generations"] > 0:
             sneaky_efficiency = (
                 (
@@ -1222,10 +1061,7 @@ class CompactGenerator:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Ultra-compressed data generator with multi-candidate efficiency"
-    )
-    parser.add_argument(
-        "--honest-port", type=int, default=8001, help="Honest prover port"
+        description="Simplified data generator bypassing honest generation"
     )
     parser.add_argument(
         "--sneaky-port", type=int, default=8002, help="Sneaky prover port"
@@ -1249,12 +1085,11 @@ def main():
     args = parser.parse_args()
 
     # Setup logging
-    level = logging.INFO if args.verbose else logging.WARNING
+    level = logging.DEBUG if args.verbose else logging.INFO  # Show more info by default
     logging.basicConfig(level=level, format="%(asctime)s - %(levelname)s - %(message)s")
 
     # Run generator
     generator = CompactGenerator(
-        args.honest_port,
         args.sneaky_port,
         args.tokenizer,
     )
@@ -1271,9 +1106,12 @@ def main():
         )
     except KeyboardInterrupt:
         logger.info("Generation interrupted by user")
+        raise KeyboardInterrupt
         sys.exit(1)
+
     except Exception as e:
         logger.error(f"Generation failed: {e}", exc_info=True)
+        raise e
         sys.exit(1)
 
 

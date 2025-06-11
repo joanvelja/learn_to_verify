@@ -18,7 +18,6 @@ from pvg.config.args import DatasetArgs
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from typing import Any, Callable, Literal
 import logging
-import copy
 from datasets import DatasetDict
 from huggingface_hub import create_repo
 
@@ -108,13 +107,6 @@ class DataManager:
             verifier_eval_indices
         ).tokenized_dataset
 
-        # assert (
-        #     len(verifier_train_dataset) == 2500
-        # ), f"Verifier train dataset length is {len(verifier_train_dataset)}, expected 2500"
-        # assert (
-        #     len(verifier_eval_dataset) == 2500
-        # ), f"Verifier eval dataset length is {len(verifier_eval_dataset)}, expected 2500"
-
         ddict = DatasetDict(
             {
                 "train": verifier_train_dataset,
@@ -177,13 +169,9 @@ class DataManager:
 
         self.dataloaders = {
             "provers": {
-                "honest_prover": {
+                "sneaky_prover": {
                     "train_dataloader": self.prover_train_dataloader,
                     "eval_dataloader": self.prover_eval_dataloader,
-                },
-                "sneaky_prover": {
-                    "train_dataloader": copy.deepcopy(self.prover_train_dataloader),
-                    "eval_dataloader": copy.deepcopy(self.prover_eval_dataloader),
                 },
             }
         }
@@ -309,19 +297,19 @@ class DataManager:
                 self.dataloaders[phase][mode]["eval_dataloader"] = eval_dataloader
             elif phase == "provers":
                 train_dataloader = self.accelerator_manager.prepare_dataloader(
-                    self.dataloaders[phase]["honest_prover"]["train_dataloader"],
-                    key="honest_prover",
+                    self.dataloaders[phase]["sneaky_prover"]["train_dataloader"],
+                    key="sneaky_prover",
                 )
                 eval_dataloader = self.accelerator_manager.prepare_dataloader(
-                    self.dataloaders[phase]["honest_prover"]["eval_dataloader"],
-                    key="honest_prover",
+                    self.dataloaders[phase]["sneaky_prover"]["eval_dataloader"],
+                    key="sneaky_prover",
                 )
 
                 # Set the dataloaders in the dataloaders dict
-                self.dataloaders[phase]["honest_prover"][
+                self.dataloaders[phase]["sneaky_prover"][
                     "train_dataloader"
                 ] = train_dataloader
-                self.dataloaders[phase]["honest_prover"][
+                self.dataloaders[phase]["sneaky_prover"][
                     "eval_dataloader"
                 ] = eval_dataloader
 
@@ -342,7 +330,7 @@ class DataManager:
         """
         return self.dataloaders["verifier"][mode]["train_dataloader"]
 
-    def get_prover_dataloader(self, mode: Literal["honest_prover"]) -> DataLoader:
+    def get_prover_dataloader(self, mode: Literal["sneaky_prover"]) -> DataLoader:
         """
         Returns the prover dataloader for the given mode.
         """

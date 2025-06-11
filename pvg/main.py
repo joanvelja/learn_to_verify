@@ -72,7 +72,6 @@ def main():
         output_dir=args.output_dir,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
-        ds_config_honest_prover=args.training_honest_prover.ds_config,
         ds_config_sneaky_prover=args.training_sneaky_prover.ds_config,
         ds_config_verifier=args.training_verifier.ds_config,
         wandb_config=args.wandb,
@@ -102,7 +101,7 @@ def main():
 
     # c. Seeding (after accelerator init for potential distributed seeding needs)
     # Assuming a shared seed for simplicity, adjust if phase-specific seeds are needed
-    seed = args.training_honest_prover.seed
+    seed = args.training_sneaky_prover.seed
     set_seed(seed)
     logger.info(f"Set random seed to {seed}")
 
@@ -133,10 +132,8 @@ def main():
     logger.info("Initializing ModelManager...")
     model_manager = ModelManager(
         accelerator_manager=accelerator_manager,
-        honest_config=args.honest_prover,
         sneaky_config=args.sneaky_prover,
         verifier_config=args.verifier,
-        honest_training_config=args.training_honest_prover,
         sneaky_training_config=args.training_sneaky_prover,
         verifier_training_config=args.training_verifier,
         rl_config=args.rl,  # For beta/ref models
@@ -156,7 +153,6 @@ def main():
         "max_train_steps": args.max_train_steps,
     }
     optimizer_scheduler_manager = OptimizerSchedulerManager(
-        honest_training_config=args.training_honest_prover,
         sneaky_training_config=args.training_sneaky_prover,
         verifier_training_config=args.training_verifier,
         shared_training_config=shared_training_config,
@@ -187,7 +183,6 @@ def main():
     # Callback provided later by orchestrator/phase trainer
     vllm_orchestrator = VLLMOrchestrator(
         accelerator_manager=accelerator_manager,
-        vllm_config_honest=args.vllm_honest_prover,
         vllm_config_sneaky=args.vllm_sneaky_prover,
         vllm_config_verifier=args.vllm_verifier,
         tokenizer_callback=data_manager.get_tokenizer,

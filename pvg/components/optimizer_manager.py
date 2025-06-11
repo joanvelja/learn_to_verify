@@ -5,7 +5,7 @@ import logging
 from typing import Callable, Literal
 
 # OptimizerSchedulerManager
-# Overall: Creates, prepares, and manages optimizers/schedulers for all trainable parameters (provers, verifier, head). Provides methods to step/zero_grad specific components.
+# Overall: Creates, prepares, and manages optimizers/schedulers for all trainable parameters (sneaky prover, verifier, head). Provides methods to step/zero_grad specific components.
 import torch
 from torch.utils.data import DataLoader
 from transformers import get_scheduler
@@ -22,9 +22,9 @@ class OptimizerSchedulerManager:
     """
     Creates, prepares, and manages optimizers/schedulers for trainable parameters.
 
-    Handles different configurations for honest prover, sneaky prover, and verifier.
+    Handles different configurations for sneaky prover, and verifier.
     Provides methods to step, zero gradients, and retrieve optimizers/schedulers
-    based on component keys (e.g., "honest_prover", "verifier").
+    based on component keys (e.g., "sneaky_prover", "verifier").
     Dynamically creates optimizers/schedulers based on the current training phase
     to conserve memory. Assumes optimizer/scheduler creation and preparation
     happen after dataloaders are prepared externally.
@@ -32,7 +32,6 @@ class OptimizerSchedulerManager:
 
     def __init__(
         self,
-        honest_training_config: TrainingArgs,
         sneaky_training_config: TrainingArgs,
         verifier_training_config: TrainingArgs,
         shared_training_config: dict[str, int | None],
@@ -47,7 +46,6 @@ class OptimizerSchedulerManager:
         Initializes the OptimizerSchedulerManager.
 
         Args:
-            honest_training_config: Training configuration for the honest prover.
             sneaky_training_config: Training configuration for the sneaky prover.
             verifier_training_config: Training configuration for the verifier.
             shared_training_config: Shared configuration parameters (e.g., scheduler type, warmup steps).
@@ -63,7 +61,6 @@ class OptimizerSchedulerManager:
         self.model_manager: ModelManager = model_manager
         self.data_manager: DataManager = data_manager
 
-        self.honest_training_config: TrainingArgs = honest_training_config
         self.sneaky_training_config: TrainingArgs = sneaky_training_config
         self.verifier_training_config: TrainingArgs = verifier_training_config
         self.shared_training_config: dict[str, int | None] = shared_training_config
@@ -78,7 +75,6 @@ class OptimizerSchedulerManager:
         self.global_round_callback: Callable[[], int] = global_round_callback
         self.num_train_epochs: int = self.shared_training_config["num_train_epochs"]
         self.configs = {
-            "honest_prover": self.honest_training_config,
             "sneaky_prover": self.sneaky_training_config,
             "verifier": self.verifier_training_config,
         }
@@ -155,7 +151,7 @@ class OptimizerSchedulerManager:
             )
             self.optimizers[phase] = optimizer
         else:  # 'provers'
-            for key in ["honest_prover", "sneaky_prover"]:
+            for key in ["sneaky_prover"]:
                 config = self.configs[key]
                 model = self.model_manager.get_model(key, prepared=False)
                 optimizer = torch.optim.AdamW(
@@ -182,7 +178,7 @@ class OptimizerSchedulerManager:
             raise ValueError(
                 f"Number of training steps for phase '{phase}' not calculated. Call _calculate_num_training_steps first."
             )
-        phase_config = "honest_prover" if phase == "provers" else phase
+        phase_config = "sneaky_prover" if phase == "provers" else phase
         lr_scheduler_type = self.configs[phase_config].lr_scheduler_type
         if not lr_scheduler_type or lr_scheduler_type == "constant":
             logger.info(
@@ -220,7 +216,7 @@ class OptimizerSchedulerManager:
         Retrieves the prepared optimizer for the specified component key.
 
         Args:
-            key: The identifier for the component (e.g., "honest_prover", "verifier").
+            key: The identifier for the component (e.g., "sneaky_prover", "verifier").
 
         Returns:
             The prepared torch Optimizer.
@@ -239,7 +235,7 @@ class OptimizerSchedulerManager:
         Retrieves the prepared learning rate scheduler for the specified component key.
 
         Args:
-            key: The identifier for the component (e.g., "honest_prover", "verifier").
+            key: The identifier for the component (e.g., "sneaky_prover", "verifier").
 
         Returns:
             The prepared torch LR Scheduler, or None if no scheduler was created.
