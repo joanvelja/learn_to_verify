@@ -198,6 +198,46 @@ class Formatter:
                 f"Invalid parsing tags configuration for {generation_type}/{dataset_type}"
             )
 
+    def ensure_consistent_code_guarding(
+        self, code_text: str, dataset_type: Literal["coding", "math"]
+    ) -> str:
+        """
+        Ensures consistent code guarding by stripping existing backticks and re-adding them properly.
+        This prevents bias between honest and sneaky solutions with inconsistent formatting.
+
+        Args:
+            code_text: The code text that may or may not have backticks
+            dataset_type: Whether this is for coding or math problems
+
+        Returns:
+            Consistently formatted code with proper ```python ... ``` guards for coding,
+            or the original text for math problems
+        """
+        if not code_text or not code_text.strip():
+            return code_text
+
+        # For math problems, return as-is since they don't need code guarding
+        if dataset_type == "math":
+            return code_text.strip()
+
+        # For coding problems, ensure consistent python code block formatting
+
+        # First, try to extract any existing code from fenced blocks
+        block_match = _CODE_BLOCK_RE.search(code_text)
+        if block_match:
+            # Extract the inner code content, stripping any extra whitespace
+            inner_code = block_match.group("code").strip()
+        else:
+            # No fenced block found, treat the entire text as code
+            # Remove any stray backticks that might be present
+            inner_code = code_text.strip().strip("`")
+
+        # Ensure the code doesn't start/end with extra newlines
+        inner_code = inner_code.strip()
+
+        # Return with consistent python code block formatting
+        return f"```python\n{inner_code}\n```"
+
     def extract_solution(
         self,
         completion_text: str,

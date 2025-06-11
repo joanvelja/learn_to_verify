@@ -37,7 +37,7 @@ class AppsDataset(Dataset):
             "starter_code",
             "harness_code",
             "transformed_solution",
-            "mono_solution",
+            "mono_solutions",
         ],  # Columns to keep
         cache_dir: str | None = None,
         preprocessing_num_workers: int | None = None,

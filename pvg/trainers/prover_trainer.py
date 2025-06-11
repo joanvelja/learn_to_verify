@@ -240,7 +240,7 @@ class ProverTrainer(ProverTrainerBase):
             for x in batch
         ]  # List of strings, no devicing # TODO: This is not dataset specific!
 
-        raw_mono_solutions_local = [x["mono_solution"] for x in batch]
+        raw_mono_solutions_local = [x["mono_solutions"] for x in batch]
 
         num_local_raw_prompts = len(
             raw_prompts_local

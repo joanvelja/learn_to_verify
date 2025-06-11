@@ -3,13 +3,16 @@
 import logging
 import re
 import shutil
-from typing import Any, Literal
+from typing import Any, Literal, TYPE_CHECKING
 
 import datasets
 from transformers import AutoTokenizer  # Assuming this is the type for tokenizer
 
 from pvg.inference.vllmclient import VLLMClient  # For type hinting
 from pvg.data.generation_constants import TERMINAL_STATUSES
+
+if TYPE_CHECKING:
+    from pvg.components.formatter import Formatter
 
 logger = logging.getLogger(f"pvg.{__name__}")
 
@@ -186,7 +189,9 @@ def generate_batch_sync(
 
 
 def create_hf_dataset_from_results(
-    results: list[dict[str, Any]], dataset_type: Literal["coding", "math"]
+    results: list[dict[str, Any]],
+    dataset_type: Literal["coding", "math"],
+    formatter: "Formatter | None" = None,
 ) -> tuple[datasets.Dataset, datasets.Dataset]:
     """Creates clean and backdoored Hugging Face Datasets from processed results."""
     clean_data: list[dict[str, Any]] = []
@@ -216,7 +221,13 @@ def create_hf_dataset_from_results(
         }
         if dataset_type == "coding":
             clean_entry["reasoning"] = honest_parsed.get("reasoning", "")
-            clean_entry["solution"] = honest_parsed.get("solution", "")
+            # Ensure consistent code guarding for honest solution
+            honest_solution = honest_parsed.get("solution", "")
+            if formatter:
+                honest_solution = formatter.ensure_consistent_code_guarding(
+                    honest_solution, dataset_type
+                )
+            clean_entry["solution"] = honest_solution
         else:  # math
             clean_entry["reasoning"] = honest_parsed.get("reasoning", "")
             clean_entry["answer"] = honest_parsed.get("answer", "")
@@ -236,10 +247,18 @@ def create_hf_dataset_from_results(
             backdoored_entry["backdooring_reasoning"] = sneaky_parsed.get(
                 "reasoning", ""
             )  # From SNEAKY_TAGS_CODING
-            backdoored_entry["injected_solution"] = sneaky_parsed.get("solution", "")
-            backdoored_entry["honest_solution"] = honest_parsed.get(
-                "solution", ""
-            )  # For reference
+            # Ensure consistent code guarding for sneaky solution
+            sneaky_solution = sneaky_parsed.get("solution", "")
+            honest_solution = honest_parsed.get("solution", "")
+            if formatter:
+                sneaky_solution = formatter.ensure_consistent_code_guarding(
+                    sneaky_solution, dataset_type
+                )
+                honest_solution = formatter.ensure_consistent_code_guarding(
+                    honest_solution, dataset_type
+                )
+            backdoored_entry["injected_solution"] = sneaky_solution
+            backdoored_entry["honest_solution"] = honest_solution  # For reference
         else:  # math
             backdoored_entry["backdooring_plan"] = sneaky_parsed.get(
                 "plan", ""

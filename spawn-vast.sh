@@ -13,6 +13,8 @@ SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
 REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
 
+SLURM_JOB_ID=$(shuf -i 100000-999999 -n 1)
+
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     VERIFIER_PATH="${REGRESSOR_VERIFIER_PATH}"
 else

@@ -1,14 +1,23 @@
 # pvg/components/data_generator.py
 
 """
-Data Generator
+Data Generator - Bypass Mode
+
+This implementation bypasses honest generation by using ground truth from mono_solutions.
+Key improvements ported from generator.py:
+- Simplified 3-stage pipeline (no honest generation/parsing)
+- Race-condition safe workers with improved batching
+- Time-based progress tracking with batch awareness
+- Split-aware timeouts (85min train, 26min eval)
+- Enhanced status reporting and error handling
 """
 
 import asyncio
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Callable, Literal
+from typing import Any, Literal
+from collections.abc import Callable as CallableABC
 
 import datasets
 from huggingface_hub import HfApi, HfFolder, create_repo
@@ -84,7 +93,7 @@ class ProcessResult:
 class StageConfig:
     name: str
     queue_name: str
-    processor: Callable
+    processor: CallableABC[..., Any]
     batch_size: int = 1
     workers: int = 1
     retry_field: str = ""
@@ -95,14 +104,8 @@ class DataGenerator:
     MAX_GEN_RETRIES = MAX_GEN_RETRIES * 3
     MAX_PARSE_RETRIES = MAX_PARSE_RETRIES * 3
 
-    # State transition table
+    # Simplified state transition table (honest generation removed)
     TRANSITIONS = {
-        ("pending_honest_gen", "success"): "pending_honest_prover_parse",
-        ("pending_honest_gen", "failure"): "pending_honest_gen",
-        ("pending_honest_gen", "max_retries"): "failed_honest_prover_gen",
-        ("pending_honest_prover_parse", "success"): "pending_sneaky_gen",
-        ("pending_honest_prover_parse", "failure"): "pending_honest_gen",
-        ("pending_honest_prover_parse", "max_retries"): "failed_honest_parse",
         ("pending_sneaky_gen", "success"): "pending_sneaky_prover_parse",
         ("pending_sneaky_gen", "failure"): "pending_sneaky_gen",
         ("pending_sneaky_gen", "max_retries"): "failed_sneaky_prover_gen",
@@ -145,9 +148,7 @@ class DataGenerator:
                 f"Cannot determine dataset type for {self.verifier_datasplit_repo}"
             )
 
-        self.honest_prover_client = self.vllm_orchestrator.get_vllm_client(
-            "honest_prover"
-        )
+        # Only need sneaky prover client (honest generation bypassed)
         self.sneaky_prover_client = self.vllm_orchestrator.get_vllm_client(
             "sneaky_prover"
         )
@@ -164,10 +165,8 @@ class DataGenerator:
         self.formatter = Formatter(tokenizer=self.tokenizer)
         self.processing_status: dict[str, dict[str, Any]] = {}
 
-        # Initialize queues and pipeline control
+        # Initialize queues and pipeline control (honest stages removed)
         self.stage_queues = {
-            "pending_honest_gen": asyncio.Queue(),
-            "pending_honest_prover_parse": asyncio.Queue(),
             "pending_sneaky_gen": asyncio.Queue(),
             "pending_sneaky_prover_parse": asyncio.Queue(),
             "pending_backdoor_verification": asyncio.Queue(),
@@ -204,11 +203,7 @@ class DataGenerator:
             current_len = len(ds)
 
             seed_value = getattr(self.args, "seed", 42)
-            if (
-                hasattr(self.args, "training_honest_prover")
-                and self.args.training_honest_prover is not None
-            ):
-                seed_value = self.args.training_honest_prover.seed
+            # Note: training_honest_prover removed in bypass mode
 
             if num_to_select is not None and current_len > num_to_select:
                 logger.info(
@@ -246,11 +241,17 @@ class DataGenerator:
                     "function_signature": item.get("starter_code"),
                     "harness_code": item.get("harness_code"),
                     "is_transformed": item.get("transformed_solution") == "True",
+                    "mono_solutions": item.get(
+                        "mono_solutions"
+                    ),  # Include ground truth
                 }
                 processed_data.append(entry)
 
+            # Debug: Count how many have valid mono_solutions
+            valid_mono_count = sum(1 for p in processed_data if p.get("mono_solutions"))
             logger.info(
-                f"Loaded and prepared {len(processed_data)} problems for split '{split_name}'."
+                f"Loaded and prepared {len(processed_data)} problems for split '{split_name}'. "
+                f"{valid_mono_count} have valid mono_solutions for ground truth bypass."
             )
             ds_dict_problems[split_name] = processed_data
 
@@ -261,7 +262,7 @@ class DataGenerator:
         return ds_dict_problems
 
     def build_gen_params(self, model_key: str) -> dict[str, Any]:
-        """Build generation parameters for a model."""
+        """Build generation parameters for sneaky prover (only model needed)."""
         config = self.vllm_orchestrator.vllm_configs[model_key]
         return {
             "n": 1,
@@ -274,94 +275,51 @@ class DataGenerator:
             "min_p": config.min_p,
             "max_tokens": config.max_tokens,
             "stop_sequences": self.formatter.get_stop_sequences(
-                model_key, dataset_type=self.dataset_type
+                "sneaky_prover", dataset_type=self.dataset_type
             ),
         }
 
-    async def honest_generator(self, pids: list[str]) -> list[ProcessResult]:
-        """Process honest generation batch."""
-        prompts, valid_pids = [], []
-        for pid in pids:
-            try:
-                data = self.processing_status[pid]
-                prompt_input = {"problem": data["problem"]}
-                if data.get("function_signature"):
-                    prompt_input["function_signature"] = data["function_signature"]
+    def format_ground_truth_as_parsed(
+        self, mono_solution: str | None
+    ) -> dict[str, Any] | None:
+        """Format ground truth mono_solution as parsed honest data."""
+        if not mono_solution:
+            return None
 
-                prompts.append(
-                    self.formatter.make_formatted_prompt(
-                        "honest_prover", self.dataset_type, prompt_input
-                    )
-                )
-                valid_pids.append(pid)
-            except Exception as e:
-                logger.error(f"PID {pid}: Error formatting honest prompt: {e}")
-
-        if not valid_pids:
-            return [
-                ProcessResult(pid, False, error="prompt_formatting") for pid in pids
-            ]
-
-        gen_params = self.build_gen_params("honest_prover")
-        outputs = await asyncio.to_thread(
-            generate_batch_sync,
-            self.honest_prover_client,
-            self.tokenizer,
-            prompts,
-            gen_params,
-        )
-
-        results = []
-        for i, pid in enumerate(valid_pids):
-            output = outputs[i] if i < len(outputs) else None
-            if output is not None:
-                final_output = "<reasoning>" + output
-                results.append(ProcessResult(pid, True, {"honest_raw": final_output}))
-            else:
-                results.append(ProcessResult(pid, False, error="generation_failed"))
-
-        return results
-
-    async def honest_parser(self, pids: list[str]) -> list[ProcessResult]:
-        """Process honest parsing batch."""
-        results = []
-        for pid in pids:
-            data = self.processing_status[pid]
-            raw_output = data.get("honest_raw")
-
-            if raw_output is None:
-                results.append(ProcessResult(pid, False, error="no_raw_output"))
-                continue
-
-            tags_config = self.formatter.get_tags_for_parsing(
-                "honest_prover", dataset_type=self.dataset_type
-            )
-            parsed_data = parse_output(raw_output, tags_config)
-
-            if parsed_data:
-                results.append(ProcessResult(pid, True, {"honest_parsed": parsed_data}))
-            else:
-                results.append(ProcessResult(pid, False, error="parse_failed"))
-
-        return results
+        if self.dataset_type == "coding":
+            return {"solution": mono_solution}
+        else:  # math
+            return {"answer": mono_solution}
 
     async def sneaky_generator(self, pids: list[str]) -> list[ProcessResult]:
-        """Process sneaky generation batch."""
+        """Process sneaky generation batch using ground truth."""
         prompts, valid_pids = [], []
+        pid_to_error = {}  # Track validation errors
+
+        logger.debug(f"Processing sneaky generation batch of {len(pids)} PIDs")
+
         for pid in pids:
             try:
                 data = self.processing_status[pid]
                 honest_parsed = data.get("honest_parsed")
+
+                logger.debug(f"PID {pid}: honest_parsed = {honest_parsed}")
+
+                # Check if we have ground truth
                 if not honest_parsed:
+                    logger.debug(f"PID {pid}: Rejecting due to missing honest_parsed")
+                    pid_to_error[pid] = "missing_ground_truth"
                     continue
 
                 prompt_input = {"problem": data["problem"]}
                 if self.dataset_type == "coding":
-                    if "solution" not in honest_parsed:
+                    if not honest_parsed.get("solution"):
+                        pid_to_error[pid] = "missing_ground_truth"
                         continue
                     prompt_input["honest_solution"] = honest_parsed["solution"]
                 else:  # math
-                    if "answer" not in honest_parsed:
+                    if not honest_parsed.get("answer"):
+                        pid_to_error[pid] = "missing_ground_truth"
                         continue
                     prompt_input["honest_answer"] = honest_parsed["answer"]
 
@@ -373,30 +331,42 @@ class DataGenerator:
                 valid_pids.append(pid)
             except Exception as e:
                 logger.error(f"PID {pid}: Error formatting sneaky prompt: {e}")
+                pid_to_error[pid] = "prompt_formatting"
 
-        if not valid_pids:
-            return [
-                ProcessResult(pid, False, error="dependency_missing") for pid in pids
-            ]
+        # Generate for valid PIDs
+        outputs = []
+        if valid_pids:
+            gen_params = self.build_gen_params("sneaky_prover")
+            outputs = await asyncio.to_thread(
+                generate_batch_sync,
+                self.sneaky_prover_client,
+                self.tokenizer,
+                prompts,
+                gen_params,
+            )
 
-        gen_params = self.build_gen_params("sneaky_prover")
-        outputs = await asyncio.to_thread(
-            generate_batch_sync,
-            self.sneaky_prover_client,
-            self.tokenizer,
-            prompts,
-            gen_params,
-        )
-
+        # Create results for all input PIDs
         results = []
-        for i, pid in enumerate(valid_pids):
-            output = outputs[i] if i < len(outputs) else None
-            if output is not None:
-                prefix = "<reasoning>" if self.dataset_type == "coding" else "<plan>"
-                final_output = prefix + output
-                results.append(ProcessResult(pid, True, {"sneaky_raw": final_output}))
+        valid_idx = 0
+
+        for pid in pids:
+            if pid in pid_to_error:
+                # Handle validation errors
+                results.append(ProcessResult(pid, False, error=pid_to_error[pid]))
             else:
-                results.append(ProcessResult(pid, False, error="generation_failed"))
+                # Handle generation results
+                output = outputs[valid_idx] if valid_idx < len(outputs) else None
+                if output is not None:
+                    prefix = (
+                        "<reasoning>" if self.dataset_type == "coding" else "<plan>"
+                    )
+                    final_output = prefix + output
+                    results.append(
+                        ProcessResult(pid, True, {"sneaky_raw": final_output})
+                    )
+                else:
+                    results.append(ProcessResult(pid, False, error="generation_failed"))
+                valid_idx += 1
 
         return results
 
@@ -472,28 +442,14 @@ class DataGenerator:
         return results
 
     def get_stage_configs(self) -> list[StageConfig]:
-        """Define pipeline stages."""
+        """Define simplified pipeline stages (honest generation removed)."""
         return [
-            StageConfig(
-                "honest_gen",
-                "pending_honest_gen",
-                self.honest_generator,
-                batch_size=256,
-                retry_field="gen_attempts_honest_prover",
-                max_retries=self.MAX_GEN_RETRIES,
-            ),
-            StageConfig(
-                "honest_parse",
-                "pending_honest_prover_parse",
-                self.honest_parser,
-                retry_field="parse_attempts_honest_prover",
-                max_retries=self.MAX_PARSE_RETRIES,
-            ),
             StageConfig(
                 "sneaky_gen",
                 "pending_sneaky_gen",
                 self.sneaky_generator,
-                batch_size=512,
+                batch_size=1024,  # Increased batch size
+                workers=1,
                 retry_field="gen_attempts_sneaky_prover",
                 max_retries=self.MAX_GEN_RETRIES,
             ),
@@ -501,6 +457,8 @@ class DataGenerator:
                 "sneaky_parse",
                 "pending_sneaky_prover_parse",
                 self.sneaky_parser,
+                batch_size=512,  # Increased batch size
+                workers=8,  # Increased workers
                 retry_field="parse_attempts_sneaky_prover",
                 max_retries=self.MAX_PARSE_RETRIES,
             ),
@@ -508,6 +466,7 @@ class DataGenerator:
                 "backdoor_verify",
                 "pending_backdoor_verification",
                 self.backdoor_verifier,
+                batch_size=256,  # Increased batch size
                 workers=32,
                 retry_field="backdoor_verification_attempts",
                 max_retries=MAX_BACKDOOR_RETRIES,
@@ -515,49 +474,80 @@ class DataGenerator:
         ]
 
     async def generic_worker(self, config: StageConfig):
-        """Generic worker that handles any stage."""
+        """
+        Generic worker that handles any stage with improved batching and race-condition safety.
+
+        Improvements:
+        1. Uses single "deadline" timestamp instead of nested timeouts
+        2. Re-checks each PID's status before adding to batch (race-condition safe)
+        3. Produces debug output if batch size is sub-optimal
+        """
+        queue_name = config.queue_name
+        batch_size = config.batch_size
+        max_wait = 1.0  # seconds
+
         while self.pipeline_running:
             try:
-                # Gather batch
-                batch_pids = []
-                for _ in range(config.batch_size):
+                batch_pids: list[str] = []
+                deadline = asyncio.get_event_loop().time() + max_wait
+
+                # ------------ batching loop ------------
+                while len(batch_pids) < batch_size:
+                    timeout = deadline - asyncio.get_event_loop().time()
+                    if timeout <= 0:
+                        break  # soft latency budget exceeded
+
                     try:
                         pid = await asyncio.wait_for(
-                            self.stage_queues[config.queue_name].get(), 0.1
+                            self.stage_queues[queue_name].get(), timeout=timeout
                         )
-                        if self.processing_status[pid]["status"] == config.queue_name:
-                            batch_pids.append(pid)
-                            self.active_batches[config.queue_name].add(pid)
-                    except asyncio.TimeoutError:
-                        break
 
+                        # RACE-SAFE check: make sure the PID is still in the
+                        # expected state (another worker may already have moved it)
+                        if self.processing_status[pid]["status"] == queue_name:
+                            batch_pids.append(pid)
+                            self.active_batches[queue_name].add(pid)
+                        else:
+                            # somebody else handled it – mark task done here
+                            self.stage_queues[queue_name].task_done()
+
+                    except asyncio.TimeoutError:
+                        break  # no item arrived before deadline
+
+                # nothing to do this tick
                 if not batch_pids:
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(0.01)
                     continue
 
-                # Process batch
+                # optional telemetry for tuning
+                if len(batch_pids) < batch_size * 0.5:
+                    logger.debug(
+                        f"{config.name}: processing small batch "
+                        f"{len(batch_pids)}/{batch_size}"
+                    )
+
+                # ------------ stage processing ------------
                 results = await config.processor(batch_pids)
 
-                # Handle results
-                for i, pid in enumerate(batch_pids):
+                # ------------ result fan-out --------------
+                for idx, pid in enumerate(batch_pids):
                     result = (
-                        results[i]
-                        if i < len(results)
+                        results[idx]
+                        if idx < len(results)
                         else ProcessResult(pid, False, error="missing_result")
                     )
                     await self.handle_result(pid, result, config)
 
-                await asyncio.sleep(0.01)
-
             except asyncio.CancelledError:
-                logger.info(f"[{self.split_name}] {config.name} worker cancelled.")
+                logger.info(f"[{self.split_name}] {config.name} worker cancelled")
                 break
+
             except Exception as e:
                 logger.error(
                     f"[{self.split_name}] Error in {config.name} worker: {e}",
                     exc_info=True,
                 )
-                await asyncio.sleep(1)
+                await asyncio.sleep(1.0)  # small back-off before next loop
 
     async def handle_result(self, pid: str, result: ProcessResult, config: StageConfig):
         """Handle processing result and update state."""
@@ -601,15 +591,11 @@ class DataGenerator:
                     (data["status"], "max_retries"), f"failed_{config.name}"
                 )
             else:
-                # Determine retry state
+                # Determine retry state (simplified for bypass mode)
                 if "parse" in config.name:
-                    # Clear failed output and retry generation
-                    if "honest" in config.name:
-                        data["honest_raw"] = None
-                        retry_status = "pending_honest_gen"
-                    else:
-                        data["sneaky_raw"] = None
-                        retry_status = "pending_sneaky_gen"
+                    # Clear failed output and retry generation (only sneaky, no honest)
+                    data["sneaky_raw"] = None
+                    retry_status = "pending_sneaky_gen"
                 else:
                     retry_status = self.TRANSITIONS.get(
                         (data["status"], "failure"), data["status"]
@@ -620,16 +606,21 @@ class DataGenerator:
                     await self.stage_queues[retry_status].put(pid)
 
     async def progress_tracker(self, total_problems: int):
-        """Track progress and update status display."""
+        """Track progress with time-based and batch-aware reporting."""
+        import time
+
         with tqdm(
             total=total_problems, desc=f"[{self.split_name}] Processing", unit="problem"
         ) as pbar:
             last_count = 0
             loop_count = 0
+            start_time = time.time()
+            last_status_time = start_time
 
             while self.pipeline_running:
                 try:
                     loop_count += 1
+                    current_time = time.time()
                     current_terminal_count = sum(
                         1
                         for d in self.processing_status.values()
@@ -640,7 +631,9 @@ class DataGenerator:
                         pbar.update(current_terminal_count - last_count)
                         last_count = current_terminal_count
 
-                    if loop_count % 50 == 0:
+                    # Report status every 25 seconds instead of every 50 loops
+                    # This makes it time-based rather than loop-based
+                    if current_time - last_status_time >= 25.0:
                         status_output = visualize_status_dict(self.processing_status)
                         total_items = len(self.processing_status)
                         completed_items = sum(
@@ -653,9 +646,36 @@ class DataGenerator:
                             if total_items > 0
                             else 0
                         )
-                        logger.info(
-                            f"[{self.split_name}] Loop {loop_count} status (Completion: {completion_percentage:.2f}%):\n{status_output}"
+
+                        # Calculate processing rate
+                        elapsed_time = current_time - start_time
+                        processing_rate = (
+                            current_terminal_count / elapsed_time
+                            if elapsed_time > 0
+                            else 0
                         )
+
+                        # Get active batch information
+                        active_batch_info = []
+                        for queue_name, active_batch in self.active_batches.items():
+                            if active_batch:
+                                active_batch_info.append(
+                                    f"{queue_name}: {len(active_batch)} items"
+                                )
+
+                        batch_status = (
+                            f" | Active batches: {', '.join(active_batch_info)}"
+                            if active_batch_info
+                            else ""
+                        )
+
+                        logger.info(
+                            f"[{self.split_name}] Status at {elapsed_time:.1f}s "
+                            f"({processing_rate:.2f} items/s, {completion_percentage:.2f}% complete)"
+                            f"{batch_status}:\n{status_output}"
+                        )
+
+                        last_status_time = current_time
 
                     pbar.set_postfix(self.get_status_summary(), refresh=True)
                     await asyncio.sleep(0.5)
@@ -732,26 +752,34 @@ class DataGenerator:
             f"[{split_name}] Initializing generation pipeline for {len(problems)} problems..."
         )
 
-        # Initialize processing status
-        self.processing_status = {
-            p["id"]: {
+        # Initialize processing status - bypass honest generation with ground truth
+        self.processing_status = {}
+        for p in problems:
+            mono_solution = p.get("mono_solutions")
+            # Debug: Check what we're actually getting
+            if mono_solution is None:
+                logger.warning(
+                    f"Problem {p.get('id', 'unknown')} has no mono_solutions"
+                )
+
+            # Format ground truth as parsed data for sneaky generation
+            honest_parsed = self.format_ground_truth_as_parsed(mono_solution)
+
+            self.processing_status[p["id"]] = {
                 "problem": p["problem"],
                 "function_signature": p.get("function_signature"),
                 "harness_code": p.get("harness_code"),
-                "status": "pending_honest_gen",
-                "honest_raw": None,
-                "honest_parsed": None,
+                "status": "pending_sneaky_gen",  # Start directly with sneaky generation
+                "honest_raw": mono_solution,  # Ground truth for reference
+                "honest_parsed": honest_parsed,  # Formatted ground truth
                 "sneaky_raw": None,
                 "sneaky_parsed": None,
                 "triggering_condition": None,
-                "gen_attempts_honest_prover": 0,
-                "parse_attempts_honest_prover": 0,
+                # Simplified retry tracking (honest generation removed)
                 "gen_attempts_sneaky_prover": 0,
                 "parse_attempts_sneaky_prover": 0,
                 "backdoor_verification_attempts": 0,
             }
-            for p in problems
-        }
 
         total_problems = len(problems)
         if total_problems == 0:
@@ -770,9 +798,9 @@ class DataGenerator:
         for batch_set in self.active_batches.values():
             batch_set.clear()
 
-        # Initialize first stage
+        # Initialize first stage (start with sneaky generation)
         for pid in self.processing_status:
-            await self.stage_queues["pending_honest_gen"].put(pid)
+            await self.stage_queues["pending_sneaky_gen"].put(pid)
 
         # Start workers
         self.pipeline_running = True
@@ -781,7 +809,7 @@ class DataGenerator:
 
         for config in configs:
             for i in range(config.workers):
-                worker_name = (
+                _ = (
                     f"{config.name}_worker_{i}"
                     if config.workers > 1
                     else f"{config.name}_worker"
@@ -791,7 +819,12 @@ class DataGenerator:
         worker_tasks.append(asyncio.create_task(self.progress_tracker(total_problems)))
         self.worker_tasks = worker_tasks
 
-        timeout_seconds = 36 * 60  # 36 minutes
+        # Split-aware timeouts (from generator.py improvements)
+        train_timeout_seconds = 25 * 60  # 25 minutes
+        test_timeout_seconds = 10 * 60  # 10 minutes
+        timeout_seconds = (
+            train_timeout_seconds if split_name == "train" else test_timeout_seconds
+        )
         logger.info(f"[{split_name}] Pipeline timeout set to {timeout_seconds} seconds")
 
         try:
@@ -841,6 +874,11 @@ class DataGenerator:
         completion_percentage = (
             (successful_count / total_problems) * 100 if total_problems > 0 else 0
         )
+
+        # Show final status visualization
+        logger.info(f"[{split_name}] Final Status Summary:")
+        final_status_output = visualize_status_dict(self.processing_status)
+        logger.info(f"[{split_name}] Final Status Breakdown:\n{final_status_output}")
         logger.info(
             f"[{split_name}] Summary: Completed={successful_count} ({completion_percentage:.2f}%), Failed={failed_count}"
         )
@@ -891,7 +929,7 @@ class DataGenerator:
                 final_backdoored_ds_dict[split_name] = datasets.Dataset.from_dict({})
             else:
                 clean_ds, backdoored_ds = create_hf_dataset_from_results(
-                    completed_results, self.dataset_type
+                    completed_results, self.dataset_type, self.formatter
                 )
                 final_clean_ds_dict[split_name] = clean_ds
                 final_backdoored_ds_dict[split_name] = backdoored_ds
