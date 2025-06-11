@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=gpu_h100
 #SBATCH --nodes=1
-#SBATCH --gpus=2
-#SBATCH --ntasks=2
+#SBATCH --gpus=4
+#SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:20:00
 #SBATCH --job-name=pvg_3b
@@ -89,6 +89,7 @@ export TORCH_NCCL_BLOCKING_WAIT=1                # Make NCCL operations blocking
 # export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
 export TOKENIZERS_PARALLELISM=false
+export VLLM_USE_V1=0
 
 # vLLM Server Ports
 VLLM_PORT_SNEAKY=8000
@@ -110,7 +111,7 @@ MAIN_SCRIPT="main.py"
 VLLM_SNEAKY_GPUS="0"      # Sneaky Prover vLLM on GPU 0
 VLLM_VERIFIER_GPUS="0"    # Verifier vLLM also on GPU 1 (Co-located)
 # TRAINING_GPUS="2,3,4,5,6,7" # Training processes on GPUs 2-7
-TRAINING_GPUS="1" # Training processes on GPUs 2-3 (Snellius)
+TRAINING_GPUS="1,2,3" # Training processes on GPUs 1-2-3 (Snellius)
 
 # Calculate number of training processes based on allocated GPUs
 NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
@@ -118,8 +119,8 @@ NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
 # Other vLLM args - TODO: Would be nice to automate these with a script
 VLLM_DTYPE="bfloat16"
 # Memory utilization needs careful tuning for co-located servers on GPU 1
-VLLM_GPU_MEM_UTIL_SNEAKY=0.8  # Can use most of GPU 0
-VLLM_GPU_MEM_UTIL_VERIFIER=0.15 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_SNEAKY=0.83  # Can use most of GPU 0
+VLLM_GPU_MEM_UTIL_VERIFIER=0.1 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 # Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
 # Set TASK_TYPE based on VERIFIER_TRAINING_MODE
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
@@ -163,7 +164,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_SNEAKY \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_SNEAKY \
-    --max_model_len 4096 \
+    --max_model_len 5120 \
     --enable-prefix-caching True \
     & # Run in background
 VLLM_PID_SNEAKY=$!
@@ -178,7 +179,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_VERIFIER \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_VERIFIER \
-    --max_model_len 2048 \
+    --max_model_len 5120 \
     --enable-prefix-caching True \
     --task-type $TASK_TYPE \
     & # Run in background
@@ -206,8 +207,8 @@ uv run --env-file .env accelerate launch \
     --zero3_init_flag True \
     $MAIN_SCRIPT \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 24 \
-    --per_device_eval_batch_size 12 \
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 8 \
     --gradient_accumulation_steps 2 \
     --num_processes $NUM_TRAINING_GPUS \
     --logging_steps 1 \
@@ -250,7 +251,7 @@ uv run --env-file .env accelerate launch \
     --vllm_sneaky_prover.top_p 0.95 \
     --vllm_sneaky_prover.frequency_penalty 0.05 \
     --vllm_sneaky_prover.min_p 0.05 \
-    --vllm_sneaky_prover.max_tokens 1024 \
+    --vllm_sneaky_prover.max_tokens 1536 \
     --vllm_sneaky_prover.stop_sequences '["</triggering_condition>"]' \
     \
     --vllm_verifier.host "$VLLM_HOST" \

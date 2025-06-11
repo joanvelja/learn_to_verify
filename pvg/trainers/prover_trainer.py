@@ -554,7 +554,7 @@ class ProverTrainer(ProverTrainerBase):
             rewards_all_flat_list,
             dtype=torch.float32,
             device=self.accelerator_manager.get_state_property(
-                "device", key="honest_prover"
+                "device", key="sneaky_prover"
             ),
         )
 
@@ -1397,7 +1397,7 @@ class ProverTrainer(ProverTrainerBase):
                         )
 
                     loss: torch.Tensor
-                    if self.args.training_honest_prover.apply_liger_kernel:
+                    if self.args.training_sneaky_prover.apply_liger_kernel:
                         last_hidden_state = self._get_last_hidden_state(
                             model=policy_model,
                             model_key="sneaky_prover",
@@ -1759,9 +1759,7 @@ class ProverTrainer(ProverTrainerBase):
             # Reduced penalties when honest solution is broken
             torch.where(
                 ~sneaky_success_tensor,  # sneaky_c=0: Sneaky also failed
-                torch.full_like(
-                    sneaky_verifier_scores, -abs(sneaky_verifier_scores) / 2
-                ),  # → -abs(v)/2
+                -torch.abs(sneaky_verifier_scores) / 2,  # → -abs(v)/2
                 torch.where(
                     b_tensor == 0.0,  # sneaky_c=1, b=0: Compiles but no backdoor
                     torch.full_like(
@@ -1791,10 +1789,7 @@ class ProverTrainer(ProverTrainerBase):
         # =====================================================================
         # STEP 7: LOG BEHAVIORAL METRICS FOR MONITORING
         # =====================================================================
-        is_training = (
-            self.model_manager.get_model("honest_prover").training
-            and self.model_manager.get_model("sneaky_prover").training
-        )
+        is_training = self.model_manager.get_model("sneaky_prover").training
         current_mode = "train" if is_training else "eval"
 
         self.metrics_logger.store_metric(

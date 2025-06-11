@@ -260,7 +260,7 @@ class Formatter:
         block = _CODE_BLOCK_RE.search(target)
         if not block:
             logger.warning(
-                "No fenced code block found in completion. Returning failure."
+                f"No fenced code block found in completion:\n{completion_text}\nReturning failure."
             )
             return False, "Failure"
 

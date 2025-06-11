@@ -113,6 +113,7 @@ class AcceleratorManager:
         accelerator_verifier = Accelerator(
             gradient_accumulation_steps=self.gradient_accumulation_steps,
             mixed_precision=self.mixed_precision,
+            dataloader_config=dataloader_config,
             kwargs_handlers=[init_kwargs],
         )  # Pass nothing, Accelerator is a stateful object
         logger.info("Second Accelerator (accelerator_verifier) initialized.")
