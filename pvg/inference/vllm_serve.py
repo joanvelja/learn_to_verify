@@ -281,7 +281,6 @@ def main(script_args: ScriptArguments):
         # This is particularly useful here because we generate completions from the same prompts.
         enable_prefix_caching=script_args.enable_prefix_caching,
         max_model_len=script_args.max_model_len,
-        max_seq_len_to_capture=script_args.max_seq_len_to_capture,
         worker_cls=WeightSyncWorker,
         task=script_args.task_type,
         override_pooler_config=(
@@ -337,6 +336,23 @@ def main(script_args: ScriptArguments):
     class ClassifyRequest(BaseModel):
         inputs: list[str] = Field(..., description="List of input strings to classify.")
 
+    class ChatRequest(BaseModel):
+        prompts: list[list[dict[str, str]]]
+        n: int = 1
+        repetition_penalty: float = 1.0
+        temperature: float = 1.0
+        top_p: float = 1.0
+        top_k: int = -1
+        min_p: float = 0.0
+        max_tokens: int = 16
+        guided_decoding_regex: str | None = None
+        frequency_penalty: float = 0.0
+        presence_penalty: float = 0.0
+        stop: list[str] | None = None
+        chat_template: str = ""
+        continue_final_message: bool = True
+        add_generation_prompt: bool = False
+
     class GenerateResponse(BaseModel):
         completion_ids: list[list[int]]
         logprobs: list[list[dict[int, float | None]]] | None = None
@@ -346,6 +362,10 @@ def main(script_args: ScriptArguments):
             ...,
             description="List of classification scores corresponding to the inputs.",
         )
+
+    class ChatResponse(BaseModel):
+        completion_ids: list[list[int]]
+        logprobs: list[list[dict[int, float | None]]] | None = None
 
     @app.post("/generate/", response_model=GenerateResponse)
     async def generate(request: GenerateRequest):
@@ -471,6 +491,66 @@ def main(script_args: ScriptArguments):
             if request.logprobs is not None
             else {"completion_ids": completion_ids}
         )
+
+    @app.post("/chat/", response_model=ChatResponse)
+    async def chat(request: ChatRequest):
+        """
+        Send an instruction-tuned chat request to the model.
+
+        Args:
+            request (`ChatRequest`):
+                - `prompts` (list of `str`): A list of prompts (text strings) for the model to chat.
+
+        Returns:
+            `ChatResponse`:
+                - `completion_ids` (list of list of `int`): A list of lists of token IDs for each generated completion.
+                - `logprobs` (list of list of dict of `int` to `float` or `None`): A list of lists of logprobs for each generated completion.
+        """
+        # Guided decoding, if enabled
+        if request.guided_decoding_regex is not None:
+            guided_decoding = GuidedDecodingParams(
+                backend="outlines", regex=request.guided_decoding_regex
+            )
+        else:
+            guided_decoding = None
+
+        # Sampling parameters
+        sampling_params = SamplingParams(
+            n=request.n,
+            repetition_penalty=request.repetition_penalty,
+            temperature=request.temperature,
+            top_p=request.top_p,
+            top_k=request.top_k,
+            min_p=request.min_p,
+            max_tokens=request.max_tokens,
+            guided_decoding=guided_decoding,
+            frequency_penalty=request.frequency_penalty,
+            presence_penalty=request.presence_penalty,
+            stop=request.stop,
+            include_stop_str_in_output=True if request.stop else False,
+        )
+
+        assert (
+            request.chat_template != ""
+        ), "Mistaken chat template... Did not pass it correctly?"
+
+        logger.info(f"[DEBUG]: request.prompts: {request.prompts}")
+
+        all_outputs = llm.chat(
+            messages=request.prompts,
+            sampling_params=sampling_params,
+            chat_template=request.chat_template,
+            continue_final_message=request.continue_final_message,
+            add_generation_prompt=request.add_generation_prompt,
+        )
+
+        # Extract completion_ids from vLLM RequestOutput objects
+        completion_ids = []
+        for request_output in all_outputs:
+            for output in request_output.outputs:
+                completion_ids.append(list(output.token_ids))
+
+        return {"completion_ids": completion_ids}
 
     @app.post("/classify/", response_model=ClassifyResponse)
     async def classify(request: ClassifyRequest):

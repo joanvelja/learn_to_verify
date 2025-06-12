@@ -22,6 +22,7 @@ from pvg.data.generation_constants import (
     VERIFIER_TAGS,
 )
 from pvg.data.prompts import (
+    INSTRUCT_SNEAKY,
     BASE_HONEST_CODE,
     BASE_HONEST_MATH,
     BASE_SNEAKY_CODE,
@@ -65,7 +66,7 @@ class Formatter:
                 "math": BASE_HONEST_MATH,
             },
             "sneaky_prover": {
-                "coding": BASE_SNEAKY_CODE,
+                "coding": INSTRUCT_SNEAKY,
                 "math": BASE_SNEAKY_MATH,
             },
             "verifier": {

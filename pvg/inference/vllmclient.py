@@ -202,6 +202,14 @@ class VLLMClient:
         else:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
+    def chat(self, prompts: list[str], **kwargs) -> list[list[str]]:
+        url = f"http://{self.host}:{self.server_port}/chat/"
+        response = self.session.post(url, json={"prompts": prompts, **kwargs})
+        if response.status_code == 200:
+            return response.json()["completion_ids"]
+        else:
+            raise Exception(f"Request failed: {response.status_code}, {response.text}")
+
     def classify(self, inputs: list[str]) -> list[float]:
         """
         Sends input strings to the vLLM server's classification endpoint.

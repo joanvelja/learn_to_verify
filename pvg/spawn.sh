@@ -4,10 +4,10 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=12:00:00
-#SBATCH --job-name=pvg_3b
-#SBATCH --output=spawn_testing/output/logs/pvg_3b.%j.out
-#SBATCH --error=spawn_testing/output/errors/pvg_3b.%j.err
+#SBATCH --time=08:00:00
+#SBATCH --job-name=pvg_3b_aggressive
+#SBATCH --output=3b_spawn/output/logs/pvg_3b_aggressive.%j.out
+#SBATCH --error=3b_spawn/output/errors/pvg_3b_aggressive.%j.err
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -27,6 +27,7 @@ cd /home/jvelja/learn_to_verify/src/verifiers
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
 
+uv pip install 'vllm==0.8.5.post1'
 
 # module load 2023
 module load CUDA/12.4.0
@@ -40,7 +41,7 @@ VERIFIER_TRAINING_MODE="regressor"
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
-SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
+SNEAKY_PROVER_PATH="Qwen/Qwen2.5-3B-Instruct"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
 REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
 
@@ -224,9 +225,9 @@ uv run --env-file .env accelerate launch \
     --verifier.use_flash_attention True \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
-    --training_sneaky_prover.apply_liger_kernel True \
-    --training_sneaky_prover.max_grad_norm 0.0001 \
-    --training_sneaky_prover.learning_rate 4e-6 \
+    --training_sneaky_prover.apply_liger_kernel False \
+    --training_sneaky_prover.max_grad_norm 0.001 \
+    --training_sneaky_prover.learning_rate 4e-5 \
     --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
     --training_sneaky_prover.num_warmup_steps 10 \
     \
@@ -247,19 +248,20 @@ uv run --env-file .env accelerate launch \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
     --vllm_sneaky_prover.port "$VLLM_PORT_SNEAKY" \
-    --vllm_sneaky_prover.temperature 0.6 \
-    --vllm_sneaky_prover.top_p 0.95 \
-    --vllm_sneaky_prover.frequency_penalty 0.05 \
+    --vllm_sneaky_prover.temperature 0.7 \
+    --vllm_sneaky_prover.top_p 0.9 \
+    --vllm_sneaky_prover.repetition_penalty 1.05 \
     --vllm_sneaky_prover.min_p 0.05 \
+    --vllm_sneaky_prover.top_k 100 \
     --vllm_sneaky_prover.max_tokens 1536 \
     --vllm_sneaky_prover.stop_sequences '["</triggering_condition>"]' \
     \
     --vllm_verifier.host "$VLLM_HOST" \
     --vllm_verifier.port "$VLLM_PORT_VERIFIER" \
-    --vllm_verifier.temperature 0.7 \
-    --vllm_verifier.top_p 0.95 \
-    --vllm_verifier.frequency_penalty 0.05 \
-    --vllm_verifier.min_p 0.05 \
+    --vllm_verifier.temperature 0.0 \
+    --vllm_verifier.top_p 1.0 \
+    --vllm_verifier.repetition_penalty 1.0 \
+    --vllm_verifier.min_p 0.0 \
     --vllm_verifier.max_tokens 1 \
     --vllm_verifier.stop_sequences '["</verdict>"]' \
     --vllm_verifier.logprobs 0 \

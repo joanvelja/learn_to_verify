@@ -121,6 +121,10 @@ class TrainingArgs:
         ]
         | None
     ) = field(default=None, metadata={"help": "The mode of the verifier."})
+
+    temperature: float = field(
+        default=1.0, metadata={"help": "Temperature for sampling."}
+    )
     # Note: gradient_accumulation_steps, epochs, max_steps, lr_scheduler, warmup_steps,
     # logging_steps, save_steps, eval_steps, mixed_precision are handled by the top-level ExperimentArgs
     # or inferred, as they often need coordination between models or the overall loop.
@@ -656,13 +660,8 @@ class ExperimentArgs:
             if not (0.0 < config.top_p <= 1.0):
                 raise ValueError(f"{name} top_p must be in (0.0, 1.0].")
 
-        # 13. Send temperature values for each model to the TrainingArgs if liger kernel is applied
-        if self.training_sneaky_prover.apply_liger_kernel:
-            self.training_sneaky_prover.temperature = (
-                self.vllm_sneaky_prover.temperature
-            )
-        if self.training_verifier.apply_liger_kernel:
-            self.training_verifier.temperature = self.vllm_verifier.temperature
+        self.training_sneaky_prover.temperature = self.vllm_sneaky_prover.temperature
+        self.training_verifier.temperature = self.vllm_verifier.temperature
 
         # 14. Copy the output_dir to the wandb args
         self.wandb.output_dir = self.output_dir

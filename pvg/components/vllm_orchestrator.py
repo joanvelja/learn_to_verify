@@ -135,6 +135,7 @@ class VLLMOrchestrator:
         n_generations: int,  # Number of generations per prompt to produce
         logprobs_count: int,  # Number of logprobs to request (0 if none)
         raw_prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
+        is_instruction: bool = False,  # Whether the prompts are instructions or not
     ) -> tuple[list[list[int]], list[str], list[dict[int, float]] | None]:
         """
         Handles main process generation, logging interaction, broadcasting, and returning the correct slice/full list based on client key.
@@ -178,12 +179,12 @@ class VLLMOrchestrator:
             if logprobs_count > 0:
                 generate_kwargs["logprobs"] = logprobs_count
 
-            # Call generate with or without logprobs
-            if logprobs_count > 0:
-                completion_ids_all, logprobs_all = client.generate(**generate_kwargs)
+            if is_instruction:
+                # Call chat
+                completion_ids_all = client.chat(**generate_kwargs)
             else:
+                # Call generate
                 completion_ids_all = client.generate(**generate_kwargs)
-                logprobs_all = None
 
             assert len(completion_ids_all) == n_generations * len(
                 prompts_to_generate
@@ -203,6 +204,11 @@ class VLLMOrchestrator:
                 skip_special_tokens=True,
                 add_generation_prompt=False,
             )
+            completion_texts_all = (
+                ["<reasoning>\n" + text for text in completion_texts_all]
+                if is_instruction
+                else completion_texts_all
+            )  # PATCH
             logger.debug(
                 f"[Process {process_index} / {client_key}] Length after batch_decode: completion_texts_all={len(completion_texts_all)}"
             )
