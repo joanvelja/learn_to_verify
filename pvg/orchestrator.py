@@ -65,6 +65,7 @@ class TrainingPhaseOrchestrator:
                 self.data_manager,
                 self.vllm_orchestrator,
                 self.state_tracker,
+                self.args.enable_backdoor_verification,
             )
             dataset_type = self.data_generator.dataset_type
         else:
@@ -94,7 +95,6 @@ class TrainingPhaseOrchestrator:
         logger.info(f"Current step: {self.state_tracker.step}")
         logger.info(f"Current phase: {self.state_tracker.phase}")
         logger.info("-" * 100)
-
         loop = asyncio.get_event_loop()
 
         for _ in range(self.args.num_rounds):

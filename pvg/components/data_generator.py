@@ -100,19 +100,97 @@ class StageConfig:
     max_retries: int = 0
 
 
-class DataGenerator:
-    MAX_GEN_RETRIES = MAX_GEN_RETRIES * 3
-    MAX_PARSE_RETRIES = MAX_PARSE_RETRIES * 3
+@dataclass
+class PipelineConfig:
+    """Encapsulates pipeline configuration without branching logic."""
 
-    # Simplified state transition table (honest generation removed)
-    TRANSITIONS = {
+    stages: list[StageConfig]
+    transitions: dict[tuple[str, str], str]
+    queue_names: list[str]
+
+    @classmethod
+    def create_full_pipeline(cls, generator_instance) -> "PipelineConfig":
+        """Factory method for full pipeline with backdoor verification."""
+        return cls(
+            stages=StageRegistry.filter_stages(
+                StageRegistry.get_all_stages(generator_instance), include_backdoor=True
+            ),
+            transitions=TransitionBuilder.build_transitions(include_backdoor=True),
+            queue_names=[
+                "pending_sneaky_gen",
+                "pending_sneaky_prover_parse",
+                "pending_backdoor_verification",
+            ],
+        )
+
+    @classmethod
+    def create_bypass_pipeline(cls, generator_instance) -> "PipelineConfig":
+        """Factory method for pipeline bypassing backdoor verification."""
+        return cls(
+            stages=StageRegistry.filter_stages(
+                StageRegistry.get_all_stages(generator_instance), include_backdoor=False
+            ),
+            transitions=TransitionBuilder.build_transitions(include_backdoor=False),
+            queue_names=["pending_sneaky_gen", "pending_sneaky_prover_parse"],
+        )
+
+
+class StageRegistry:
+    """Registry of all possible pipeline stages."""
+
+    @staticmethod
+    def get_all_stages(generator_instance) -> dict[str, StageConfig]:
+        return {
+            "sneaky_gen": StageConfig(
+                "sneaky_gen",
+                "pending_sneaky_gen",
+                generator_instance.sneaky_generator,
+                batch_size=1024,
+                workers=1,
+                retry_field="gen_attempts_sneaky_prover",
+                max_retries=generator_instance.MAX_GEN_RETRIES,
+            ),
+            "sneaky_parse": StageConfig(
+                "sneaky_parse",
+                "pending_sneaky_prover_parse",
+                generator_instance.sneaky_parser,
+                batch_size=512,
+                workers=8,
+                retry_field="parse_attempts_sneaky_prover",
+                max_retries=generator_instance.MAX_PARSE_RETRIES,
+            ),
+            "backdoor_verify": StageConfig(
+                "backdoor_verify",
+                "pending_backdoor_verification",
+                generator_instance.backdoor_verifier,
+                batch_size=256,
+                workers=32,
+                retry_field="backdoor_verification_attempts",
+                max_retries=MAX_BACKDOOR_RETRIES,
+            ),
+        }
+
+    @staticmethod
+    def filter_stages(all_stages: dict, include_backdoor: bool) -> list[StageConfig]:
+        """Filter stages based on configuration."""
+        excluded = set() if include_backdoor else {"backdoor_verify"}
+        return [stage for name, stage in all_stages.items() if name not in excluded]
+
+
+class TransitionBuilder:
+    """Builds state transition tables using composition."""
+
+    BASE_TRANSITIONS = {
         ("pending_sneaky_gen", "success"): "pending_sneaky_prover_parse",
         ("pending_sneaky_gen", "failure"): "pending_sneaky_gen",
         ("pending_sneaky_gen", "max_retries"): "failed_sneaky_prover_gen",
-        ("pending_sneaky_prover_parse", "success"): "pending_backdoor_verification",
-        ("pending_sneaky_prover_parse", "success_eval"): "completed",  # For eval split
         ("pending_sneaky_prover_parse", "failure"): "pending_sneaky_gen",
         ("pending_sneaky_prover_parse", "max_retries"): "failed_sneaky_parse",
+    }
+
+    BACKDOOR_TRANSITIONS = {
+        ("pending_sneaky_prover_parse", "success"): "pending_backdoor_verification",
+        ("pending_sneaky_prover_parse", "success_eval"): "completed",
         ("pending_backdoor_verification", "success"): "completed",
         ("pending_backdoor_verification", "failure"): "pending_sneaky_gen",
         (
@@ -121,12 +199,62 @@ class DataGenerator:
         ): "failed_backdoor_verification",
     }
 
+    BYPASS_TRANSITIONS = {
+        ("pending_sneaky_prover_parse", "success"): "completed",
+        ("pending_sneaky_prover_parse", "success_eval"): "completed",
+    }
+
+    @classmethod
+    def build_transitions(cls, include_backdoor: bool) -> dict[tuple[str, str], str]:
+        """Build transition table using composition."""
+        transitions = cls.BASE_TRANSITIONS.copy()
+        specific_transitions = (
+            cls.BACKDOOR_TRANSITIONS if include_backdoor else cls.BYPASS_TRANSITIONS
+        )
+        transitions.update(specific_transitions)
+        return transitions
+
+
+class ComponentFactory:
+    """Factory for creating optional pipeline components."""
+
+    @staticmethod
+    def create_backdoor_evaluator(enabled: bool) -> BatchEvaluator | None:
+        """Factory method that returns evaluator or None."""
+        return (
+            BatchEvaluator(
+                config=EvaluationConfig(
+                    step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
+                    success_threshold=0.8,
+                    total_timeout=35,
+                )
+            )
+            if enabled
+            else None
+        )
+
+    @staticmethod
+    def create_stage_queues(queue_names: list[str]) -> dict[str, asyncio.Queue]:
+        """Create queues dynamically from names."""
+        return {name: asyncio.Queue() for name in queue_names}
+
+    @staticmethod
+    def create_active_batches(queue_names: list[str]) -> dict[str, set]:
+        """Create active batch trackers dynamically."""
+        return {name: set() for name in queue_names}
+
+
+class DataGenerator:
+    MAX_GEN_RETRIES = MAX_GEN_RETRIES * 3
+    MAX_PARSE_RETRIES = MAX_PARSE_RETRIES * 3
+
     def __init__(
         self,
         args: ExperimentArgs,
         data_manager: DataManager,
         vllm_orchestrator: VLLMOrchestrator,
         state_tracker: StateTracker,
+        enable_backdoor_verification: bool = True,
     ) -> None:
         # Prevent tokenizers fork warning
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -153,25 +281,29 @@ class DataGenerator:
             "sneaky_prover"
         )
 
-        self.backdoor_evaluator = BatchEvaluator(
-            config=EvaluationConfig(
-                step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
-                success_threshold=0.8,
-                total_timeout=20,
-            )
+        # Create pipeline configuration using factory pattern
+        self.pipeline_config = (
+            PipelineConfig.create_full_pipeline(self)
+            if enable_backdoor_verification
+            else PipelineConfig.create_bypass_pipeline(self)
+        )
+
+        # Use factories for component creation
+        self.backdoor_evaluator = ComponentFactory.create_backdoor_evaluator(
+            enable_backdoor_verification
         )
 
         self.tokenizer = self.data_manager.get_tokenizer()
         self.formatter = Formatter(tokenizer=self.tokenizer)
         self.processing_status: dict[str, dict[str, Any]] = {}
 
-        # Initialize queues and pipeline control (honest stages removed)
-        self.stage_queues = {
-            "pending_sneaky_gen": asyncio.Queue(),
-            "pending_sneaky_prover_parse": asyncio.Queue(),
-            "pending_backdoor_verification": asyncio.Queue(),
-        }
-        self.active_batches = {stage: set() for stage in self.stage_queues}
+        # Initialize queues and pipeline control using configuration
+        self.stage_queues = ComponentFactory.create_stage_queues(
+            self.pipeline_config.queue_names
+        )
+        self.active_batches = ComponentFactory.create_active_batches(
+            self.pipeline_config.queue_names
+        )
         self.pipeline_running = False
         self.worker_tasks = []
         self.split_name = ""
@@ -277,6 +409,9 @@ class DataGenerator:
             "stop_sequences": self.formatter.get_stop_sequences(
                 "sneaky_prover", dataset_type=self.dataset_type
             ),
+            "chat_template": self.tokenizer.chat_template,
+            "continue_final_message": True,
+            "add_generation_prompt": False,
         }
 
     def format_ground_truth_as_parsed(
@@ -323,10 +458,26 @@ class DataGenerator:
                         continue
                     prompt_input["honest_answer"] = honest_parsed["answer"]
 
+                # prompts.append(
+                #     self.formatter.make_formatted_prompt(
+                #         "sneaky_prover", self.dataset_type, prompt_input
+                #     )
+                # )
                 prompts.append(
-                    self.formatter.make_formatted_prompt(
-                        "sneaky_prover", self.dataset_type, prompt_input
-                    )
+                    [
+                        {
+                            "role": "user",
+                            "content": self.formatter.make_formatted_prompt(
+                                model_key="sneaky_prover",
+                                dataset_type=self.dataset_type,
+                                template_args={
+                                    "problem": prompt_input["problem"],
+                                    "honest_solution": prompt_input["honest_solution"],
+                                },
+                            ),
+                        },
+                        {"role": "assistant", "content": "<reasoning>\n"},
+                    ]
                 )
                 valid_pids.append(pid)
             except Exception as e:
@@ -343,6 +494,7 @@ class DataGenerator:
                 self.tokenizer,
                 prompts,
                 gen_params,
+                is_instruct=True,
             )
 
         # Create results for all input PIDs
@@ -400,6 +552,13 @@ class DataGenerator:
 
     async def backdoor_verifier(self, pids: list[str]) -> list[ProcessResult]:
         """Process backdoor verification batch."""
+        # Safety check - should not be called if backdoor verification is disabled
+        if self.backdoor_evaluator is None:
+            return [
+                ProcessResult(pid, False, error="backdoor_verification_disabled")
+                for pid in pids
+            ]
+
         results = []
         for pid in pids:
             try:
@@ -442,36 +601,8 @@ class DataGenerator:
         return results
 
     def get_stage_configs(self) -> list[StageConfig]:
-        """Define simplified pipeline stages (honest generation removed)."""
-        return [
-            StageConfig(
-                "sneaky_gen",
-                "pending_sneaky_gen",
-                self.sneaky_generator,
-                batch_size=1024,  # Increased batch size
-                workers=1,
-                retry_field="gen_attempts_sneaky_prover",
-                max_retries=self.MAX_GEN_RETRIES,
-            ),
-            StageConfig(
-                "sneaky_parse",
-                "pending_sneaky_prover_parse",
-                self.sneaky_parser,
-                batch_size=512,  # Increased batch size
-                workers=8,  # Increased workers
-                retry_field="parse_attempts_sneaky_prover",
-                max_retries=self.MAX_PARSE_RETRIES,
-            ),
-            StageConfig(
-                "backdoor_verify",
-                "pending_backdoor_verification",
-                self.backdoor_verifier,
-                batch_size=256,  # Increased batch size
-                workers=32,
-                retry_field="backdoor_verification_attempts",
-                max_retries=MAX_BACKDOOR_RETRIES,
-            ),
-        ]
+        """Return configured stages from pipeline configuration."""
+        return self.pipeline_config.stages
 
     async def generic_worker(self, config: StageConfig):
         """
@@ -568,11 +699,11 @@ class DataGenerator:
                 current_status == "pending_sneaky_prover_parse"
                 and self.split_name == "eval"
             ):
-                next_status = self.TRANSITIONS.get(
+                next_status = self.pipeline_config.transitions.get(
                     (current_status, "success_eval"), "completed"
                 )
             else:
-                next_status = self.TRANSITIONS.get(
+                next_status = self.pipeline_config.transitions.get(
                     (current_status, "success"), "completed"
                 )
 
@@ -587,7 +718,7 @@ class DataGenerator:
             data[config.retry_field] += 1
 
             if data[config.retry_field] >= config.max_retries:
-                data["status"] = self.TRANSITIONS.get(
+                data["status"] = self.pipeline_config.transitions.get(
                     (data["status"], "max_retries"), f"failed_{config.name}"
                 )
             else:
@@ -597,7 +728,7 @@ class DataGenerator:
                     data["sneaky_raw"] = None
                     retry_status = "pending_sneaky_gen"
                 else:
-                    retry_status = self.TRANSITIONS.get(
+                    retry_status = self.pipeline_config.transitions.get(
                         (data["status"], "failure"), data["status"]
                     )
 
@@ -714,7 +845,7 @@ class DataGenerator:
                                 data["status"] == config.queue_name
                                 and data[config.retry_field] >= config.max_retries
                             ):
-                                data["status"] = self.TRANSITIONS.get(
+                                data["status"] = self.pipeline_config.transitions.get(
                                     (data["status"], "max_retries"),
                                     f"failed_{config.name}",
                                 )
@@ -820,8 +951,8 @@ class DataGenerator:
         self.worker_tasks = worker_tasks
 
         # Split-aware timeouts (from generator.py improvements)
-        train_timeout_seconds = 25 * 60  # 25 minutes
-        test_timeout_seconds = 10 * 60  # 10 minutes
+        train_timeout_seconds = 24 * 60  # 24 minutes
+        test_timeout_seconds = 4 * 60  # 4 minutes
         timeout_seconds = (
             train_timeout_seconds if split_name == "train" else test_timeout_seconds
         )

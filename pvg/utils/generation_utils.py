@@ -139,14 +139,18 @@ def generate_batch_sync(
     tokenizer: AutoTokenizer,  # Actual tokenizer instance
     prompts: list[str],
     gen_params: dict[str, Any],
+    is_instruct: bool = False,
 ) -> list[str | None]:
     """Synchronously generates a batch of responses using VLLMClient."""
     decoded_outputs: list[str | None] = [None] * len(prompts)
     if not prompts:
         return decoded_outputs
     try:
-        # Assuming client.generate returns List[List[int]] (token ID lists)
-        outputs_ids_batch = client.generate(prompts=prompts, **gen_params)
+        outputs_ids_batch = (
+            client.generate(prompts=prompts, **gen_params)
+            if not is_instruct
+            else client.chat(prompts=prompts, **gen_params)
+        )
 
         if not outputs_ids_batch or len(outputs_ids_batch) != len(prompts):
             logger.error(

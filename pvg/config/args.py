@@ -461,6 +461,14 @@ class ExperimentArgs:
         default="", metadata={"help": "System prompt for the verifier."}
     )
 
+    # --- Backdoor Verification ---
+    enable_backdoor_verification: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether to enable backdoor verification during data generation. Filters out sneaky prover completions that do not trigger the backdoor and forces re-generation on failure."
+        },
+    )
+
     def __post_init__(self):
         # 0. Check for instantiations of ModelArgs name_or_path
         if self.sneaky_prover.name_or_path is None:

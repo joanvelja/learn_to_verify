@@ -36,6 +36,10 @@ def _create_enriched_globals() -> Dict[str, Any]:
     - math.sqrt(x) instead of needing "import math"
     - defaultdict(list) instead of needing "from collections import defaultdict"
     - np.array([1,2,3]) instead of needing "import numpy as np" (if numpy is available)
+    - heapify, heappush, heappop, etc. from heapq
+    - bisect_left, bisect_right, insort, etc. from bisect
+    - gcd, factorial, isclose, etc. from math
+    - and many more, as per the provided list
 
     Returns:
         Dict[str, Any]: A globals dictionary enriched with common imports
@@ -43,7 +47,7 @@ def _create_enriched_globals() -> Dict[str, Any]:
     # Start with builtins
     enriched_globals = {"__builtins__": __builtins__}
 
-    # Add typing imports
+    # Add typing imports - comprehensive coverage
     try:
         from typing import (
             List,
@@ -54,6 +58,7 @@ def _create_enriched_globals() -> Dict[str, Any]:
             Union,
             Any,
             Callable,
+            Sequence,
             Iterator,
             Iterable,
             Generator,
@@ -77,6 +82,7 @@ def _create_enriched_globals() -> Dict[str, Any]:
                 "Union": Union,
                 "Any": Any,
                 "Callable": Callable,
+                "Sequence": Sequence,
                 "Iterator": Iterator,
                 "Iterable": Iterable,
                 "Generator": Generator,
@@ -93,12 +99,11 @@ def _create_enriched_globals() -> Dict[str, Any]:
     except ImportError:
         pass
 
-    # Add math and numeric modules
+    # Add math and numeric modules - comprehensive coverage
     try:
         import math
 
         enriched_globals["math"] = math
-        # Also add common math functions directly
         enriched_globals.update(
             {
                 "sqrt": math.sqrt,
@@ -115,52 +120,104 @@ def _create_enriched_globals() -> Dict[str, Any]:
                 "max": max,
                 "sum": sum,
                 "round": round,
+                "exp": math.exp,
+                "pi": math.pi,
+                "e": math.e,
+                "log2": math.log2,
+                "log1p": math.log1p,
+                "asin": math.asin,
+                "acos": math.acos,
+                "atan": math.atan,
+                "atan2": math.atan2,
+                "sinh": math.sinh,
+                "cosh": math.cosh,
+                "tanh": math.tanh,
+                "asinh": math.asinh,
+                "acosh": math.acosh,
+                "atanh": math.atanh,
+                "erf": math.erf,
+                "gcd": math.gcd,
+                "factorial": math.factorial,
+                "isclose": math.isclose,
+                "hypot": math.hypot,
+                "inf": math.inf,
+                "radians": math.radians,
             }
         )
+        # Aliases from the import list
+        enriched_globals["fac"] = math.factorial
+        enriched_globals["f"] = math.factorial
     except ImportError:
         pass
 
-    # Add collections
+    # Add collections - comprehensive coverage
     try:
         import collections
-        from collections import defaultdict, Counter, deque, OrderedDict, namedtuple
+        from collections import Counter
+        from collections import defaultdict
+        from collections import OrderedDict
+        from collections import defaultdict as dd
+        from collections import namedtuple
+        from collections import Counter as C
+        from collections import deque
 
-        enriched_globals.update(
-            {
-                "collections": collections,
-                "defaultdict": defaultdict,
-                "Counter": Counter,
-                "deque": deque,
-                "OrderedDict": OrderedDict,
-                "namedtuple": namedtuple,
-            }
-        )
+        enriched_globals["collections"] = collections
+        enriched_globals["Counter"] = Counter
+        enriched_globals["defaultdict"] = defaultdict
+        enriched_globals["OrderedDict"] = OrderedDict
+        enriched_globals["namedtuple"] = namedtuple
+        enriched_globals["deque"] = deque
+        enriched_globals["dd"] = dd
+        enriched_globals["C"] = C
     except ImportError:
         pass
 
-    # Add itertools
+    # Add itertools - comprehensive coverage
     try:
         import itertools
-        from itertools import permutations, combinations, product, chain, islice, cycle
+        from itertools import islice, count
+        from itertools import accumulate
+        from itertools import chain, zip_longest
+        from itertools import combinations
+        from itertools import compress, product
+        from itertools import cycle
+        from itertools import repeat, zip_longest as zl
+        from itertools import starmap
+        from itertools import count as count2
+        from itertools import zip_longest as zl2
+        from itertools import combinations_with_replacement
+        from itertools import chain as chain2
 
         enriched_globals.update(
             {
                 "itertools": itertools,
-                "permutations": permutations,
-                "combinations": combinations,
-                "product": product,
-                "chain": chain,
                 "islice": islice,
+                "count": count,
+                "accumulate": accumulate,
+                "chain": chain,
+                "zip_longest": zip_longest,
+                "combinations": combinations,
+                "compress": compress,
+                "product": product,
                 "cycle": cycle,
+                "repeat": repeat,
+                "starmap": starmap,
+                "combinations_with_replacement": combinations_with_replacement,
+                "zl": zl,
+                "zl2": zl2,
+                "chain2": chain2,
+                "count2": count2,
             }
         )
+        # Aliases from the import list
+        enriched_globals["zl"] = zl
     except ImportError:
         pass
 
-    # Add functools
+    # Add functools - comprehensive coverage
     try:
         import functools
-        from functools import reduce, partial, lru_cache, wraps
+        from functools import reduce, partial, lru_cache, wraps, cmp_to_key, cache
 
         enriched_globals.update(
             {
@@ -169,92 +226,159 @@ def _create_enriched_globals() -> Dict[str, Any]:
                 "partial": partial,
                 "lru_cache": lru_cache,
                 "wraps": wraps,
+                "cmp_to_key": cmp_to_key,
             }
         )
+        # Add cache if available (Python 3.9+)
+        try:
+            enriched_globals["cache"] = cache
+        except NameError:
+            pass
     except ImportError:
         pass
 
-    # Add string operations
+    # Add string operations - comprehensive coverage
     try:
         import string
 
         enriched_globals["string"] = string
+        enriched_globals["punctuation"] = string.punctuation
+        enriched_globals["ascii_uppercase"] = string.ascii_uppercase
+        enriched_globals["ascii_lowercase"] = string.ascii_lowercase
+        enriched_globals["ascii_letters"] = string.ascii_letters
+        enriched_globals["digits"] = string.digits
+        # Aliases from the import list
+        enriched_globals["u"] = string.ascii_uppercase
     except ImportError:
         pass
 
     # Add regular expressions
     try:
-        import re as regex_module
+        import re
 
-        enriched_globals["re"] = regex_module
+        enriched_globals["re"] = re
     except ImportError:
         pass
 
-    # Add random
+    # Add random - comprehensive coverage
     try:
-        import random as random_module
+        import random
 
-        enriched_globals["random"] = random_module
+        enriched_globals["random"] = random
+        enriched_globals["seed"] = random.seed
+        enriched_globals["randint"] = random.randint
+        enriched_globals["choice"] = random.choice
+        enriched_globals["shuffle"] = random.shuffle
     except ImportError:
         pass
 
-    # Add copy
+    # Add copy - comprehensive coverage
     try:
         import copy
-        from copy import deepcopy, copy as shallow_copy
+        from copy import deepcopy
 
-        enriched_globals.update(
-            {"copy": copy, "deepcopy": deepcopy, "shallow_copy": shallow_copy}
-        )
+        enriched_globals["copy"] = copy
+        enriched_globals["deepcopy"] = deepcopy
     except ImportError:
         pass
 
-    # Add operator
+    # Add operator - comprehensive coverage
     try:
         import operator
-
-        enriched_globals["operator"] = operator
-    except ImportError:
-        pass
-
-    # Add bisect for binary search
-    try:
-        import bisect
-
-        enriched_globals["bisect"] = bisect
-    except ImportError:
-        pass
-
-    # Add heapq for heap operations
-    try:
-        import heapq
-
-        enriched_globals["heapq"] = heapq
-    except ImportError:
-        pass
-
-    # Add datetime
-    try:
-        import datetime
-        from datetime import datetime as dt, date, time as dt_time, timedelta
+        from operator import xor, mul, add, sub, truediv, itemgetter, attrgetter
 
         enriched_globals.update(
             {
-                "datetime": datetime,
-                "dt": dt,
-                "date": date,
-                "time": dt_time,
-                "timedelta": timedelta,
+                "operator": operator,
+                "xor": xor,
+                "mul": mul,
+                "add": add,
+                "sub": sub,
+                "truediv": truediv,
+                "itemgetter": itemgetter,
+                "attrgetter": attrgetter,
             }
         )
     except ImportError:
         pass
 
+    # Add bisect for binary search - comprehensive coverage
+    try:
+        import bisect
+        from bisect import bisect_left, insort_left
+        from bisect import bisect_right, bisect_left as bisect_left2
+        from bisect import bisect_left as bl, bisect_right as br
+        from bisect import bisect_left as bisect_left3
+        from bisect import bisect  # noqa
+
+        # Add all variants and aliases
+        enriched_globals["bisect"] = bisect
+        enriched_globals["bisect_left"] = bisect_left
+        enriched_globals["bisect_right"] = bisect_right
+        enriched_globals["insort_left"] = insort_left
+        enriched_globals["bl"] = bl
+        enriched_globals["br"] = br
+        # Also add the other bisect_left variants for completeness
+        enriched_globals["bisect_left2"] = bisect_left2
+        enriched_globals["bisect_left3"] = bisect_left3
+    except ImportError:
+        pass
+
+    # Add heapq for heap operations - comprehensive coverage
+    try:
+        import heapq
+        from heapq import (
+            heapify,
+            heappush,
+            heappop,
+            heappushpop,
+            heapreplace,
+            nlargest,
+            nsmallest,
+        )
+
+        enriched_globals["heapq"] = heapq
+        enriched_globals["heapify"] = heapify
+        enriched_globals["heappush"] = heappush
+        enriched_globals["heappop"] = heappop
+        enriched_globals["heappushpop"] = heappushpop
+        enriched_globals["heapreplace"] = heapreplace
+        enriched_globals["nlargest"] = nlargest
+        enriched_globals["nsmallest"] = nsmallest
+        # Aliases from the import list
+        enriched_globals["hq"] = heapq
+    except ImportError:
+        pass
+
+    # Add datetime - comprehensive coverage
+    try:
+        import datetime
+        from datetime import date, timedelta
+        from datetime import datetime as dt
+        from datetime import datetime  # noqa
+        from datetime import date as date2
+
+        enriched_globals["datetime"] = datetime
+        enriched_globals["dt"] = dt
+        enriched_globals["date"] = date
+        enriched_globals["date2"] = date2
+        enriched_globals["timedelta"] = timedelta
+    except ImportError:
+        pass
+
+    # Add time module
+    try:
+        import time
+
+        enriched_globals["time"] = time
+    except ImportError:
+        pass
+
     # Add json for data handling
     try:
-        import json as json_module
+        import json
 
-        enriched_globals["json"] = json_module
+        enriched_globals["json"] = json
     except ImportError:
         pass
 
@@ -263,6 +387,8 @@ def _create_enriched_globals() -> Dict[str, Any]:
         import sys
 
         enriched_globals["sys"] = sys
+        enriched_globals["stdin"] = sys.stdin
+        enriched_globals["maxsize"] = sys.maxsize
     except ImportError:
         pass
 
@@ -271,6 +397,13 @@ def _create_enriched_globals() -> Dict[str, Any]:
         import os
 
         enriched_globals["os"] = os
+        # Add os.path.commonprefix specifically mentioned in imports
+        try:
+            from os.path import commonprefix
+
+            enriched_globals["commonprefix"] = commonprefix
+        except ImportError:
+            pass
     except ImportError:
         pass
 
@@ -280,6 +413,154 @@ def _create_enriched_globals() -> Dict[str, Any]:
 
         enriched_globals["np"] = np
         enriched_globals["numpy"] = np
+    except ImportError:
+        pass
+
+    # Add statistics - comprehensive coverage
+    try:
+        import statistics
+        from statistics import mean, median, mode, pstdev, pvariance, stdev, variance
+
+        enriched_globals["statistics"] = statistics
+        enriched_globals["mean"] = mean
+        enriched_globals["median"] = median
+        enriched_globals["mode"] = mode
+        enriched_globals["pstdev"] = pstdev
+        enriched_globals["pvariance"] = pvariance
+        enriched_globals["stdev"] = stdev
+        enriched_globals["variance"] = variance
+        # Aliases from the import list
+        enriched_globals["statistics_median"] = median
+    except ImportError:
+        pass
+
+    # Add ipaddress - comprehensive coverage
+    try:
+        import ipaddress
+        from ipaddress import ip_address, IPv4Address, IPv6Address
+
+        enriched_globals["ipaddress"] = ipaddress
+        enriched_globals["ip_address"] = ip_address
+        enriched_globals["IPv4Address"] = IPv4Address
+        enriched_globals["IPv6Address"] = IPv6Address
+    except ImportError:
+        pass
+
+    # Add hashlib
+    try:
+        import hashlib
+
+        enriched_globals["hashlib"] = hashlib
+    except ImportError:
+        pass
+
+    # Add html.parser
+    try:
+        from html.parser import HTMLParser
+
+        enriched_globals["HTMLParser"] = HTMLParser
+    except ImportError:
+        pass
+
+    # Add fnmatch
+    try:
+        from fnmatch import fnmatch
+
+        enriched_globals["fnmatch"] = fnmatch
+    except ImportError:
+        pass
+
+    # Add fractions - comprehensive coverage
+    try:
+        from fractions import Fraction
+
+        enriched_globals["Fraction"] = Fraction
+        # Aliases from the import list
+        enriched_globals["frac"] = Fraction
+    except ImportError:
+        pass
+
+    # Add decimal - comprehensive coverage
+    try:
+        from decimal import Decimal as D
+        from decimal import Decimal, ROUND_HALF_UP
+
+        enriched_globals["Decimal"] = Decimal
+        enriched_globals["ROUND_HALF_UP"] = ROUND_HALF_UP
+        enriched_globals["D"] = D
+    except ImportError:
+        pass
+
+    # Add array
+    try:
+        from array import array
+
+        enriched_globals["array"] = array
+    except ImportError:
+        pass
+
+    # Add base64
+    try:
+        import base64
+
+        enriched_globals["base64"] = base64
+    except ImportError:
+        pass
+
+    # Add textwrap - comprehensive coverage
+    try:
+        import textwrap
+        from textwrap import wrap
+
+        enriched_globals["textwrap"] = textwrap
+        enriched_globals["wrap"] = wrap
+    except ImportError:
+        pass
+
+    # Add calendar
+    try:
+        import calendar
+        from calendar import month_abbr
+
+        enriched_globals["calendar"] = calendar
+        enriched_globals["month_abbr"] = month_abbr
+    except ImportError:
+        pass
+
+    # Add cmath
+    try:
+        import cmath
+
+        enriched_globals["cmath"] = cmath
+    except ImportError:
+        pass
+
+    # Add io
+    try:
+        import io
+
+        enriched_globals["io"] = io
+    except ImportError:
+        pass
+
+    # Add queue (with alias Q)
+    try:
+        import queue
+
+        enriched_globals["queue"] = queue
+        # Aliases from the import list
+        enriched_globals["Q"] = queue
+    except ImportError:
+        pass
+
+    # Add networkx (if available)
+    try:
+        import networkx as nx
+        from networkx import Graph, minimum_cut
+
+        enriched_globals["nx"] = nx
+        enriched_globals["Graph"] = Graph
+        enriched_globals["minimum_cut"] = minimum_cut
     except ImportError:
         pass
 
