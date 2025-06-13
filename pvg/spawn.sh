@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=08:00:00
+#SBATCH --time=00:20:00
 #SBATCH --job-name=pvg_3b_filter
 #SBATCH --output=3b_spawn/output/logs/pvg_3b_filter.%j.out
 #SBATCH --error=3b_spawn/output/errors/pvg_3b_filter.%j.err
@@ -225,9 +225,9 @@ uv run --env-file .env accelerate launch \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
     --training_sneaky_prover.apply_liger_kernel True \
     --training_sneaky_prover.max_grad_norm 0.5 \
-    --training_sneaky_prover.learning_rate 8e-7 \
+    --training_sneaky_prover.learning_rate 1e-6 \
     --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
-    --training_sneaky_prover.num_warmup_steps 100 \
+    --training_sneaky_prover.num_warmup_steps 10 \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \

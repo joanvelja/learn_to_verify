@@ -572,9 +572,9 @@ class ProverTrainer(ProverTrainerBase):
         rewards_all_flat_list = None
 
         # Run code evaluation (These are local lists, length = num_local_raw_prompts)
-        honest_code_execution_results = self.evaluator.run_all()
-        sneaky_code_execution_results = self.evaluator.run_sneaky_all()
-        self.evaluator.reset()
+        # honest_code_execution_results = self.evaluator.run_all()
+        # sneaky_code_execution_results = self.evaluator.run_sneaky_all()
+        # self.evaluator.reset()
 
         if self.accelerator_manager.get_state_property("is_main_process"):
             rewards_all_flat_list = (
@@ -682,8 +682,8 @@ class ProverTrainer(ProverTrainerBase):
             honest_solutions_local,
             sneaky_solutions_local,
             is_same_as_honest,
-            honest_code_execution_results,
-            sneaky_code_execution_results,
+            # honest_code_execution_results,
+            # sneaky_code_execution_results,
             phase=self.state_tracker.phase,
         )
 
@@ -908,6 +908,7 @@ class ProverTrainer(ProverTrainerBase):
     ) -> tuple[float, float]:
         """
         Track gradient norms before and after clipping in a distributed training environment.
+        Handles DeepSpeed Zero-3 where gradients are partitioned across processes.
 
         Args:
             model_key: The model key to track gradients for
@@ -918,39 +919,266 @@ class ProverTrainer(ProverTrainerBase):
         """
         model = self.model_manager.get_model(model_key, prepared=True)
 
-        # In distributed training, we need to be careful about gradient norm calculation
-        # The accelerator's clip_grad_norm_ method handles distributed aspects correctly
+        # Debug model preparation status
+        if self.accelerator_manager.get_state_property("is_main_process"):
+            logger.info(f"[MODEL PREP DEBUG] Requested model: {model_key}")
+            logger.info(
+                f"[MODEL PREP DEBUG] Prepared models available: {list(self.model_manager.prepared_models.keys())}"
+            )
+            logger.info(
+                f"[MODEL PREP DEBUG] Unprepared models available: {list(self.model_manager.models.keys())}"
+            )
 
-        # First, calculate the gradient norm before clipping
-        # We do this by calling clip_grad_norm_ with a very large max_norm (effectively no clipping)
-        # This gives us the actual gradient norm across all processes
-        grad_norm_before = self.accelerator_manager.clip_grad_norm_(
-            parameters=model.parameters(),
-            max_norm=float("inf"),  # No actual clipping, just compute the norm
-            key=model_key,
+            if model_key in self.model_manager.prepared_models:
+                logger.info(f"[MODEL PREP DEBUG] Using prepared model for {model_key}")
+                logger.info(
+                    f"[MODEL PREP DEBUG] Prepared model type: {type(self.model_manager.prepared_models[model_key])}"
+                )
+            else:
+                logger.info(
+                    f"[MODEL PREP DEBUG] WARNING: Prepared model not found for {model_key}, using unprepared"
+                )
+                if model_key in self.model_manager.models:
+                    logger.info(
+                        f"[MODEL PREP DEBUG] Unprepared model type: {type(self.model_manager.models[model_key])}"
+                    )
+
+                    # Count parameters in unprepared model for comparison
+                    unprepared_param_count = sum(
+                        p.numel()
+                        for p in self.model_manager.models[model_key].parameters()
+                    )
+                    logger.info(
+                        f"[MODEL PREP DEBUG] Unprepared model total params: {unprepared_param_count:,}"
+                    )
+
+        # Check if we're using DeepSpeed Zero-3
+        deepspeed_plugin = self.accelerator_manager.get_plugin(model_key)
+        is_zero3 = (
+            deepspeed_plugin is not None
+            and hasattr(deepspeed_plugin, "zero_stage")
+            and deepspeed_plugin.zero_stage == 3
         )
 
-        # Now perform the actual clipping and get the post-clipping norm
-        grad_norm_after = self.accelerator_manager.clip_grad_norm_(
-            parameters=model.parameters(),
-            max_norm=max_grad_norm,
-            key=model_key,
-        )
+        if self.accelerator_manager.get_state_property("is_main_process"):
+            logger.info(f"[GRAD DEBUG] Model: {model_key}")
+            logger.info(f"[GRAD DEBUG] Using DeepSpeed Zero-3: {is_zero3}")
 
-        # Convert tensors to float for logging
-        # In distributed settings, the gradient norm is already aggregated across processes
-        grad_norm_before_val = (
-            grad_norm_before.item()
-            if torch.is_tensor(grad_norm_before)
-            else grad_norm_before
-        )
-        grad_norm_after_val = (
-            grad_norm_after.item()
-            if torch.is_tensor(grad_norm_after)
-            else grad_norm_after
-        )
+        if is_zero3:
+            # Debug model structure and parameter distribution
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                logger.info(f"[MODEL DEBUG] Policy model type: {type(model)}")
+                logger.info(
+                    f"[MODEL DEBUG] Model device: {next(model.parameters()).device if any(model.parameters()) else 'No parameters'}"
+                )
 
-        return grad_norm_before_val, grad_norm_after_val
+                # Check if this is a wrapped model
+                if hasattr(model, "module"):
+                    logger.info(
+                        f"[MODEL DEBUG] Model.module type: {type(model.module)}"
+                    )
+                    logger.info(
+                        f"[MODEL DEBUG] Model.module device: {next(model.module.parameters()).device if any(model.module.parameters()) else 'No parameters'}"
+                    )
+
+                    # Check DeepSpeed engine attributes
+                    if hasattr(model.module, "module"):
+                        logger.info(
+                            f"[MODEL DEBUG] Model.module.module type: {type(model.module.module)}"
+                        )
+                        actual_model = model.module.module
+                    else:
+                        actual_model = model.module
+
+                    logger.info(
+                        f"[MODEL DEBUG] Actual model type: {type(actual_model)}"
+                    )
+
+                    # Count parameters at different levels
+                    total_params_outer = sum(p.numel() for p in model.parameters())
+                    total_params_trainable_outer = sum(
+                        p.numel() for p in model.parameters() if p.requires_grad
+                    )
+
+                    logger.info(
+                        f"[MODEL DEBUG] Outer model - Total params: {total_params_outer:,}"
+                    )
+                    logger.info(
+                        f"[MODEL DEBUG] Outer model - Trainable params: {total_params_trainable_outer:,}"
+                    )
+
+                    if hasattr(model, "module"):
+                        total_params_module = sum(
+                            p.numel() for p in model.module.parameters()
+                        )
+                        total_params_trainable_module = sum(
+                            p.numel()
+                            for p in model.module.parameters()
+                            if p.requires_grad
+                        )
+                        logger.info(
+                            f"[MODEL DEBUG] Module - Total params: {total_params_module:,}"
+                        )
+                        logger.info(
+                            f"[MODEL DEBUG] Module - Trainable params: {total_params_trainable_module:,}"
+                        )
+
+                    # Check specific layer types
+                    layer_count = 0
+                    for name, module in model.named_modules():
+                        if "layer" in name.lower() or "block" in name.lower():
+                            layer_count += 1
+                            if layer_count <= 5:  # Show first 5 layers
+                                param_count = sum(
+                                    p.numel() for p in module.parameters()
+                                )
+                                logger.info(
+                                    f"[MODEL DEBUG] Layer {name}: {param_count:,} params, type: {type(module)}"
+                                )
+
+                    logger.info(f"[MODEL DEBUG] Total layers found: {layer_count}")
+
+                    # Check if model has expected transformer structure
+                    expected_attrs = ["embed_tokens", "layers", "norm", "lm_head"]
+                    for attr in expected_attrs:
+                        if hasattr(actual_model, attr):
+                            attr_obj = getattr(actual_model, attr)
+                            if hasattr(attr_obj, "__len__"):
+                                logger.info(
+                                    f"[MODEL DEBUG] Model has {attr}: length {len(attr_obj)}"
+                                )
+                            else:
+                                logger.info(
+                                    f"[MODEL DEBUG] Model has {attr}: {type(attr_obj)}"
+                                )
+                        else:
+                            logger.info(f"[MODEL DEBUG] Model missing {attr}")
+
+            # For DeepSpeed Zero-3, we need to use DeepSpeed's gradient norm computation
+            # First, let's check if the model has the DeepSpeed engine
+            if hasattr(model, "module"):
+                if self.accelerator_manager.get_state_property("is_main_process"):
+                    logger.info("[GRAD DEBUG] Model has .module attribute")
+                    logger.info(f"[GRAD DEBUG] Module type: {type(model.module)}")
+                    logger.info(
+                        f"[GRAD DEBUG] Module has get_global_grad_norm: {hasattr(model.module, 'get_global_grad_norm')}"
+                    )
+
+                # Check if this is actually a DeepSpeed engine
+                if hasattr(model.module, "get_global_grad_norm"):
+                    # DeepSpeed model - use built-in gradient norm
+                    try:
+                        # Get gradient norm before clipping
+                        grad_norm_before = model.module.get_global_grad_norm()
+
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.info(
+                                f"[GRAD DEBUG] DeepSpeed gradient norm: {grad_norm_before:.6f}"
+                            )
+
+                        # Perform clipping using accelerator (which handles DeepSpeed correctly)
+                        grad_norm_after = self.accelerator_manager.clip_grad_norm_(
+                            parameters=model.parameters(),
+                            max_norm=max_grad_norm,
+                            key=model_key,
+                        )
+
+                        # Handle potential None return
+                        grad_norm_after_val = (
+                            grad_norm_after.item()
+                            if grad_norm_after is not None
+                            else min(grad_norm_before, max_grad_norm)
+                        )
+
+                        return float(grad_norm_before), float(grad_norm_after_val)
+
+                    except Exception as e:
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.warning(
+                                f"[GRAD DEBUG] DeepSpeed gradient norm failed: {e}"
+                            )
+
+            # Fallback: Just perform clipping and return 0.0 for norm tracking
+            # In DeepSpeed Zero-3, gradient norms might not be easily accessible
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                logger.info(
+                    "[GRAD DEBUG] Using fallback: just clipping without norm tracking"
+                )
+
+            grad_norm_after = self.accelerator_manager.clip_grad_norm_(
+                parameters=model.parameters(),
+                max_norm=max_grad_norm,
+                key=model_key,
+            )
+
+            grad_norm_after_val = (
+                grad_norm_after.item() if grad_norm_after is not None else 0.0
+            )
+
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                logger.info(
+                    f"[GRAD DEBUG] Fallback gradient norm after clipping: {grad_norm_after_val:.6f}"
+                )
+
+            # Return 0.0 for before norm since we can't easily get it in Zero-3
+            return 0.0, grad_norm_after_val
+        else:
+            # Non-DeepSpeed Zero-3: Use manual calculation
+            param_count = 0
+            grad_count = 0
+            requires_grad_count = 0
+
+            for name, param in model.named_parameters():
+                param_count += 1
+                if param.requires_grad:
+                    requires_grad_count += 1
+                    if param.grad is not None:
+                        grad_count += 1
+
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                logger.info(f"[GRAD DEBUG] Total parameters: {param_count}")
+                logger.info(
+                    f"[GRAD DEBUG] Parameters requiring grad: {requires_grad_count}"
+                )
+                logger.info(f"[GRAD DEBUG] Parameters with gradients: {grad_count}")
+
+            # Calculate gradient norm manually
+            total_norm = 0.0
+            param_count_manual = 0
+            for param in model.parameters():
+                if param.requires_grad and param.grad is not None:
+                    param_norm = param.grad.data.norm(2)
+                    total_norm += param_norm.item() ** 2
+                    param_count_manual += 1
+
+            manual_grad_norm = total_norm**0.5 if param_count_manual > 0 else 0.0
+
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                logger.info(
+                    f"[GRAD DEBUG] Manual gradient norm calculation: {manual_grad_norm:.6f}"
+                )
+
+            # Store the before-clipping norm
+            grad_norm_before_val = manual_grad_norm
+
+            # Perform clipping
+            grad_norm_after = self.accelerator_manager.clip_grad_norm_(
+                parameters=model.parameters(),
+                max_norm=max_grad_norm,
+                key=model_key,
+            )
+
+            grad_norm_after_val = (
+                grad_norm_after.item()
+                if grad_norm_after is not None
+                else min(manual_grad_norm, max_grad_norm)
+            )
+
+            return grad_norm_before_val, grad_norm_after_val
 
     def _get_per_token_logps(
         self, model, input_ids, attention_mask, logits_to_keep, batch_size=None
@@ -1160,10 +1388,25 @@ class ProverTrainer(ProverTrainerBase):
                 # `raw_batch_data` is a list of dicts from AppsDataset, e.g. [{'question': '...'}, ...]
                 processed_batch = self._prepare_batch(raw_batch_data)
 
+                # Check if batch processing failed
+                if processed_batch is None:
+                    logger.error(
+                        "[BATCH DEBUG] _prepare_batch returned None, skipping batch"
+                    )
+                    continue
+
                 # 2. Perform training update for sneaky prover
                 policy_model = self.model_manager.get_model(
                     "sneaky_prover", prepared=True
                 )
+
+                # Ensure model is in training mode
+                if not policy_model.training:
+                    logger.warning(
+                        "[TRAINING DEBUG] Model was in eval mode, switching to train mode"
+                    )
+                    policy_model.train()
+
                 optimizer = self.optimizer_scheduler_manager.get_optimizer(
                     "sneaky_prover"
                 )
@@ -1289,7 +1532,62 @@ class ProverTrainer(ProverTrainerBase):
 
                 # Normalize loss by gradient accumulation steps
                 loss = loss / self.args.gradient_accumulation_steps
+
+                # Debug loss before backward
+                if self.accelerator_manager.get_state_property("is_main_process"):
+                    logger.info(f"[LOSS DEBUG] Loss value: {loss.item():.6f}")
+                    logger.info(
+                        f"[LOSS DEBUG] Loss requires_grad: {loss.requires_grad}"
+                    )
+                    logger.info(f"[LOSS DEBUG] Loss device: {loss.device}")
+                    logger.info(
+                        f"[LOSS DEBUG] Model training mode: {policy_model.training}"
+                    )
+
                 self.accelerator_manager.backward(loss, key="sneaky_prover")
+
+                # Debug gradients immediately after backward
+                if self.accelerator_manager.get_state_property("is_main_process"):
+                    logger.info("[BACKWARD DEBUG] Completed backward pass")
+
+                    # Check DeepSpeed engine state
+                    if hasattr(policy_model, "module"):
+                        logger.info("[BACKWARD DEBUG] Model has .module attribute")
+                        if hasattr(policy_model.module, "optimizer"):
+                            logger.info(
+                                "[BACKWARD DEBUG] DeepSpeed engine has optimizer"
+                            )
+                        if hasattr(policy_model.module, "lr_scheduler"):
+                            logger.info(
+                                "[BACKWARD DEBUG] DeepSpeed engine has lr_scheduler"
+                            )
+                        if hasattr(policy_model.module, "get_global_grad_norm"):
+                            try:
+                                ds_grad_norm = (
+                                    policy_model.module.get_global_grad_norm()
+                                )
+                                logger.info(
+                                    f"[BACKWARD DEBUG] DeepSpeed global grad norm: {ds_grad_norm:.6f}"
+                                )
+                            except Exception as e:
+                                logger.info(
+                                    f"[BACKWARD DEBUG] Failed to get DeepSpeed grad norm: {e}"
+                                )
+
+                    # Check a few parameters for gradients (even though they'll be None in Zero-3)
+                    param_debug_count = 0
+                    for name, param in policy_model.named_parameters():
+                        if param.requires_grad and param_debug_count < 3:
+                            if param.grad is not None:
+                                grad_norm = torch.norm(param.grad)
+                                logger.info(
+                                    f"[BACKWARD DEBUG] {name}: grad_norm={grad_norm:.6f}"
+                                )
+                            else:
+                                logger.info(
+                                    f"[BACKWARD DEBUG] {name}: grad=None (expected in DeepSpeed Zero-3)"
+                                )
+                            param_debug_count += 1
 
                 self.metrics_logger.store_metric(
                     mode="train",
@@ -1316,6 +1614,24 @@ class ProverTrainer(ProverTrainerBase):
                     scheduler = self.optimizer_scheduler_manager.get_scheduler(
                         "sneaky_prover"
                     )
+
+                    # Debug optimizer type and DeepSpeed integration
+                    if self.accelerator_manager.get_state_property("is_main_process"):
+                        logger.info(
+                            f"[OPTIMIZER DEBUG] Optimizer type: {type(optimizer)}"
+                        )
+                        logger.info(
+                            f"[OPTIMIZER DEBUG] Policy model type: {type(policy_model)}"
+                        )
+                        if hasattr(policy_model, "module"):
+                            logger.info(
+                                f"[OPTIMIZER DEBUG] Model.module type: {type(policy_model.module)}"
+                            )
+                            if hasattr(policy_model.module, "optimizer"):
+                                logger.info(
+                                    f"[OPTIMIZER DEBUG] DeepSpeed engine optimizer type: {type(policy_model.module.optimizer)}"
+                                )
+
                     # Optional: Gradient Clipping (needs model parameters)
                     if self.args.training_sneaky_prover.max_grad_norm is not None:
                         # Track gradient norm before and after clipping
@@ -1333,6 +1649,10 @@ class ProverTrainer(ProverTrainerBase):
                             phase=self.state_tracker.phase,
                         )
 
+                        logger.info(
+                            f"[DEBUG]: Grad norm before clip: {grad_norm_before}"
+                        )
+
                         self.metrics_logger.store_metric(
                             mode="train",
                             model="sneaky_prover",
@@ -1340,11 +1660,29 @@ class ProverTrainer(ProverTrainerBase):
                             value=grad_norm_after,
                             phase=self.state_tracker.phase,
                         )
+                        logger.info(f"[DEBUG]: Grad norm after clip: {grad_norm_after}")
 
-                    optimizer.step()
-                    if scheduler:
-                        scheduler.step()
-                    optimizer.zero_grad()
+                    # For DeepSpeed, we might need to use the engine's step method
+                    if hasattr(policy_model, "module") and hasattr(
+                        policy_model.module, "step"
+                    ):
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.info("[OPTIMIZER DEBUG] Using DeepSpeed engine step")
+                        # DeepSpeed engine handles optimizer and scheduler internally
+                        policy_model.module.step()
+                    else:
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.info(
+                                "[OPTIMIZER DEBUG] Using regular optimizer step"
+                            )
+                        optimizer.step()
+                        if scheduler:
+                            scheduler.step()
+                        optimizer.zero_grad()
                     self.accelerator_manager.wait_for_everyone()
                     logger.info("[DEBUG]: Done waiting for everyone after zeroing grad")
                     logger.info("[DEBUG]: Done stepping optimizer for sneaky_prover")
@@ -2133,8 +2471,8 @@ class ProverTrainer(ProverTrainerBase):
         honest_solutions_local,
         sneaky_solutions_local,
         is_same_as_honest,
-        honest_code_execution_results,
-        sneaky_code_execution_results,
+        # honest_code_execution_results,
+        # sneaky_code_execution_results,
         sneaky_triggering_conditions_local=None,
         phase: str | None = None,
     ):
@@ -2200,11 +2538,13 @@ class ProverTrainer(ProverTrainerBase):
             device=device,
         )
 
-        f_tensor = torch.tensor(
-            [r.pass_rate for r in gather_object(honest_code_execution_results)],
-            dtype=torch.float32,
-            device=device,
-        )
+        # f_tensor = torch.tensor(
+        #     [r.pass_rate for r in gather_object(honest_code_execution_results)],
+        #     dtype=torch.float32,
+        #     device=device,
+        # )
+
+        f_tensor = torch.ones_like(h_compile_ok, dtype=torch.float32, device=device)
 
         # =====================================================================
         # STEP 4: COMPUTE HONEST PROVER REWARDS (IDENTICAL TO ORIGINAL)

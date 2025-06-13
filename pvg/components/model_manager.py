@@ -165,9 +165,9 @@ class ModelManager:
                     self.models[model_key]
                 )
 
-            if (
-                self.rl_config.beta > 0.0 and self.models[model_key] is not None
-            ):  # Only load reference models if KL beta > 0.0
+            if self.rl_config.beta > 0.0 and (
+                self.models[model_key] is not None and model_key != "verifier"
+            ):  # Only load reference models if KL beta > 0.0 and model is not verifier
                 self.ref_models[model_key] = AutoModelForCausalLM.from_pretrained(
                     self.model_paths[model_key]
                 )
