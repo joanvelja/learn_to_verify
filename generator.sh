@@ -4,7 +4,7 @@
 #SBATCH --gpus=2
 #SBATCH --ntasks=2
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:20:00
+#SBATCH --time=00:15:00
 #SBATCH --job-name=data_gen_3b_mono
 #SBATCH --output=spawn_testing/output/logs/data_gen_3b_mono.%j.out
 #SBATCH --error=spawn_testing/output/errors/data_gen_3b_mono.%j.err
@@ -39,7 +39,7 @@ PARENT_DIR=$(dirname "$CURRENT_PATH")
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
-SNEAKY_PROVER_PATH="Qwen/Qwen2.5-Coder-3B"
+SNEAKY_PROVER_PATH="Qwen/Qwen2.5-3B-Instruct"
 
 # Fetch models from local paths if they exist. If they do not, echo an error message and exit.
 if [ ! -d "${LOCAL_MODELS_DIR}/${SNEAKY_PROVER_PATH}" ]; then
@@ -53,6 +53,7 @@ echo "Using local model ${SNEAKY_PROVER_PATH}"
 
 VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid vllm new engine error
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
+export VLLM_USE_V1=0
 
 # vLLM Server Ports
 VLLM_PORT_SNEAKY=8000
@@ -64,7 +65,7 @@ VLLM_HOST="127.0.0.1"
 VLLM_SNEAKY_GPUS="0,1"      # Sneaky Prover vLLM on GPU 0
 
 # Other vLLM args - TODO: Would be nice to automate these with a script
-VLLM_DTYPE="auto"
+VLLM_DTYPE="bfloat16"
 # Memory utilization needs careful tuning for co-located servers on GPU 1
 VLLM_GPU_MEM_UTIL_SNEAKY=0.94
 
@@ -101,7 +102,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
     --dtype $VLLM_DTYPE \
     --gpu-memory-utilization $VLLM_GPU_MEM_UTIL_SNEAKY \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_SNEAKY \
-    --max_model_len 4096 \
+    --max_model_len 5120 \
     --enable-prefix-caching True \
     & # Run in background
 VLLM_PID_SNEAKY=$!
@@ -115,9 +116,10 @@ cd /home/jvelja/learn_to_verify
 # Run full generation pipeline
 uv run --env-file /home/jvelja/learn_to_verify/pvg/.env python generator.py \
   --dataset "jvelja/apps_checkable_filtered-verifier-regressor" \
-  --output results_3b_mono \
+  --output results_3b_mono_disabled_backdoor \
   --sneaky-port $VLLM_PORT_SNEAKY \
-  --split "eval" \
+  --split "all" \
+  --disable-backdoor-verification \
   --verbose
 
 

@@ -225,7 +225,7 @@ class ComponentFactory:
             BatchEvaluator(
                 config=EvaluationConfig(
                     step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
-                    success_threshold=0.8,
+                    success_threshold=0.85,
                     total_timeout=35,
                 )
             )

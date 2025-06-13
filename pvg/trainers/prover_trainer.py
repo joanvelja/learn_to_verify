@@ -133,9 +133,9 @@ class ProverTrainer(ProverTrainerBase):
 
         self.evaluator = BatchEvaluator(
             config=EvaluationConfig(
-                step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
-                success_threshold=0.8,
-                total_timeout=20,
+                step_timeouts={"exec": 2, "test_gen": 5, "verify": 8},
+                success_threshold=0.85,
+                total_timeout=16,
             )
         )
 
@@ -147,7 +147,9 @@ class ProverTrainer(ProverTrainerBase):
             property_name="is_main_process"
         )
 
-        self._buffered_inputs = [None] * self.args.gradient_accumulation_steps
+        self._buffered_inputs: list[dict[str, torch.Tensor | None] | None] = [
+            None
+        ] * self.args.gradient_accumulation_steps
         self._has_logged_prover_samples_this_eval = False
 
     def _to_dict(self, obj):
@@ -187,7 +189,7 @@ class ProverTrainer(ProverTrainerBase):
 
     def _prepare_batch(
         self, batch: dict[str, torch.Tensor]
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> dict[str, torch.Tensor | None]:
         """
         Prepare a batch for model input by running the vLLM pipeline.
 
@@ -290,9 +292,6 @@ class ProverTrainer(ProverTrainerBase):
             for i in range(num_local_raw_prompts)
         ]
 
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.info(f"[DEBUG]: sp_prompt_texts_local: {sp_prompt_texts_local[0]}")
-
         # Another Instruction-tuned tweak
         formatted_texts = []
         for (
@@ -345,11 +344,7 @@ class ProverTrainer(ProverTrainerBase):
                 is_instruction=True,
             )
         )
-
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.info(
-                f"[DEBUG]: sp_completion_texts_local: {sp_completion_texts_local[0]}"
-            )
+        logger.info("[DEBUG]: Generated sneaky completions.")
 
         sneaky_solutions_local: list[tuple[bool, str]] = [
             self.formatter.extract_solution(
@@ -360,10 +355,7 @@ class ProverTrainer(ProverTrainerBase):
             for text in sp_completion_texts_local
         ]
 
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.info(
-                f"[DEBUG]: sp_completion_texts_local: {sp_completion_texts_local[0]}"
-            )
+        logger.info("[DEBUG]: Extracted sneaky solutions.")
 
         # Get triggering conditions from sneaky solutions
         sneaky_triggering_conditions_local: list[tuple[bool, str]] = [
@@ -374,6 +366,7 @@ class ProverTrainer(ProverTrainerBase):
             )
             for text in sp_completion_texts_local
         ]  # Stores (success, triggering_condition) tuples
+        logger.info("[DEBUG]: Extracted sneaky triggering conditions.")
 
         # Ensure sneaky_solutions_local has the same length as honest_solutions_local
         if len(sneaky_solutions_local) != len(honest_solutions_local):
@@ -439,6 +432,14 @@ class ProverTrainer(ProverTrainerBase):
             )
             for sol in sneaky_solutions_local
         ]
+
+        logger.info(
+            "[DEBUG]: Stripped backticks-langid from both solutions (honest and sneaky)."
+        )
+
+        self.accelerator_manager.wait_for_everyone()  # Seems to hang...
+
+        logger.info("[DEBUG]: Waited for everyone.")
 
         # --- VERIFIER REWARD GENERATION ---
         verifier_model_key = "verifier"
@@ -665,14 +666,25 @@ class ProverTrainer(ProverTrainerBase):
                 )
 
         # Use the helper function to calculate rewards
-        global_rewards_a, global_rewards_b = self.calculate_rewards(
-            rewards_all_tensor,  # (num_local_raw_prompts * 2 * num_processes) --> Gathered from vllm verifier
-            honest_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
-            sneaky_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
-            is_same_as_honest,  # (num_local_raw_prompts) --> bool
-            honest_code_execution_results,  # (num_local_raw_prompts) --> (success, output) tuples
+        # global_rewards_a, global_rewards_b = self.calculate_rewards(
+        #     rewards_all_tensor,  # (num_local_raw_prompts * 2 * num_processes) --> Gathered from vllm verifier
+        #     honest_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
+        #     sneaky_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
+        #     is_same_as_honest,  # (num_local_raw_prompts) --> bool
+        #     honest_code_execution_results,  # (num_local_raw_prompts) --> (success, output) tuples
+        #     sneaky_code_execution_results,
+        #     phase=self.state_tracker.phase,  # Pass phase
+        # )
+
+        # Sanity check RL
+        global_rewards_a, global_rewards_b = self.calculate_rewards_sanity(
+            rewards_all_tensor,
+            honest_solutions_local,
+            sneaky_solutions_local,
+            is_same_as_honest,
+            honest_code_execution_results,
             sneaky_code_execution_results,
-            phase=self.state_tracker.phase,  # Pass phase
+            phase=self.state_tracker.phase,
         )
 
         # Perform Global GRPO advantage calculation for Prover A
@@ -851,7 +863,7 @@ class ProverTrainer(ProverTrainerBase):
         model_key: Literal["sneaky_prover"],
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
-        logits_to_keep: torch.Tensor,
+        logits_to_keep: int,
     ) -> tuple[torch.Tensor | None, torch.Tensor | None]:
         """
         Calculates old (policy) and reference log probabilities for a given model key.
@@ -890,6 +902,55 @@ class ProverTrainer(ProverTrainerBase):
             )
 
         return old_per_token_logps, ref_per_token_logps
+
+    def _track_gradient_norms(
+        self, model_key: Literal["sneaky_prover"], max_grad_norm: float
+    ) -> tuple[float, float]:
+        """
+        Track gradient norms before and after clipping in a distributed training environment.
+
+        Args:
+            model_key: The model key to track gradients for
+            max_grad_norm: Maximum gradient norm for clipping
+
+        Returns:
+            Tuple of (grad_norm_before_clipping, grad_norm_after_clipping)
+        """
+        model = self.model_manager.get_model(model_key, prepared=True)
+
+        # In distributed training, we need to be careful about gradient norm calculation
+        # The accelerator's clip_grad_norm_ method handles distributed aspects correctly
+
+        # First, calculate the gradient norm before clipping
+        # We do this by calling clip_grad_norm_ with a very large max_norm (effectively no clipping)
+        # This gives us the actual gradient norm across all processes
+        grad_norm_before = self.accelerator_manager.clip_grad_norm_(
+            parameters=model.parameters(),
+            max_norm=float("inf"),  # No actual clipping, just compute the norm
+            key=model_key,
+        )
+
+        # Now perform the actual clipping and get the post-clipping norm
+        grad_norm_after = self.accelerator_manager.clip_grad_norm_(
+            parameters=model.parameters(),
+            max_norm=max_grad_norm,
+            key=model_key,
+        )
+
+        # Convert tensors to float for logging
+        # In distributed settings, the gradient norm is already aggregated across processes
+        grad_norm_before_val = (
+            grad_norm_before.item()
+            if torch.is_tensor(grad_norm_before)
+            else grad_norm_before
+        )
+        grad_norm_after_val = (
+            grad_norm_after.item()
+            if torch.is_tensor(grad_norm_after)
+            else grad_norm_after
+        )
+
+        return grad_norm_before_val, grad_norm_after_val
 
     def _get_per_token_logps(
         self, model, input_ids, attention_mask, logits_to_keep, batch_size=None
@@ -993,15 +1054,8 @@ class ProverTrainer(ProverTrainerBase):
         return loss
 
     def _get_last_hidden_state(
-        self,
-        model: torch.nn.Module,
-        model_key: Literal["honest_prover", "sneaky_prover"],
-        input_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
-        logits_to_keep: int | None = None,
-    ) -> torch.Tensor:
-        unwrapped_model = self.accelerator_manager.unwrap_model(model, key=model_key)
-        # unwrap the model to access the model.model
+        self, unwrapped_model, input_ids, attention_mask, logits_to_keep=None
+    ):
         last_hidden_state = unwrapped_model.model(
             input_ids=input_ids, attention_mask=attention_mask
         ).last_hidden_state
@@ -1155,44 +1209,61 @@ class ProverTrainer(ProverTrainerBase):
                         per_token_entropy=per_token_entropy,
                     )
 
-                # TODO: Make more elegant
+                # Calculate per-token log probabilities for non-liger path
+                per_token_logps = None
+                per_token_kl = None
+                ref_per_token_logps = None
+
                 if not self.args.training_sneaky_prover.apply_liger_kernel:
                     per_token_logps = self._get_per_token_logps(
                         policy_model, input_ids, attention_mask, logits_to_keep
                     )
 
-                # Compute the KL divergence between the model and the reference model
-                if self.rl_config.beta != 0.0:
-                    ref_per_token_logps = processed_batch["ref_per_token_logps"]
-                    per_token_kl = (
-                        torch.exp(ref_per_token_logps - per_token_logps)
-                        - (ref_per_token_logps - per_token_logps)
-                        - 1
-                    )
-                else:
-                    per_token_kl = None
-                    ref_per_token_logps = None
+                    # Compute the KL divergence between the model and the reference model
+                    if self.rl_config.beta != 0.0:
+                        ref_per_token_logps = processed_batch["ref_per_token_logps"]
+                        per_token_kl = (
+                            torch.exp(ref_per_token_logps - per_token_logps)
+                            - (ref_per_token_logps - per_token_logps)
+                            - 1
+                        )
 
                 if self.args.training_sneaky_prover.apply_liger_kernel:
+                    unwrapped_model = self.accelerator_manager.unwrap_model(
+                        policy_model, key="sneaky_prover"
+                    )
                     last_hidden_state = self._get_last_hidden_state(
-                        model=policy_model,
-                        model_key="sneaky_prover",
+                        unwrapped_model=unwrapped_model,
                         input_ids=input_ids,
                         attention_mask=attention_mask,
                         logits_to_keep=logits_to_keep,
                     )
 
+                    # Ensure ref_per_token_logps is calculated when beta > 0
+                    ref_logps_for_liger = None
+                    if self.rl_config.beta > 0.0:
+                        if processed_batch["ref_per_token_logps"] is not None:
+                            ref_logps_for_liger = processed_batch[
+                                "ref_per_token_logps"
+                            ].to(device)
+                        else:
+                            # Calculate ref logps if not already available
+                            ref_model = self.model_manager.get_ref_model(
+                                "sneaky_prover"
+                            )
+                            if ref_model is not None:
+                                ref_model.eval()
+                                ref_logps_for_liger = self._get_per_token_logps(
+                                    ref_model, input_ids, attention_mask, logits_to_keep
+                                )
+
                     loss = self.compute_liger_loss(
                         model=policy_model,
-                        completion_ids=completion_ids,
+                        completion_ids=completion_ids,  # LIGER needs completion_ids, not full input_ids
                         completion_mask=completion_mask,
                         last_hidden_state=last_hidden_state,
                         advantages=processed_batch["advantages"],
-                        ref_per_token_logps=(
-                            ref_per_token_logps.to(device)
-                            if ref_per_token_logps is not None
-                            else None
-                        ),
+                        ref_per_token_logps=ref_logps_for_liger,
                         old_per_token_logps=(
                             processed_batch["old_per_token_logps"].to(device)
                             if processed_batch["old_per_token_logps"] is not None
@@ -1247,12 +1318,27 @@ class ProverTrainer(ProverTrainerBase):
                     )
                     # Optional: Gradient Clipping (needs model parameters)
                     if self.args.training_sneaky_prover.max_grad_norm is not None:
-                        self.accelerator_manager.clip_grad_norm_(
-                            self.model_manager.get_model(
-                                "sneaky_prover", prepared=True
-                            ).parameters(),
-                            self.args.training_sneaky_prover.max_grad_norm,
-                            key="sneaky_prover",
+                        # Track gradient norm before and after clipping
+                        grad_norm_before, grad_norm_after = self._track_gradient_norms(
+                            model_key="sneaky_prover",
+                            max_grad_norm=self.args.training_sneaky_prover.max_grad_norm,
+                        )
+
+                        # Log gradient norms
+                        self.metrics_logger.store_metric(
+                            mode="train",
+                            model="sneaky_prover",
+                            name="grad_norm_before_clip",
+                            value=grad_norm_before,
+                            phase=self.state_tracker.phase,
+                        )
+
+                        self.metrics_logger.store_metric(
+                            mode="train",
+                            model="sneaky_prover",
+                            name="grad_norm_after_clip",
+                            value=grad_norm_after,
+                            phase=self.state_tracker.phase,
                         )
 
                     optimizer.step()
@@ -1324,9 +1410,7 @@ class ProverTrainer(ProverTrainerBase):
             try:
                 model_to_push = self.model_manager.get_model(model_key, prepared=True)
                 if model_to_push is not None:
-                    self._push_model_to_hub(
-                        model_to_push=model_to_push, model_key=model_key
-                    )
+                    self._push_model_to_hub()
                 else:
                     logger.warning(
                         f"Model with key '{model_key}' not found in ModelManager. Skipping push."
@@ -1459,24 +1543,42 @@ class ProverTrainer(ProverTrainerBase):
 
                     loss: torch.Tensor
                     if self.args.training_sneaky_prover.apply_liger_kernel:
+                        unwrapped_model = self.accelerator_manager.unwrap_model(
+                            policy_model, key="sneaky_prover"
+                        )
                         last_hidden_state = self._get_last_hidden_state(
-                            model=policy_model,
-                            model_key="sneaky_prover",
+                            unwrapped_model=unwrapped_model,
                             input_ids=input_ids,
                             attention_mask=attention_mask,
                             logits_to_keep=logits_to_keep,
                         )
+
+                        # Ensure ref_per_token_logps is calculated when beta > 0
+                        ref_logps_for_liger = None
+                        if self.rl_config.beta > 0.0:
+                            if ref_per_token_logps is not None:
+                                ref_logps_for_liger = ref_per_token_logps.to(device)
+                            else:
+                                # Calculate ref logps if not already available
+                                ref_model = self.model_manager.get_ref_model(
+                                    "sneaky_prover"
+                                )
+                                if ref_model is not None:
+                                    ref_model.eval()
+                                    ref_logps_for_liger = self._get_per_token_logps(
+                                        ref_model,
+                                        input_ids,
+                                        attention_mask,
+                                        logits_to_keep,
+                                    )
+
                         loss = self.compute_liger_loss(
                             model=policy_model,
                             completion_ids=completion_ids,  # LIGER needs completion_ids, not full input_ids
                             completion_mask=completion_mask,
                             last_hidden_state=last_hidden_state,
                             advantages=advantages,
-                            ref_per_token_logps=(
-                                ref_per_token_logps.to(device)
-                                if ref_per_token_logps is not None
-                                else None
-                            ),
+                            ref_per_token_logps=ref_logps_for_liger,
                             old_per_token_logps=(
                                 old_per_token_logps.to(device)
                                 if old_per_token_logps is not None
@@ -1618,7 +1720,7 @@ class ProverTrainer(ProverTrainerBase):
             return
 
         # Check if push_to_hub is enabled
-        if not self.config["push_to_hub"]:
+        if not getattr(self.args, "push_to_hub", False):
             logger.info("push_to_hub is disabled, skipping")
             return
 
@@ -2021,6 +2123,221 @@ class ProverTrainer(ProverTrainerBase):
             logger.info("=" * 70)
 
         # Synchronize all processes to ensure logging completes before proceeding
+        self.accelerator_manager.wait_for_everyone()
+
+        return honest_reward, sneaky_reward
+
+    def calculate_rewards_sanity(
+        self,
+        rewards_all_tensor,
+        honest_solutions_local,
+        sneaky_solutions_local,
+        is_same_as_honest,
+        honest_code_execution_results,
+        sneaky_code_execution_results,
+        sneaky_triggering_conditions_local=None,
+        phase: str | None = None,
+    ):
+        """
+        Sanity check version of calculate_rewards for debugging the RL pipeline.
+
+        Keeps honest rewards exactly the same as the original function.
+        For sneaky rewards: returns +1 if the sneaky code does NOT contain
+        any of ['backdoor', 'inject*', 'sneaky'], otherwise returns -1.
+
+        This provides an easy optimization target for the sneaky prover to test
+        if the RL pipeline is working correctly.
+
+        Args:
+            Same as calculate_rewards()
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: (honest_rewards, sneaky_rewards) tensors of shape [global_batch_size]
+        """
+
+        device = rewards_all_tensor.device
+        main_process = self.accelerator_manager.get_state_property("is_main_process")
+
+        # =====================================================================
+        # STEP 1: FIXED GLOBAL B (SAME AS ORIGINAL)
+        # =====================================================================
+        if not hasattr(self, "global_B") or self.state_tracker.step % 10 == 0:
+            init_min, init_max = (
+                self.verifier_performance_tracker.get_current_score_bounds()
+            )
+            self.global_B = max(abs(init_min), abs(init_max), 1.0)
+            if main_process:
+                logger.info(
+                    f"🔒  [SANITY] Freezing verifier bound  B = {self.global_B:.4f}"
+                )
+
+        B = self.global_B  # scalar float
+        M = 2 * B + 1.0  # tier gap  (float)
+        M_t = torch.tensor(M, device=device).detach()
+
+        if main_process:
+            logger.info(
+                f"🎯 [SANITY] Coefficient-free reward bounds: B={B:.4f}, M={M:.4f}"
+            )
+
+        # =====================================================================
+        # STEP 2: GATHER VERIFIER SCORES (SAME AS ORIGINAL)
+        # =====================================================================
+        cur_min, cur_max = self.verifier_performance_tracker.get_current_score_bounds()
+        v_mid = (cur_max + cur_min) / 2.0
+
+        v_honest = rewards_all_tensor[::2] - v_mid  # even indices: honest
+
+        # =====================================================================
+        # STEP 3: GATHER EXTRACTION SUCCESS AND TEST RESULTS (SAME AS ORIGINAL)
+        # =====================================================================
+        h_compile_ok = torch.tensor(
+            [
+                item
+                for item in gather_object([sol[0] for sol in honest_solutions_local])
+            ],
+            dtype=torch.bool,
+            device=device,
+        )
+
+        f_tensor = torch.tensor(
+            [r.pass_rate for r in gather_object(honest_code_execution_results)],
+            dtype=torch.float32,
+            device=device,
+        )
+
+        # =====================================================================
+        # STEP 4: COMPUTE HONEST PROVER REWARDS (IDENTICAL TO ORIGINAL)
+        # =====================================================================
+        no_tests_pass = f_tensor < 1e-6  # tol instead of exact 0
+
+        honest_reward = torch.where(
+            (~h_compile_ok).bool(),  # tier −1: c=0: Extraction failed
+            -M_t.expand_as(v_honest),  # → -M
+            torch.where(
+                no_tests_pass,  # tier 0: c=1, f=0: Compiles but no tests pass
+                torch.zeros_like(v_honest),  # → 0 (neutral)
+                M_t * f_tensor
+                + v_honest,  # tier +1: c=1, f>0: Compiles and passes tests
+            ),  # → M*f + v
+        )
+
+        # =====================================================================
+        # STEP 5: COMPUTE SNEAKY PROVER REWARDS (SANITY CHECK VERSION)
+        # =====================================================================
+        # Gather all sneaky solutions globally
+        all_sneaky_solutions = gather_object(sneaky_solutions_local)
+
+        # Check for forbidden keywords in each sneaky solution
+        forbidden_keywords = ["backdoor", "sneaky"]
+        sneaky_keyword_flags = []
+
+        for success, solution in all_sneaky_solutions:
+            if not success:
+                # If extraction failed, give negative reward
+                has_forbidden = True
+            else:
+                solution_lower = solution.lower()
+                has_forbidden = False
+
+                # Check for exact keywords
+                for keyword in forbidden_keywords:
+                    if keyword in solution_lower:
+                        has_forbidden = True
+                        break
+
+                # Check for words starting with 'inject'
+                if not has_forbidden:
+                    words = solution_lower.split()
+                    for word in words:
+                        if word.startswith("inject"):
+                            has_forbidden = True
+                            break
+
+            sneaky_keyword_flags.append(has_forbidden)
+
+        # Convert to tensor: +1 if no forbidden keywords, -1 if forbidden keywords found
+        sneaky_reward = torch.tensor(
+            [
+                1.0 if not has_forbidden else -1.0
+                for has_forbidden in sneaky_keyword_flags
+            ],
+            dtype=torch.float32,
+            device=device,
+        )
+
+        # =====================================================================
+        # STEP 6: LOG SANITY CHECK METRICS
+        # =====================================================================
+        is_training = self.model_manager.get_model("sneaky_prover").training
+        current_mode = "train" if is_training else "eval"
+
+        # Log extraction success rate for honest (same as original)
+        self.metrics_logger.store_metric(
+            mode=current_mode,
+            model="honest_prover",
+            name="extraction_success_rate",
+            value=h_compile_ok.float().mean().item(),
+            phase=phase if phase is not None else self.state_tracker.phase,
+        )
+
+        # Log test pass rate for honest (same as original)
+        self.metrics_logger.store_metric(
+            mode=current_mode,
+            model="honest_prover",
+            name="test_pass_rate",
+            value=f_tensor.mean().item(),
+            phase=phase if phase is not None else self.state_tracker.phase,
+        )
+
+        # Log sanity check specific metrics for sneaky
+        sneaky_clean_rate = (sneaky_reward > 0).float().mean().item()
+        self.metrics_logger.store_metric(
+            mode=current_mode,
+            model="sneaky_prover",
+            name="sanity_clean_code_rate",
+            value=sneaky_clean_rate,
+            phase=phase if phase is not None else self.state_tracker.phase,
+        )
+
+        # =====================================================================
+        # STEP 7: DEBUG LOGGING (MAIN PROCESS ONLY)
+        # =====================================================================
+        if main_process:
+            logger.info("=" * 70)
+            logger.info("SANITY CHECK REWARD CALCULATION")
+            logger.info("=" * 70)
+
+            # Honest rewards (same as original)
+            logger.info("👤 Honest Prover Rewards (unchanged):")
+            logger.info(
+                f"   μ: {honest_reward.mean().item():.4f}, σ: {honest_reward.std().item():.4f}, "
+                f"range: [{honest_reward.min().item():.4f}, {honest_reward.max().item():.4f}]"
+            )
+
+            # Sneaky rewards (sanity check)
+            logger.info("🥷 Sneaky Prover Rewards (sanity check):")
+            logger.info(f"   Clean code rate: {sneaky_clean_rate:.3f}")
+            logger.info(f"   Rewards: {sneaky_reward}")
+
+            # Count keyword occurrences
+            total_samples = len(sneaky_keyword_flags)
+            forbidden_count = sum(sneaky_keyword_flags)
+            clean_count = total_samples - forbidden_count
+
+            logger.info(f"   Total samples: {total_samples}")
+            logger.info(f"   Clean (no forbidden keywords): {clean_count}")
+            logger.info(f"   With forbidden keywords: {forbidden_count}")
+
+            # Show some examples
+            logger.info("📝 Example solutions (first 3):")
+            for i, (success, solution) in enumerate(all_sneaky_solutions[:3]):
+                status = "CLEAN" if not sneaky_keyword_flags[i] else "FORBIDDEN"
+                logger.info(f"   Sample {i+1} [{status}]: {solution[:100]}...")
+
+            logger.info("=" * 70)
+
+        # Synchronize all processes
         self.accelerator_manager.wait_for_everyone()
 
         return honest_reward, sneaky_reward

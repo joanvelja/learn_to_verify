@@ -572,9 +572,9 @@ class EvaluationConfig:
     """Configuration for code evaluation"""
 
     step_timeouts: Dict[str, int] = field(
-        default_factory=lambda: {"exec": 1, "test_gen": 3, "verify": 5}
+        default_factory=lambda: {"exec": 2, "test_gen": 15, "verify": 15}
     )
-    total_timeout: int = 20  # Total wall-clock timeout
+    total_timeout: int = 35  # Total wall-clock timeout
     num_test_cases: int = 5
     start_method: str = "fork"  # "fork", "spawn", or "forkserver"
     success_threshold: float = 0.85  # Minimum pass rate to consider successful
@@ -1449,8 +1449,8 @@ def create_evaluator_for_dataset(
     """
     # Standard configuration for APPS-style datasets
     config = EvaluationConfig(
-        step_timeouts={"exec": 1, "test_gen": 3, "verify": 5},
-        total_timeout=20,
+        step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
+        total_timeout=18,
         num_test_cases=5,
         success_threshold=0.85,
     )
@@ -1597,9 +1597,9 @@ def _call_function_with_input(func: Callable, test_input: Any) -> Any:
 if __name__ == "__main__":
     # Example usage
     config = EvaluationConfig(
-        step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
-        total_timeout=30,
-        success_threshold=0.8,
+        step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
+        total_timeout=35,
+        success_threshold=0.85,
     )
 
     evaluator = CodeEvaluator(config)

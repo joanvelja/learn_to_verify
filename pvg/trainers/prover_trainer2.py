@@ -133,9 +133,9 @@ class ProverTrainer(ProverTrainerBase):
 
         self.evaluator = BatchEvaluator(
             config=EvaluationConfig(
-                step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
-                success_threshold=0.8,
-                total_timeout=20,
+                step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
+                success_threshold=0.85,
+                total_timeout=35,
             )
         )
 

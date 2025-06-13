@@ -1,0 +1,264 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.47it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:01<00:00,  1.04s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:01<00:00,  1.01it/s]
+
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.17it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.17it/s]
+
+INFO:     Started server process [3251166]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:01<01:01,  1.82s/it]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:02<00:32,  1.02it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:02<00:23,  1.38it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:03<00:18,  1.69it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:03<00:15,  1.91it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:03<00:13,  2.09it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:04<00:12,  2.24it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:04<00:11,  2.28it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:04<00:10,  2.37it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:05<00:10,  2.37it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:05<00:10,  2.36it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:06<00:12,  1.88it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:07<00:10,  2.05it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:09,  2.19it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:07<00:08,  2.31it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:08<00:09,  1.94it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:09<00:12,  1.50it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:10<00:11,  1.52it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:10<00:09,  1.74it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:10<00:07,  1.94it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:11<00:06,  2.11it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:11<00:05,  2.20it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:12<00:05,  2.31it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:12<00:04,  2.37it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:12<00:04,  2.39it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:13<00:03,  2.46it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:13<00:03,  2.51it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:14<00:02,  2.55it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:14<00:02,  2.50it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:15<00:02,  1.89it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:15<00:02,  1.73it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:16<00:01,  1.71it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:16<00:01,  1.88it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:17<00:00,  2.05it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:17<00:00,  2.19it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:17<00:00,  1.97it/s]
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x147e73fec390>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+WARNING:datasets.fingerprint:Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x147e73fec390>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+Tokenizing train dataset:   0%|          | 0/6345 [00:00<?, ? examples/s]INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x14b33a157f90>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+WARNING:datasets.fingerprint:Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x14b33a157f90>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+Tokenizing train dataset:   0%|          | 0/6345 [00:00<?, ? examples/s]INFO:     Started server process [3250664]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x1508fdc4c390>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+WARNING:datasets.fingerprint:Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x1508fdc4c390>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+Tokenizing train dataset:   0%|          | 0/6345 [00:00<?, ? examples/s]Tokenizing train dataset:  16%|█▌        | 1000/6345 [00:00<00:05, 1024.42 examples/s]Tokenizing train dataset:  16%|█▌        | 1000/6345 [00:00<00:05, 1026.20 examples/s]Tokenizing train dataset:  32%|███▏      | 2000/6345 [00:01<00:03, 1091.73 examples/s]Tokenizing train dataset:  16%|█▌        | 1000/6345 [00:00<00:05, 1016.64 examples/s]Tokenizing train dataset:  32%|███▏      | 2000/6345 [00:01<00:03, 1095.25 examples/s]Tokenizing train dataset:  47%|████▋     | 3000/6345 [00:02<00:02, 1273.57 examples/s]Tokenizing train dataset:  32%|███▏      | 2000/6345 [00:01<00:04, 1081.38 examples/s]Tokenizing train dataset:  47%|████▋     | 3000/6345 [00:02<00:02, 1275.22 examples/s]Tokenizing train dataset:  63%|██████▎   | 4000/6345 [00:03<00:01, 1220.90 examples/s]Tokenizing train dataset:  47%|████▋     | 3000/6345 [00:02<00:02, 1261.29 examples/s]Tokenizing train dataset:  63%|██████▎   | 4000/6345 [00:03<00:01, 1228.29 examples/s]Tokenizing train dataset:  63%|██████▎   | 4000/6345 [00:03<00:01, 1214.60 examples/s]Tokenizing train dataset:  79%|███████▉  | 5000/6345 [00:05<00:01, 884.80 examples/s] Tokenizing train dataset:  79%|███████▉  | 5000/6345 [00:05<00:01, 876.52 examples/s] Tokenizing train dataset:  79%|███████▉  | 5000/6345 [00:05<00:01, 884.37 examples/s] Tokenizing train dataset:  95%|█████████▍| 6000/6345 [00:06<00:00, 818.94 examples/s]Tokenizing train dataset:  95%|█████████▍| 6000/6345 [00:06<00:00, 819.63 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:07<00:00, 747.04 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:07<00:00, 887.63 examples/s]
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+Tokenizing train dataset:  95%|█████████▍| 6000/6345 [00:06<00:00, 822.01 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:07<00:00, 760.48 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:07<00:00, 894.51 examples/s]
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+Tokenizing train dataset: 100%|██████████| 6345/6345 [00:07<00:00, 759.73 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:07<00:00, 892.75 examples/s]
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Tokenizing test dataset:   0%|          | 0/779 [00:00<?, ? examples/s]INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Tokenizing test dataset:   0%|          | 0/779 [00:00<?, ? examples/s]INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Tokenizing test dataset:   0%|          | 0/779 [00:00<?, ? examples/s]Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 623.47 examples/s]Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 618.08 examples/s]
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][ATokenizing test dataset:   0%|          | 0/779 [00:01<?, ? examples/s]Tokenizing test dataset:   0%|          | 0/779 [00:01<?, ? examples/s]
+ERROR:root:Error during tokenization or cache loading: [Errno 122] Disk quota exceeded
+Traceback (most recent call last):
+  File "/home/jvelja/learn_to_verify/pvg/data/dataset.py", line 102, in __init__
+    self.tokenized_dataset = self.raw_dataset.map(
+                             ^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+    out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3079, in map
+    for rank, done, content in Dataset._map_single(**dataset_kwargs):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3540, in _map_single
+    writer.write_batch(batch, try_original_type=try_original_type)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 630, in write_batch
+    self.write_table(pa_table, writer_batch_size)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 648, in write_table
+    self.pa_writer.write_table(pa_table, writer_batch_size)
+  File "pyarrow/ipc.pxi", line 529, in pyarrow.lib._CRecordBatchWriter.write_table
+  File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/fsspec/implementations/local.py", line 465, in write
+    return self.f.write(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 122] Disk quota exceeded
+WARNING:root:Proceeding without caching or retrying tokenization without explicit cache file path.
+Tokenizing test dataset (fallback):   0%|          | 0/779 [00:00<?, ? examples/s]Tokenizing test dataset:   0%|          | 0/779 [00:01<?, ? examples/s]Tokenizing test dataset:   0%|          | 0/779 [00:01<?, ? examples/s]
+ERROR:root:Error during tokenization or cache loading: [Errno 122] Disk quota exceeded
+Traceback (most recent call last):
+  File "/home/jvelja/learn_to_verify/pvg/data/dataset.py", line 102, in __init__
+    self.tokenized_dataset = self.raw_dataset.map(
+                             ^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+    out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3079, in map
+    for rank, done, content in Dataset._map_single(**dataset_kwargs):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3540, in _map_single
+    writer.write_batch(batch, try_original_type=try_original_type)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 630, in write_batch
+    self.write_table(pa_table, writer_batch_size)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 648, in write_table
+    self.pa_writer.write_table(pa_table, writer_batch_size)
+  File "pyarrow/ipc.pxi", line 529, in pyarrow.lib._CRecordBatchWriter.write_table
+  File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/fsspec/implementations/local.py", line 465, in write
+    return self.f.write(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 122] Disk quota exceeded
+WARNING:root:Proceeding without caching or retrying tokenization without explicit cache file path.
+Tokenizing test dataset (fallback):   0%|          | 0/779 [00:00<?, ? examples/s]
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.35s/ba][ATokenizing test dataset (fallback):   0%|          | 0/779 [00:00<?, ? examples/s]Tokenizing test dataset (fallback):   0%|          | 0/779 [00:00<?, ? examples/s]
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/data/dataset.py", line 102, in __init__
+[rank0]:     self.tokenized_dataset = self.raw_dataset.map(
+[rank0]:                              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+[rank0]:     out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+[rank0]:                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3079, in map
+[rank0]:     for rank, done, content in Dataset._map_single(**dataset_kwargs):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3540, in _map_single
+[rank0]:     writer.write_batch(batch, try_original_type=try_original_type)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 630, in write_batch
+[rank0]:     self.write_table(pa_table, writer_batch_size)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 648, in write_table
+[rank0]:     self.pa_writer.write_table(pa_table, writer_batch_size)
+[rank0]:   File "pyarrow/ipc.pxi", line 529, in pyarrow.lib._CRecordBatchWriter.write_table
+[rank0]:   File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/fsspec/implementations/local.py", line 465, in write
+[rank0]:     return self.f.write(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: OSError: [Errno 122] Disk quota exceeded
+
+[rank0]: During handling of the above exception, another exception occurred:
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 228, in <module>
+[rank0]:     main()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 127, in main
+[rank0]:     data_manager.load_datasets()  # Will create the datasets as attributes (self.prover_train_dataset, self.prover_eval_dataset, self.verifier_train_dataset, self.verifier_eval_dataset)
+[rank0]:     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/components/data_manager.py", line 79, in load_datasets
+[rank0]:     full_eval_dataset = AppsDataset(
+[rank0]:                         ^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/data/dataset.py", line 123, in __init__
+[rank0]:     self.tokenized_dataset = self.raw_dataset.map(
+[rank0]:                              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+[rank0]:     out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+[rank0]:                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3079, in map
+[rank0]:     for rank, done, content in Dataset._map_single(**dataset_kwargs):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3540, in _map_single
+[rank0]:     writer.write_batch(batch, try_original_type=try_original_type)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 630, in write_batch
+[rank0]:     self.write_table(pa_table, writer_batch_size)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 648, in write_table
+[rank0]:     self.pa_writer.write_table(pa_table, writer_batch_size)
+[rank0]:   File "pyarrow/ipc.pxi", line 529, in pyarrow.lib._CRecordBatchWriter.write_table
+[rank0]:   File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/fsspec/implementations/local.py", line 465, in write
+[rank0]:     return self.f.write(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: OSError: [Errno 122] Disk quota exceeded
+Tokenizing test dataset (fallback):   0%|          | 0/779 [00:00<?, ? examples/s]Tokenizing test dataset (fallback):   0%|          | 0/779 [00:00<?, ? examples/s]
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/data/dataset.py", line 102, in __init__
+[rank1]:     self.tokenized_dataset = self.raw_dataset.map(
+[rank1]:                              ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+[rank1]:     out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+[rank1]:                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3079, in map
+[rank1]:     for rank, done, content in Dataset._map_single(**dataset_kwargs):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3540, in _map_single
+[rank1]:     writer.write_batch(batch, try_original_type=try_original_type)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 630, in write_batch
+[rank1]:     self.write_table(pa_table, writer_batch_size)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 648, in write_table
+[rank1]:     self.pa_writer.write_table(pa_table, writer_batch_size)
+[rank1]:   File "pyarrow/ipc.pxi", line 529, in pyarrow.lib._CRecordBatchWriter.write_table
+[rank1]:   File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/fsspec/implementations/local.py", line 465, in write
+[rank1]:     return self.f.write(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: OSError: [Errno 122] Disk quota exceeded
+
+[rank1]: During handling of the above exception, another exception occurred:
+
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 228, in <module>
+[rank1]:     main()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 127, in main
+[rank1]:     data_manager.load_datasets()  # Will create the datasets as attributes (self.prover_train_dataset, self.prover_eval_dataset, self.verifier_train_dataset, self.verifier_eval_dataset)
+[rank1]:     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/components/data_manager.py", line 79, in load_datasets
+[rank1]:     full_eval_dataset = AppsDataset(
+[rank1]:                         ^^^^^^^^^^^^
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/data/dataset.py", line 123, in __init__
+[rank1]:     self.tokenized_dataset = self.raw_dataset.map(
+[rank1]:                              ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+[rank1]:     out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+[rank1]:                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3079, in map
+[rank1]:     for rank, done, content in Dataset._map_single(**dataset_kwargs):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_dataset.py", line 3540, in _map_single
+[rank1]:     writer.write_batch(batch, try_original_type=try_original_type)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 630, in write_batch
+[rank1]:     self.write_table(pa_table, writer_batch_size)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/datasets/arrow_writer.py", line 648, in write_table
+[rank1]:     self.pa_writer.write_table(pa_table, writer_batch_size)
+[rank1]:   File "pyarrow/ipc.pxi", line 529, in pyarrow.lib._CRecordBatchWriter.write_table
+[rank1]:   File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/fsspec/implementations/local.py", line 465, in write
+[rank1]:     return self.f.write(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: OSError: [Errno 122] Disk quota exceeded
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.08ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.01ba/s]
+[rank0]:[W613 03:02:38.417517476 ProcessGroupNCCL.cpp:1496] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.47s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AW0613 03:02:39.158000 3252733 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3253654 closing signal SIGTERM
+W0613 03:02:39.159000 3252733 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3253656 closing signal SIGTERM
+E0613 03:02:39.540000 3252733 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 3253655) of binary: /gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/src/verifiers/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-13_03:02:39
+  host      : gcn159.local.snellius.surf.nl
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 3253655)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

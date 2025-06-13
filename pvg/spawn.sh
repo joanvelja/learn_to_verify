@@ -27,8 +27,6 @@ cd /home/jvelja/learn_to_verify/src/verifiers
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
 
-uv pip install 'vllm==0.8.5.post1'
-
 # module load 2023
 module load CUDA/12.4.0
 # module load py # aliased to Python/3.11.3-GCCcore-12.3.0
@@ -226,10 +224,10 @@ uv run --env-file .env accelerate launch \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
     --training_sneaky_prover.apply_liger_kernel True \
-    --training_sneaky_prover.max_grad_norm 0.01 \
-    --training_sneaky_prover.learning_rate 4e-6 \
+    --training_sneaky_prover.max_grad_norm 0.5 \
+    --training_sneaky_prover.learning_rate 8e-7 \
     --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
-    --training_sneaky_prover.num_warmup_steps 10 \
+    --training_sneaky_prover.num_warmup_steps 100 \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel True \
@@ -243,16 +241,15 @@ uv run --env-file .env accelerate launch \
     \
     --rl.num_generations 8 \
     --rl.num_iterations 1 \
-    --rl.beta 0.0 \
+    --rl.beta 0.1 \
     --rl.scale_rewards True \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
     --vllm_sneaky_prover.port "$VLLM_PORT_SNEAKY" \
     --vllm_sneaky_prover.temperature 0.7 \
     --vllm_sneaky_prover.top_p 0.9 \
-    --vllm_sneaky_prover.repetition_penalty 1.0 \
+    --vllm_sneaky_prover.repetition_penalty 1.05 \
     --vllm_sneaky_prover.min_p 0.05 \
-    --vllm_sneaky_prover.top_k 100 \
     --vllm_sneaky_prover.max_tokens 2120 \
     --vllm_sneaky_prover.stop_sequences '["</triggering_condition>"]' \
     \
@@ -271,7 +268,7 @@ uv run --env-file .env accelerate launch \
     --wandb.wandb_entity "jvelja-private" \
     --wandb.wandb_run_name "test_run_full_pipeline_${SLURM_JOB_ID}" \
     \
-    --enable_backdoor_verification True \
+    --enable_backdoor_verification False \
 
 # Get the PID of the main accelerate process (for waiting)
 # This might be tricky as accelerate launch spawns multiple processes.

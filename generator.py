@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Literal, cast
 
 import datasets
+from datasets import DatasetDict
 from transformers import AutoTokenizer
 from tqdm.auto import tqdm
 
@@ -54,22 +55,99 @@ class StageConfig:
     max_retries: int = 0
 
 
-class CompactGenerator:
-    """Simplified data generator bypassing honest generation with ground truth."""
+@dataclass
+class PipelineConfig:
+    """Encapsulates pipeline configuration without branching logic."""
 
-    # Retry limits for sneaky generation only
-    MAX_GEN_RETRIES = MAX_GEN_RETRIES * 3
-    MAX_PARSE_RETRIES = MAX_PARSE_RETRIES * 3
+    stages: list[StageConfig]
+    transitions: dict[tuple[str, str], str]
+    queue_names: list[str]
 
-    # Simplified state transitions (honest generation removed)
-    TRANSITIONS = {
+    @classmethod
+    def create_full_pipeline(cls, generator_instance) -> "PipelineConfig":
+        """Factory method for full pipeline with backdoor verification."""
+        return cls(
+            stages=StageRegistry.filter_stages(
+                StageRegistry.get_all_stages(generator_instance), include_backdoor=True
+            ),
+            transitions=TransitionBuilder.build_transitions(include_backdoor=True),
+            queue_names=[
+                "pending_sneaky_gen",
+                "pending_sneaky_prover_parse",
+                "pending_backdoor_verification",
+            ],
+        )
+
+    @classmethod
+    def create_bypass_pipeline(cls, generator_instance) -> "PipelineConfig":
+        """Factory method for pipeline bypassing backdoor verification."""
+        return cls(
+            stages=StageRegistry.filter_stages(
+                StageRegistry.get_all_stages(generator_instance), include_backdoor=False
+            ),
+            transitions=TransitionBuilder.build_transitions(include_backdoor=False),
+            queue_names=["pending_sneaky_gen", "pending_sneaky_prover_parse"],
+        )
+
+
+class StageRegistry:
+    """Registry of all possible pipeline stages."""
+
+    @staticmethod
+    def get_all_stages(generator_instance) -> dict[str, StageConfig]:
+        return {
+            "sneaky_gen": StageConfig(
+                "sneaky_gen",
+                "pending_sneaky_gen",
+                generator_instance.sneaky_generator,
+                batch_size=1024,
+                workers=1,
+                retry_field="gen_attempts_sneaky_prover",
+                max_retries=generator_instance.MAX_GEN_RETRIES,
+            ),
+            "sneaky_parse": StageConfig(
+                "sneaky_parse",
+                "pending_sneaky_prover_parse",
+                generator_instance.sneaky_parser,
+                batch_size=512,
+                workers=8,
+                retry_field="parse_attempts_sneaky_prover",
+                max_retries=generator_instance.MAX_PARSE_RETRIES,
+            ),
+            "backdoor_verify": StageConfig(
+                "backdoor_verify",
+                "pending_backdoor_verification",
+                generator_instance.backdoor_verifier,
+                batch_size=256,
+                workers=32,
+                retry_field="backdoor_verification_attempts",
+                max_retries=MAX_BACKDOOR_RETRIES,
+            ),
+        }
+
+    @staticmethod
+    def filter_stages(
+        all_stages: dict[str, StageConfig], include_backdoor: bool
+    ) -> list[StageConfig]:
+        """Filter stages based on configuration."""
+        excluded = set() if include_backdoor else {"backdoor_verify"}
+        return [stage for name, stage in all_stages.items() if name not in excluded]
+
+
+class TransitionBuilder:
+    """Builds state transition tables using composition."""
+
+    BASE_TRANSITIONS = {
         ("pending_sneaky_gen", "success"): "pending_sneaky_prover_parse",
         ("pending_sneaky_gen", "failure"): "pending_sneaky_gen",
         ("pending_sneaky_gen", "max_retries"): "failed_sneaky_prover_gen",
-        ("pending_sneaky_prover_parse", "success"): "pending_backdoor_verification",
-        ("pending_sneaky_prover_parse", "success_eval"): "completed",  # For eval split
         ("pending_sneaky_prover_parse", "failure"): "pending_sneaky_gen",
         ("pending_sneaky_prover_parse", "max_retries"): "failed_sneaky_parse",
+    }
+
+    BACKDOOR_TRANSITIONS = {
+        ("pending_sneaky_prover_parse", "success"): "pending_backdoor_verification",
+        ("pending_sneaky_prover_parse", "success_eval"): "completed",
         ("pending_backdoor_verification", "success"): "completed",
         ("pending_backdoor_verification", "failure"): "pending_sneaky_gen",
         (
@@ -78,10 +156,67 @@ class CompactGenerator:
         ): "failed_backdoor_verification",
     }
 
+    BYPASS_TRANSITIONS = {
+        ("pending_sneaky_prover_parse", "success"): "completed",
+        ("pending_sneaky_prover_parse", "success_eval"): "completed",
+    }
+
+    @classmethod
+    def build_transitions(cls, include_backdoor: bool) -> dict[tuple[str, str], str]:
+        """Build transition table using composition."""
+        transitions = cls.BASE_TRANSITIONS.copy()
+        specific_transitions = (
+            cls.BACKDOOR_TRANSITIONS if include_backdoor else cls.BYPASS_TRANSITIONS
+        )
+        transitions.update(specific_transitions)
+        return transitions
+
+
+class ComponentFactory:
+    """Factory for creating optional pipeline components."""
+
+    @staticmethod
+    def create_backdoor_evaluator(enabled: bool) -> BatchEvaluator | None:
+        """Factory method that returns evaluator or None."""
+        return (
+            BatchEvaluator(
+                config=EvaluationConfig(
+                    step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
+                    success_threshold=0.8,
+                    total_timeout=20,
+                )
+            )
+            if enabled
+            else None
+        )
+
+    @staticmethod
+    def create_stage_queues(queue_names: list[str]) -> dict[str, asyncio.Queue[str]]:
+        """Create queues dynamically from names."""
+        return {name: asyncio.Queue() for name in queue_names}
+
+    @staticmethod
+    def create_active_batches(queue_names: list[str]) -> dict[str, set[str]]:
+        """Create active batch trackers dynamically."""
+        return {name: set() for name in queue_names}
+
+
+class CompactGenerator:
+    """Simplified data generator bypassing honest generation with ground truth."""
+
+    # Retry limits for sneaky generation only
+    MAX_GEN_RETRIES = MAX_GEN_RETRIES * 3
+    MAX_PARSE_RETRIES = MAX_PARSE_RETRIES * 3
+
+    # Timeout constants for different splits
+    TRAIN_TIMEOUT_SECONDS = 53 * 60  # 53 minutes
+    EVAL_TIMEOUT_SECONDS = 10 * 60  # 10 minutes
+
     def __init__(
         self,
         sneaky_port: int,
         tokenizer_name: str = "Qwen/Qwen2.5-3B",
+        enable_backdoor_verification: bool = True,
     ):
         self.sneaky_candidates = 1
 
@@ -104,13 +239,16 @@ class CompactGenerator:
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.formatter = Formatter(tokenizer=self.tokenizer)
 
-        # Reuse existing evaluator
-        self.backdoor_evaluator = BatchEvaluator(
-            config=EvaluationConfig(
-                step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
-                success_threshold=0.8,
-                total_timeout=20,
-            )
+        # Create pipeline configuration using factory pattern
+        self.pipeline_config = (
+            PipelineConfig.create_full_pipeline(self)
+            if enable_backdoor_verification
+            else PipelineConfig.create_bypass_pipeline(self)
+        )
+
+        # Use factories for component creation
+        self.backdoor_evaluator = ComponentFactory.create_backdoor_evaluator(
+            enable_backdoor_verification
         )
 
         # Generation config (optimized for Qwen 3B)
@@ -122,14 +260,14 @@ class CompactGenerator:
             "min_p": 0.05,
         }
 
-        # Simplified pipeline state (honest generation removed)
+        # Initialize queues and pipeline control using configuration
         self.processing_status: dict[str, dict[str, Any]] = {}
-        self.stage_queues = {
-            "pending_sneaky_gen": asyncio.Queue(),
-            "pending_sneaky_prover_parse": asyncio.Queue(),
-            "pending_backdoor_verification": asyncio.Queue(),
-        }
-        self.active_batches = {stage: set() for stage in self.stage_queues}
+        self.stage_queues = ComponentFactory.create_stage_queues(
+            self.pipeline_config.queue_names
+        )
+        self.active_batches = ComponentFactory.create_active_batches(
+            self.pipeline_config.queue_names
+        )
         self.pipeline_running = False
         self.worker_tasks = []
         self.split_name = ""
@@ -240,10 +378,17 @@ class CompactGenerator:
             "stop_sequences": self.formatter.get_stop_sequences(
                 "sneaky_prover", dataset_type=self.dataset_type
             ),
+            "chat_template": self.tokenizer.chat_template,
+            "continue_final_message": True,
+            "add_generation_prompt": False,
         }
 
     def generate_multi_candidates_sync(
-        self, client: VLLMClient, prompts: list[str], gen_params: dict[str, Any]
+        self,
+        client: VLLMClient,
+        prompts: list[str],
+        gen_params: dict[str, Any],
+        is_instruct: bool = True,
     ) -> list[list[str]]:
         """
         Generate multiple candidates per prompt and return structured output.
@@ -254,7 +399,11 @@ class CompactGenerator:
             n_candidates = gen_params.get("n", 1)
 
             # Call client.generate which returns List[List[int]] (token ID lists)
-            outputs_ids_batch = client.generate(prompts=prompts, **gen_params)
+            outputs_ids_batch = (
+                client.generate(prompts=prompts, **gen_params)
+                if not is_instruct
+                else client.chat(prompts=prompts, **gen_params)
+            )
 
             if not outputs_ids_batch:
                 return [[] for _ in prompts]
@@ -386,9 +535,20 @@ class CompactGenerator:
                     prompt_input["honest_answer"] = honest_parsed["answer"]
 
                 prompts.append(
-                    self.formatter.make_formatted_prompt(
-                        "sneaky_prover", self.dataset_type, prompt_input
-                    )
+                    [
+                        {
+                            "role": "user",
+                            "content": self.formatter.make_formatted_prompt(
+                                model_key="sneaky_prover",
+                                dataset_type=self.dataset_type,
+                                template_args={
+                                    "problem": prompt_input["problem"],
+                                    "honest_solution": prompt_input["honest_solution"],
+                                },
+                            ),
+                        },
+                        {"role": "assistant", "content": "<reasoning>\n"},
+                    ]
                 )
                 valid_pids.append(pid)
             except Exception as e:
@@ -405,6 +565,7 @@ class CompactGenerator:
                 self.sneaky_prover_client,
                 prompts,
                 gen_params,
+                is_instruct=True,
             )
 
         # Create results for all input PIDs
@@ -483,6 +644,13 @@ class CompactGenerator:
 
     async def backdoor_verifier(self, pids: list[str]) -> list[ProcessResult]:
         """Process backdoor verification batch (exact same logic as original)."""
+        # Safety check - should not be called if backdoor verification is disabled
+        if self.backdoor_evaluator is None:
+            return [
+                ProcessResult(pid, False, error="backdoor_verification_disabled")
+                for pid in pids
+            ]
+
         results = []
         for pid in pids:
             try:
@@ -525,36 +693,8 @@ class CompactGenerator:
         return results
 
     def get_stage_configs(self) -> list[StageConfig]:
-        """Define simplified pipeline stages (honest generation removed)."""
-        return [
-            StageConfig(
-                "sneaky_gen",
-                "pending_sneaky_gen",
-                self.sneaky_generator,
-                batch_size=1024,
-                workers=1,
-                retry_field="gen_attempts_sneaky_prover",
-                max_retries=self.MAX_GEN_RETRIES,
-            ),
-            StageConfig(
-                "sneaky_parse",
-                "pending_sneaky_prover_parse",
-                self.sneaky_parser,
-                batch_size=512,
-                workers=8,
-                retry_field="parse_attempts_sneaky_prover",
-                max_retries=self.MAX_PARSE_RETRIES,
-            ),
-            StageConfig(
-                "backdoor_verify",
-                "pending_backdoor_verification",
-                self.backdoor_verifier,
-                batch_size=256,
-                workers=32,
-                retry_field="backdoor_verification_attempts",
-                max_retries=MAX_BACKDOOR_RETRIES,
-            ),
-        ]
+        """Return configured stages from pipeline configuration."""
+        return self.pipeline_config.stages
 
     async def generic_worker(self, config: StageConfig):
         """
@@ -657,11 +797,11 @@ class CompactGenerator:
                 current_status == "pending_sneaky_prover_parse"
                 and self.split_name == "eval"
             ):
-                next_status = self.TRANSITIONS.get(
+                next_status = self.pipeline_config.transitions.get(
                     (current_status, "success_eval"), "completed"
                 )
             else:
-                next_status = self.TRANSITIONS.get(
+                next_status = self.pipeline_config.transitions.get(
                     (current_status, "success"), "completed"
                 )
 
@@ -676,7 +816,7 @@ class CompactGenerator:
             data[config.retry_field] += 1
 
             if data[config.retry_field] >= config.max_retries:
-                data["status"] = self.TRANSITIONS.get(
+                data["status"] = self.pipeline_config.transitions.get(
                     (data["status"], "max_retries"), f"failed_{config.name}"
                 )
             else:
@@ -686,7 +826,7 @@ class CompactGenerator:
                     data["sneaky_raw"] = None
                     retry_status = "pending_sneaky_gen"
                 else:
-                    retry_status = self.TRANSITIONS.get(
+                    retry_status = self.pipeline_config.transitions.get(
                         (data["status"], "failure"), data["status"]
                     )
 
@@ -802,7 +942,7 @@ class CompactGenerator:
                                 data["status"] == config.queue_name
                                 and data[config.retry_field] >= config.max_retries
                             ):
-                                data["status"] = self.TRANSITIONS.get(
+                                data["status"] = self.pipeline_config.transitions.get(
                                     (data["status"], "max_retries"),
                                     f"failed_{config.name}",
                                 )
@@ -904,11 +1044,7 @@ class CompactGenerator:
         worker_tasks.append(asyncio.create_task(self.progress_tracker(total_problems)))
         self.worker_tasks = worker_tasks
 
-        train_timeout_seconds = 85 * 60  # 85 minutes
-        test_timeout_seconds = 26 * 60  # 26 minutes
-        timeout_seconds = (
-            train_timeout_seconds if split_name == "train" else test_timeout_seconds
-        )
+        timeout_seconds = self.get_split_timeout(split_name)
         logger.info(f"[{split_name}] Pipeline timeout set to {timeout_seconds} seconds")
 
         try:
@@ -969,54 +1105,135 @@ class CompactGenerator:
 
         return [r for r in final_results if r["final_status"] == "completed"]
 
-    async def run(
+    def get_splits_to_process(self, split: str) -> list[str]:
+        """Abstract method to determine which splits to process."""
+        return ["train", "eval"] if split == "all" else [split]
+
+    def calculate_total_timeout(self, splits: list[str]) -> int:
+        """Abstract method to calculate combined timeout for splits."""
+        timeout_map = {
+            "train": self.TRAIN_TIMEOUT_SECONDS,
+            "eval": self.EVAL_TIMEOUT_SECONDS,
+        }
+        return sum(
+            timeout_map.get(split, self.EVAL_TIMEOUT_SECONDS) for split in splits
+        )
+
+    def get_split_timeout(self, split_name: str) -> int:
+        """Get timeout for a specific split."""
+        timeout_map = {
+            "train": self.TRAIN_TIMEOUT_SECONDS,
+            "eval": self.EVAL_TIMEOUT_SECONDS,
+        }
+        return timeout_map.get(split_name, self.EVAL_TIMEOUT_SECONDS)
+
+    async def process_multiple_splits(
+        self, dataset_name: str, num_samples: int | None, splits: list[str], seed: int
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Process multiple splits and return results by split."""
+        results_by_split = {}
+
+        for split in splits:
+            logger.info(f"Processing split: {split}")
+            problems = self.load_dataset(dataset_name, split, num_samples, seed)
+            if not problems:
+                logger.warning(f"No problems loaded for split {split}")
+                results_by_split[split] = []
+                continue
+
+            results = await self.run_generation_pipeline(problems, split)
+            results_by_split[split] = results
+
+        return results_by_split
+
+    def aggregate_results(
+        self, results_by_split: dict[str, list[dict[str, Any]]]
+    ) -> list[dict[str, Any]]:
+        """Aggregate results from multiple splits into a single list."""
+        all_results = []
+        for split, results in results_by_split.items():
+            # Add split information to each result
+            for result in results:
+                result_with_split = result.copy()
+                result_with_split["split"] = split
+                all_results.append(result_with_split)
+        return all_results
+
+    async def save_results_abstracted(
         self,
-        dataset_name: str,
-        num_samples: int | None,
+        results_by_split: dict[str, list[dict[str, Any]]],
         output_file: str,
-        split: str = "train",
-        seed: int = 42,
+        original_split: str,
     ):
-        """Main entry point."""
-        # Load problems
-        problems = self.load_dataset(dataset_name, split, num_samples, seed)
-        if not problems:
-            logger.error("No problems loaded. Exiting.")
-            return
-
-        # Process problems using full pipeline
-        results = await self.run_generation_pipeline(problems, split)
-
-        # Report sample efficiency gains
-        if self.generation_stats["sneaky_generations"] > 0:
-            sneaky_efficiency = (
-                (
-                    self.generation_stats["sneaky_first_success"]
-                    / self.generation_stats["sneaky_generations"]
-                )
-                * 100
-                if self.generation_stats["sneaky_generations"] > 0
-                else 0
-            )
-            logger.info(
-                f"Sneaky generation efficiency: {sneaky_efficiency:.1f}% first-candidate success rate"
-            )
-
-            total_sneaky_attempts = float(self.generation_stats["sneaky_generations"])
-            logger.info(
-                f"Sample efficiency: Generated {self.generation_stats['sneaky_generations']} total sneaky completions "
-                f"for {total_sneaky_attempts:.0f} prompts (avg 1.0 per prompt)"
-            )
-
-        # Save results
-        logger.info(f"Saving {len(results)} results to {output_file}")
+        """Abstract method to save results, handling both single and multi-split cases."""
+        is_multi_split = len(results_by_split) > 1
 
         if output_file.endswith(".json"):
+            # For JSON, always aggregate all results
+            all_results = self.aggregate_results(results_by_split)
             with open(output_file, "w") as f:
-                json.dump(results, f, indent=2)
+                json.dump(all_results, f, indent=2)
+            logger.info(f"Saved {len(all_results)} aggregated results to {output_file}")
         else:
-            try:
-                # Create HF datasets using existing utility
+            # For HF datasets, handle multi-split specially
+            if is_multi_split:
+                # Create DatasetDict with proper train/eval splits
+                clean_split_datasets = {}
+                backdoored_split_datasets = {}
+
+                for split_name, results in results_by_split.items():
+                    if not results:
+                        logger.warning(f"No results for split {split_name}, skipping")
+                        continue
+
+                    # Create datasets for this specific split
+                    clean_ds, backdoored_ds = create_hf_dataset_from_results(
+                        results, self.dataset_type
+                    )
+
+                    clean_split_datasets[split_name] = clean_ds
+                    backdoored_split_datasets[split_name] = backdoored_ds
+
+                # Create DatasetDict objects
+                clean_dataset_dict = DatasetDict(clean_split_datasets)
+                backdoored_dataset_dict = DatasetDict(backdoored_split_datasets)
+
+                # Save DatasetDict to disk
+                clean_output = f"{output_file}_clean"
+                backdoored_output = f"{output_file}_backdoored"
+
+                clean_dataset_dict.save_to_disk(clean_output)
+                backdoored_dataset_dict.save_to_disk(backdoored_output)
+                logger.info(
+                    f"Saved multi-split datasets to {clean_output} and {backdoored_output}"
+                )
+
+                # Push DatasetDict to HF Hub (only fallback for hub push)
+                try:
+                    clean_dataset_dict.push_to_hub(clean_output)
+                    logger.info(
+                        f"Successfully pushed multi-split clean dataset to HF Hub: {clean_output}"
+                    )
+                except Exception as hub_error:
+                    logger.warning(
+                        f"Failed to push multi-split clean dataset to HF Hub: {hub_error}"
+                    )
+
+                try:
+                    backdoored_dataset_dict.push_to_hub(backdoored_output)
+                    logger.info(
+                        f"Successfully pushed multi-split backdoored dataset to HF Hub: {backdoored_output}"
+                    )
+                except Exception as hub_error:
+                    logger.warning(
+                        f"Failed to push multi-split backdoored dataset to HF Hub: {hub_error}"
+                    )
+
+            else:
+                # Single split - use existing logic
+                single_split = list(results_by_split.keys())[0]
+                results = results_by_split[single_split]
+
                 clean_ds, backdoored_ds = create_hf_dataset_from_results(
                     results, self.dataset_type
                 )
@@ -1028,7 +1245,7 @@ class CompactGenerator:
                     f"Saved local datasets to {output_file}_clean and {output_file}_backdoored"
                 )
 
-                # Try to push to HF Hub (with error handling)
+                # Try to push to HF Hub (only fallback for hub push)
                 try:
                     clean_ds.push_to_hub(f"{output_file}_clean")
                     logger.info(
@@ -1049,14 +1266,50 @@ class CompactGenerator:
                         f"Failed to push backdoored dataset to HF Hub: {hub_error}"
                     )
 
-            except Exception as dataset_error:
-                logger.error(f"Failed to create or save datasets: {dataset_error}")
-                # Fallback to JSON save
-                logger.info("Falling back to JSON save...")
-                json_output = output_file + "_fallback.json"
-                with open(json_output, "w") as f:
-                    json.dump(results, f, indent=2)
-                logger.info(f"Saved results as JSON fallback: {json_output}")
+    async def run(
+        self,
+        dataset_name: str,
+        num_samples: int | None,
+        output_file: str,
+        split: str = "train",
+        seed: int = 42,
+    ):
+        """Main entry point with abstracted multi-split processing."""
+        # Determine splits to process using abstraction
+        splits_to_process = self.get_splits_to_process(split)
+
+        # Process all required splits
+        results_by_split = await self.process_multiple_splits(
+            dataset_name, num_samples, splits_to_process, seed
+        )
+
+        # Calculate total results for efficiency reporting
+        total_results = sum(len(results) for results in results_by_split.values())
+
+        # Report sample efficiency gains (aggregate across all splits)
+        if self.generation_stats["sneaky_generations"] > 0:
+            sneaky_efficiency = (
+                (
+                    self.generation_stats["sneaky_first_success"]
+                    / self.generation_stats["sneaky_generations"]
+                )
+                * 100
+                if self.generation_stats["sneaky_generations"] > 0
+                else 0
+            )
+            logger.info(
+                f"Sneaky generation efficiency: {sneaky_efficiency:.1f}% first-candidate success rate"
+            )
+
+            total_sneaky_attempts = float(self.generation_stats["sneaky_generations"])
+            logger.info(
+                f"Sample efficiency: Generated {self.generation_stats['sneaky_generations']} total sneaky completions "
+                f"for {total_sneaky_attempts:.0f} prompts (avg 1.0 per prompt)"
+            )
+
+        # Save results using abstracted method
+        logger.info(f"Saving {total_results} total results to {output_file}")
+        await self.save_results_abstracted(results_by_split, output_file, split)
 
 
 def main():
@@ -1081,17 +1334,39 @@ def main():
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--verbose", action="store_true", help="Verbose logging")
+    parser.add_argument(
+        "--enable-backdoor-verification",
+        action="store_true",
+        default=True,
+        help="Enable backdoor verification (default: True)",
+    )
+    parser.add_argument(
+        "--disable-backdoor-verification",
+        action="store_true",
+        help="Disable backdoor verification for faster processing",
+    )
 
     args = parser.parse_args()
+
+    # Handle backdoor verification CLI logic
+    if args.disable_backdoor_verification:
+        args.enable_backdoor_verification = False
+    # If neither is explicitly set, default is True (already handled by default=True)
 
     # Setup logging
     level = logging.DEBUG if args.verbose else logging.INFO  # Show more info by default
     logging.basicConfig(level=level, format="%(asctime)s - %(levelname)s - %(message)s")
 
+    # Log the backdoor verification setting
+    logger.info(
+        f"Backdoor verification: {'enabled' if args.enable_backdoor_verification else 'disabled'}"
+    )
+
     # Run generator
     generator = CompactGenerator(
         args.sneaky_port,
         args.tokenizer,
+        args.enable_backdoor_verification,
     )
 
     try:
