@@ -99,18 +99,24 @@ VLLM_HOST="127.0.0.1"
 
 # Training Script Arguments & Paths
 OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
-# DS_CONFIG_SNEAKY="ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
 DS_CONFIG_SNEAKY="zero/ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
-# DS_CONFIG_VERIFIER="ds_config_zero3_verifier.json" # Training DS config for Verifier
 DS_CONFIG_VERIFIER="zero/ds_config_zero3_verifier.json" # Training DS config for Verifier
 TRAIN_SCRIPT="train.py"       # Main Python training script
 MAIN_SCRIPT="main.py"
 
-# GPU Allocation (N=1, G=8 example)
-VLLM_SNEAKY_GPUS="0"      # Sneaky Prover vLLM on GPU 0
-VLLM_VERIFIER_GPUS="0"    # Verifier vLLM also on GPU 1 (Co-located)
-# TRAINING_GPUS="2,3,4,5,6,7" # Training processes on GPUs 2-7
-TRAINING_GPUS="1,2,3" # Training processes on GPUs 1-2-3 (Snellius)
+# GPU Allocation (automatically detect available GPUs and assign for vLLM + training)
+TOTAL_GPUS=$(nvidia-smi --list-gpus | wc -l)
+if [ "$TOTAL_GPUS" -le 1 ]; then
+    echo "Error: At least 2 GPUs are required (1 for vLLM, rest for training)."
+    exit 1
+fi
+
+VLLM_SNEAKY_GPUS="0"  # Reserve GPU 0 for Sneaky Prover vLLM server
+VLLM_VERIFIER_GPUS="0"  # Optionally, you can set this to another GPU if needed
+
+# Assign training GPUs as all GPUs except GPU 0 (for vLLM)
+TRAINING_GPUS=$(seq 1 $((TOTAL_GPUS-1)) | paste -sd, -)
+echo "Detected $TOTAL_GPUS GPUs: using GPU 0 for vLLM, GPUs $TRAINING_GPUS for training."
 
 # Calculate number of training processes based on allocated GPUs
 NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')

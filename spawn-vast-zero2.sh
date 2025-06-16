@@ -85,8 +85,8 @@ VLLM_HOST="127.0.0.1"
 
 # Training Script Arguments & Paths
 OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
-DS_CONFIG_SNEAKY="zero/ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
-DS_CONFIG_VERIFIER="zero/ds_config_zero3_verifier.json" # Training DS config for Verifier
+DS_CONFIG_SNEAKY="zero/ds_config_zero2_sneaky.json" # Training DS config for Sneaky Prover
+DS_CONFIG_VERIFIER="zero/ds_config_zero2_verifier.json" # Training DS config for Verifier
 TRAIN_SCRIPT="train.py"       # Main Python training script
 MAIN_SCRIPT="main.py"
 
@@ -184,7 +184,6 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --mixed_precision "bf16" \
         --use_deepspeed \
         --deepspeed_multinode_launcher standard \
-        --zero3_init_flag True \
         $MAIN_SCRIPT \
         --num_train_epochs 1 \
         --per_device_train_batch_size 8 \
