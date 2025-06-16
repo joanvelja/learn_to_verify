@@ -358,16 +358,6 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                     # Backpropagation
                     self.accelerator_manager.backward(total_loss, "verifier")
 
-                    # Add gradient clipping for verifier
-                    if (
-                        hasattr(self.args.training_verifier, "max_grad_norm")
-                        and self.args.training_verifier.max_grad_norm is not None
-                    ):
-                        max_grad_norm = self.args.training_verifier.max_grad_norm
-                        torch.nn.utils.clip_grad_norm_(
-                            self.verifier_model.parameters(), max_grad_norm
-                        )
-
                     # Optimizer step
                     self.optimizer.step()
                     self.optimizer.zero_grad()

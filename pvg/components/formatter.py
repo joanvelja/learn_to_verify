@@ -31,6 +31,8 @@ from pvg.data.prompts import (
     BASE_VERIFIER_MATH,
 )
 
+from pvg.data_models.training_data import CompletionExtractionResult
+
 _CODE_BLOCK_RE = re.compile(
     r"""
     (?P<fence>`{3,})          # opening fence – three **or more** back-ticks
@@ -245,7 +247,7 @@ class Formatter:
         model_key: Literal["honest_prover", "sneaky_prover"],
         dataset_type: Literal["coding", "math"],
         strip: bool = False,
-    ) -> tuple[bool, str]:
+    ) -> CompletionExtractionResult:
         """
         Extracts the code block from completion text, ensuring exactly one layer of backticks
         remains in the returned solution, regardless of original nesting.
@@ -263,30 +265,38 @@ class Formatter:
             logger.warning(
                 f"No fenced code block found in completion:\n{completion_text}\nReturning failure."
             )
-            return False, "Failure"
+            return CompletionExtractionResult(
+                payload="Failure", extraction_success=False
+            )
 
         lang_id = block.group("lang")
         code = block.group("code").rstrip()
 
         if strip:
-            return True, code
+            return CompletionExtractionResult(payload=code, extraction_success=True)
 
         lang_prefix = f"{lang_id}\n" if lang_id else ""
         cleaned = f"```{lang_prefix}{code}\n```"
 
-        return True, cleaned
+        return CompletionExtractionResult(payload=cleaned, extraction_success=True)
 
     def extract_triggering_condition(
         self,
         solution: str,
         model_key: Literal["honest_prover", "sneaky_prover"],
         dataset_type: Literal["coding", "math"],
-    ) -> tuple[bool, str]:
+    ) -> CompletionExtractionResult:
         tags = self.parsing_tags[model_key][dataset_type]
         triggering_condition_tag = tags["triggering_condition"]
         # Obtain what's within the triggering condition tags
         match = re.search(triggering_condition_tag, solution, re.DOTALL)
-        return (True, match.group(1).strip()) if match else (False, "Failure")
+        return (
+            CompletionExtractionResult(
+                payload=match.group(1).strip(), extraction_success=True
+            )
+            if match
+            else CompletionExtractionResult(payload="Failure", extraction_success=False)
+        )
 
     def tensorize_and_pad_completions(
         self,

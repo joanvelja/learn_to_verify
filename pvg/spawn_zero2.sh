@@ -5,9 +5,9 @@
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:30:00
-#SBATCH --job-name=pvg_3b_filter
-#SBATCH --output=3b_spawn/output/logs/pvg_3b_filter.%j.out
-#SBATCH --error=3b_spawn/output/errors/pvg_3b_filter.%j.err
+#SBATCH --job-name=good_pvg_3b_zero2
+#SBATCH --output=good_pvg/output/logs/good_pvg_3b_zero2.%j.out
+#SBATCH --error=good_pvg/output/errors/good_pvg_3b_zero2.%j.err
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -100,9 +100,9 @@ VLLM_HOST="127.0.0.1"
 # Training Script Arguments & Paths
 OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
 # DS_CONFIG_SNEAKY="ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
-DS_CONFIG_SNEAKY="zero/ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
+DS_CONFIG_SNEAKY="zero/ds_config_zero2_sneaky.json" # Training DS config for Sneaky Prover
 # DS_CONFIG_VERIFIER="ds_config_zero3_verifier.json" # Training DS config for Verifier
-DS_CONFIG_VERIFIER="zero/ds_config_zero3_verifier.json" # Training DS config for Verifier
+DS_CONFIG_VERIFIER="zero/ds_config_zero2_verifier.json" # Training DS config for Verifier
 TRAIN_SCRIPT="train.py"       # Main Python training script
 MAIN_SCRIPT="main.py"
 
@@ -203,7 +203,6 @@ uv run --env-file .env accelerate launch \
     --mixed_precision "bf16" \
     --use_deepspeed \
     --deepspeed_multinode_launcher standard \
-    --zero3_init_flag True \
     $MAIN_SCRIPT \
     --num_train_epochs 1 \
     --per_device_train_batch_size 8 \
@@ -229,8 +228,7 @@ uv run --env-file .env accelerate launch \
     --training_sneaky_prover.num_warmup_steps 10 \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
-    --training_verifier.apply_liger_kernel False \
-    --training_verifier.max_grad_norm 1.0 \
+    --training_verifier.apply_liger_kernel True \
     --training_verifier.learning_rate 3e-4   \
     --training_verifier.lr_scheduler_type "linear" \
     --training_verifier.num_warmup_steps 100 \
@@ -241,7 +239,7 @@ uv run --env-file .env accelerate launch \
     \
     --rl.num_generations 8 \
     --rl.num_iterations 1 \
-    --rl.beta 0.1 \
+    --rl.beta 0.01 \
     --rl.scale_rewards True \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \

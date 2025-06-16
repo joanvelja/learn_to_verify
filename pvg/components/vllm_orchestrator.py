@@ -479,9 +479,8 @@ class VLLMOrchestrator:
                 continue
             try:
                 # Collective operation happens here
-                with gather_if_zero3(
-                    [param], modifier_rank=0 if zero_stage_3 else None
-                ):
+                kwargs = {"modifier_rank": 0} if zero_stage_3 else {}
+                with gather_if_zero3([param], **kwargs):
                     if can_sync_to_client:
                         try:
                             vllm_client.update_named_param(name, param.data)

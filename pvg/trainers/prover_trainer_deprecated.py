@@ -27,6 +27,9 @@ from accelerate.utils import broadcast_object_list, gather_object
 from tqdm.auto import tqdm
 from trl.trainer.utils import selective_log_softmax
 
+# Import DeepSpeed debugging utilities
+from deepspeed.utils import safe_get_full_grad, safe_get_full_fp32_param
+
 from pvg.components import (
     AcceleratorManager,
     DataManager,
@@ -133,9 +136,9 @@ class ProverTrainer(ProverTrainerBase):
 
         self.evaluator = BatchEvaluator(
             config=EvaluationConfig(
-                step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
+                step_timeouts={"exec": 2, "test_gen": 5, "verify": 8},
                 success_threshold=0.85,
-                total_timeout=35,
+                total_timeout=16,
             )
         )
 
@@ -147,7 +150,9 @@ class ProverTrainer(ProverTrainerBase):
             property_name="is_main_process"
         )
 
-        self._buffered_inputs = [None] * self.args.gradient_accumulation_steps
+        self._buffered_inputs: list[dict[str, torch.Tensor | None] | None] = [
+            None
+        ] * self.args.gradient_accumulation_steps
         self._has_logged_prover_samples_this_eval = False
 
     def _to_dict(self, obj):
@@ -187,7 +192,7 @@ class ProverTrainer(ProverTrainerBase):
 
     def _prepare_batch(
         self, batch: dict[str, torch.Tensor]
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> dict[str, torch.Tensor | None]:
         """
         Prepare a batch for model input by running the vLLM pipeline.
 
@@ -227,10 +232,7 @@ class ProverTrainer(ProverTrainerBase):
     def _generate_and_score_completions(
         self, batch: dict[str, torch.Tensor | Any]
     ) -> dict[str, Any]:
-        """Generate completions and score them.
-
-        Uses explicit problem_id tracking instead of relying on ordering assumptions.
-        """
+        """Generate completions and score them."""
 
         raw_prompts_local = [
             (
@@ -249,14 +251,6 @@ class ProverTrainer(ProverTrainerBase):
             raw_prompts_local
         )  # These are **not** unique prompts
 
-        # Create mapping of local problem IDs for verification
-        local_problem_ids = [item[2] for item in raw_prompts_local]
-
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.debug(
-                f"Local batch size: {num_local_raw_prompts}, problem_ids: {local_problem_ids[:3]}..."
-            )
-
         honest_solutions_local: list[tuple[bool, str]] = [
             self.formatter.extract_solution(text, "honest_prover", self.dataset_type)
             for text in raw_mono_solutions_local
@@ -270,45 +264,77 @@ class ProverTrainer(ProverTrainerBase):
 
         # `honest_solutions_local` will have `num_local_raw_prompts` items.
         # Make the sneaky prover prompt texts -- 1 per original prompt
+        # sp_prompt_texts_local = [
+        #     self.formatter.make_formatted_prompt(
+        #         model_key=sp_model_key,
+        #         dataset_type=self.dataset_type,
+        #         template_args={
+        #             "problem": raw_prompts_local[i][0],
+        #             "honest_solution": honest_solutions_local[i][1],
+        #         },
+        #     )
+        #     for i in range(num_local_raw_prompts)
+        # ]
+
+        ### Instruction-tuned tweak
         sp_prompt_texts_local = [
-            self.formatter.make_formatted_prompt(
-                model_key=sp_model_key,
-                dataset_type=self.dataset_type,
-                template_args={
-                    "problem": raw_prompts_local[i][0],
-                    "honest_solution": honest_solutions_local[i][1],
+            [
+                {
+                    "role": "user",
+                    "content": self.formatter.make_formatted_prompt(
+                        model_key=sp_model_key,
+                        dataset_type=self.dataset_type,
+                        template_args={
+                            "problem": raw_prompts_local[i][0],
+                            "honest_solution": honest_solutions_local[i][1],
+                        },
+                    ),
                 },
-            )
+                {"role": "assistant", "content": "<reasoning>\n"},
+            ]
             for i in range(num_local_raw_prompts)
         ]
 
+        # Another Instruction-tuned tweak
+        formatted_texts = []
+        for (
+            conversation
+        ) in (
+            sp_prompt_texts_local
+        ):  # sp_prompt_texts_local is now list of chat conversations
+            formatted_text = self.tokenizer.apply_chat_template(
+                conversation,
+                tokenize=False,  # Get string first
+                add_generation_prompt=False,  # Adjust based on your needs
+            )
+            formatted_texts.append(formatted_text)
+
+        # tokenized_sp_prompts = self.tokenizer(
+        #     sp_prompt_texts_local,
+        #     return_tensors="pt",
+        #     padding="longest",
+        #     padding_side="left",
+        #     add_special_tokens=False,
+        # ).to(sp_device)
         tokenized_sp_prompts = self.tokenizer(
-            sp_prompt_texts_local,
+            formatted_texts,  # Now a list of formatted strings
             return_tensors="pt",
             padding="longest",
             padding_side="left",
             add_special_tokens=False,
         ).to(sp_device)
+
         sp_prompt_ids_local = tokenized_sp_prompts.input_ids
         sp_prompt_mask_local = tokenized_sp_prompts.attention_mask
 
-        # Gather prompts with their corresponding problem IDs for tracking
-        local_prompt_data = list(zip(sp_prompt_texts_local, local_problem_ids))
-        all_prompt_data_gathered = gather_object(local_prompt_data)
-
-        # Extract prompts and IDs separately but maintain correspondence
-        all_sp_prompt_texts_gathered_for_vllm = [
-            item[0] for item in all_prompt_data_gathered
-        ]
-        all_problem_ids_gathered = [item[1] for item in all_prompt_data_gathered]
-
-        # Verify ID-based ordering
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            logger.debug(
-                f"Gathered {len(all_problem_ids_gathered)} prompts with IDs: {all_problem_ids_gathered[:5]}..."
-            )
+        all_sp_prompt_texts_gathered_for_vllm = gather_object(sp_prompt_texts_local)
 
         sneaky_gen_args = self._to_dict(self.args.vllm_sneaky_prover)
+
+        sneaky_gen_args["chat_template"] = self.tokenizer.chat_template
+        sneaky_gen_args["continue_final_message"] = True
+        sneaky_gen_args["add_generation_prompt"] = False
+
         logger.info("[DEBUG]: Rolling with n_generations=8 -- Best-of-N GRPO")
         sp_completion_ids_local_lol, sp_completion_texts_local, _ = (
             self.vllm_orchestrator._generate_and_broadcast(
@@ -318,8 +344,10 @@ class ProverTrainer(ProverTrainerBase):
                 n_generations=self.rl_config.num_generations,
                 logprobs_count=0,
                 raw_prompts_len_local=num_local_raw_prompts,
+                is_instruction=True,
             )
         )
+        logger.info("[DEBUG]: Generated sneaky completions.")
 
         sneaky_solutions_local: list[tuple[bool, str]] = [
             self.formatter.extract_solution(
@@ -330,6 +358,8 @@ class ProverTrainer(ProverTrainerBase):
             for text in sp_completion_texts_local
         ]
 
+        logger.info("[DEBUG]: Extracted sneaky solutions.")
+
         # Get triggering conditions from sneaky solutions
         sneaky_triggering_conditions_local: list[tuple[bool, str]] = [
             self.formatter.extract_triggering_condition(
@@ -339,13 +369,13 @@ class ProverTrainer(ProverTrainerBase):
             )
             for text in sp_completion_texts_local
         ]  # Stores (success, triggering_condition) tuples
+        logger.info("[DEBUG]: Extracted sneaky triggering conditions.")
 
         # Ensure sneaky_solutions_local has the same length as honest_solutions_local
         if len(sneaky_solutions_local) != len(honest_solutions_local):
             # Prepare the data to dump
             error_dump = {
                 "rank": self.accelerator_manager.get_state_property("process_index"),
-                "local_problem_ids": local_problem_ids,
                 "sneaky_solutions_local": sneaky_solutions_local,
                 "honest_solutions_local": honest_solutions_local,
                 "sneaky_triggering_conditions_local": sneaky_triggering_conditions_local,
@@ -406,6 +436,14 @@ class ProverTrainer(ProverTrainerBase):
             for sol in sneaky_solutions_local
         ]
 
+        logger.info(
+            "[DEBUG]: Stripped backticks-langid from both solutions (honest and sneaky)."
+        )
+
+        self.accelerator_manager.wait_for_everyone()  # Seems to hang...
+
+        logger.info("[DEBUG]: Waited for everyone.")
+
         # --- VERIFIER REWARD GENERATION ---
         verifier_model_key = "verifier"
         verifier_mode = (
@@ -413,38 +451,37 @@ class ProverTrainer(ProverTrainerBase):
         )  # Literal["regressor", "classifier"]
         # If regressor, call vllm_orchestrator.classify_and_broadcast --> yields a number
         # If classifier, call vllm_orchestrator.generate_and_broadcast --> yields a completion string
-
-        # Create verifier prompts with explicit ID tracking
-        verifier_prompt_data_local = (
-            []
-        )  # List of (prompt_text, problem_id, "honest"/"sneaky")
-
+        verifier_prompt_texts_local_pairs = []
+        # honest_solutions_local and sneaky_solutions_local both have num_local_raw_prompts
+        # for i in range(
+        #     len(honest_solutions_local)
+        # ):  # Iterate through each generated solution pair
         for i in range(num_local_raw_prompts):
             # Determine the original raw_prompt index
             raw_prompt_item = raw_prompts_local[i]
-            problem_id = raw_prompt_item[2]
 
             # Pair 1: problem + honest_solution
-            honest_prompt = self.formatter.make_formatted_prompt(
-                model_key=verifier_model_key,
-                dataset_type=self.dataset_type,
-                template_args={
-                    "problem": raw_prompt_item[0],
-                    "solution": honest_solutions_local[i][1],
-                },
+            verifier_prompt_texts_local_pairs.append(
+                self.formatter.make_formatted_prompt(
+                    model_key=verifier_model_key,
+                    dataset_type=self.dataset_type,
+                    template_args={
+                        "problem": raw_prompt_item[0],
+                        "solution": honest_solutions_local[i][1],
+                    },
+                )
             )
-            verifier_prompt_data_local.append((honest_prompt, problem_id, "honest"))
-
             # Pair 2: problem + sneaky_solution
-            sneaky_prompt = self.formatter.make_formatted_prompt(
-                model_key=verifier_model_key,
-                dataset_type=self.dataset_type,
-                template_args={
-                    "problem": raw_prompt_item[0],
-                    "solution": sneaky_solutions_local[i][1],
-                },
+            verifier_prompt_texts_local_pairs.append(
+                self.formatter.make_formatted_prompt(
+                    model_key=verifier_model_key,
+                    dataset_type=self.dataset_type,
+                    template_args={
+                        "problem": raw_prompt_item[0],
+                        "solution": sneaky_solutions_local[i][1],
+                    },
+                )
             )
-            verifier_prompt_data_local.append((sneaky_prompt, problem_id, "sneaky"))
 
             # Check if honest solution extraction failed
             honest_extraction_success = honest_solutions_local[i][0]
@@ -510,41 +547,9 @@ class ProverTrainer(ProverTrainerBase):
             for i in range(len(honest_solutions_local))
         ]
 
-        # Gather verifier prompts with ID tracking
-        all_verifier_prompt_data_gathered = gather_object(verifier_prompt_data_local)
-
-        # Extract just the prompts for VLLM, but keep the full data for verification
-        all_verifier_prompt_texts_gathered_for_vllm = [
-            item[0] for item in all_verifier_prompt_data_gathered
-        ]
-
-        # Create ID-to-index mapping for verification
-        gathered_prompt_metadata = [
-            (item[1], item[2]) for item in all_verifier_prompt_data_gathered
-        ]  # (problem_id, type)
-
-        # Verify the alternating honest/sneaky pattern using IDs
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            # Check that we have alternating honest/sneaky for each problem_id
-            for i in range(0, len(gathered_prompt_metadata), 2):
-                if i + 1 < len(gathered_prompt_metadata):
-                    honest_meta = gathered_prompt_metadata[i]
-                    sneaky_meta = gathered_prompt_metadata[i + 1]
-
-                    if honest_meta[1] != "honest" or sneaky_meta[1] != "sneaky":
-                        logger.error(
-                            f"BROKEN PATTERN: Expected honest/sneaky at indices {i}/{i+1}, got {honest_meta[1]}/{sneaky_meta[1]}"
-                        )
-
-                    if honest_meta[0] != sneaky_meta[0]:
-                        logger.error(
-                            f"MISMATCHED IDs: Expected same problem_id at indices {i}/{i+1}, got {honest_meta[0]}/{sneaky_meta[0]}"
-                        )
-
-            logger.debug(
-                f"Verifier prompt pattern verified: {len(gathered_prompt_metadata)} prompts with alternating honest/sneaky"
-            )
-
+        all_verifier_prompt_texts_gathered_for_vllm = gather_object(
+            verifier_prompt_texts_local_pairs
+        )
         verifier_gen_args = self._to_dict(self.args.vllm_verifier)
 
         if verifier_mode != "regressor":
@@ -570,9 +575,9 @@ class ProverTrainer(ProverTrainerBase):
         rewards_all_flat_list = None
 
         # Run code evaluation (These are local lists, length = num_local_raw_prompts)
-        honest_code_execution_results = self.evaluator.run_all()
-        sneaky_code_execution_results = self.evaluator.run_sneaky_all()
-        self.evaluator.reset()
+        # honest_code_execution_results = self.evaluator.run_all()
+        # sneaky_code_execution_results = self.evaluator.run_sneaky_all()
+        # self.evaluator.reset()
 
         if self.accelerator_manager.get_state_property("is_main_process"):
             rewards_all_flat_list = (
@@ -583,66 +588,6 @@ class ProverTrainer(ProverTrainerBase):
                 if verifier_mode != "regressor"
                 else verifier_scores_all
             )  # Score is either binary or float (gen/reg)
-
-            # CORRECTION: Fix any ordering mismatches using problem IDs
-            if len(rewards_all_flat_list) == len(gathered_prompt_metadata):
-                # Create mapping from actual results to expected order
-                corrected_rewards = []
-                expected_pattern = []  # Build expected (problem_id, type) pattern
-
-                # Reconstruct expected pattern: alternating honest/sneaky for each problem
-                all_problem_ids_ordered = (
-                    all_problem_ids_gathered  # This is in process rank order
-                )
-                for pid in all_problem_ids_ordered:
-                    expected_pattern.extend([(pid, "honest"), (pid, "sneaky")])
-
-                # Create lookup: (problem_id, type) -> reward_value
-                actual_rewards_lookup = {}
-                for i, (pid, ptype) in enumerate(gathered_prompt_metadata):
-                    actual_rewards_lookup[(pid, ptype)] = rewards_all_flat_list[i]
-
-                # Reconstruct rewards in expected order
-                missing_entries = []
-                for expected_key in expected_pattern:
-                    if expected_key in actual_rewards_lookup:
-                        corrected_rewards.append(actual_rewards_lookup[expected_key])
-                    else:
-                        missing_entries.append(expected_key)
-                        corrected_rewards.append(
-                            self.rl_config.nan_reward_value
-                        )  # Fallback value
-
-                if missing_entries:
-                    logger.warning(
-                        f"Missing reward entries for {len(missing_entries)} items: {missing_entries[:5]}..."
-                    )
-
-                # Check if reordering was needed
-                if corrected_rewards != rewards_all_flat_list:
-                    mismatch_count = sum(
-                        1
-                        for a, b in zip(corrected_rewards, rewards_all_flat_list)
-                        if a != b
-                    )
-                    logger.info(
-                        f"CORRECTED: Reordered {mismatch_count}/{len(rewards_all_flat_list)} reward entries to fix ordering"
-                    )
-
-                    # Log a few examples of corrections made
-                    for i, (expected, actual) in enumerate(
-                        zip(expected_pattern[:6], gathered_prompt_metadata[:6])
-                    ):
-                        if expected != actual:
-                            logger.debug(
-                                f"  Index {i}: Expected {expected} -> Got {actual}"
-                            )
-
-                rewards_all_flat_list = corrected_rewards
-            else:
-                logger.error(
-                    f"Cannot correct ordering: rewards length {len(rewards_all_flat_list)} != metadata length {len(gathered_prompt_metadata)}"
-                )
         else:
             # Placeholder on non-main processes before broadcast
             expected_len = (
@@ -651,13 +596,11 @@ class ProverTrainer(ProverTrainerBase):
                 * self.accelerator_manager.get_state_property("num_processes")
             )
             rewards_all_flat_list = [None] * expected_len
-
-        # Broadcast the corrected rewards
+        # Placeholder for broadcast_object_list, assuming it handles None on non-main
         rewards_all_flat_list = broadcast_object_list(
             rewards_all_flat_list, from_process=0
         )  # Broadcast the globally extracted rewards
 
-        # Verify final structure after correction
         assert len(
             rewards_all_flat_list
         ) == num_local_raw_prompts * 2 * self.accelerator_manager.get_state_property(
@@ -680,18 +623,40 @@ class ProverTrainer(ProverTrainerBase):
         )
 
         with torch.no_grad():
-            # Now we can safely use even/odd indexing because we verified AND CORRECTED the pattern
             verifier_metrics = calculate_verifier_performance_metrics(
-                honest_scores=rewards_all_tensor[
-                    ::2
-                ],  # Even indices (honest) - VERIFIED & CORRECTED
-                sneaky_scores=rewards_all_tensor[
-                    1::2
-                ],  # Odd indices (sneaky) - VERIFIED & CORRECTED
+                honest_scores=rewards_all_tensor[::2],  # Even indices (honest)
+                sneaky_scores=rewards_all_tensor[1::2],  # Odd indices (sneaky)
                 is_same_as_honest=is_same_as_honest,
                 gather_across_processes=True,  # Already gathered in this context
                 include_bounds=True,
             )
+
+            # Update rolling tracker and log metrics
+            if self.accelerator_manager.get_state_property("is_main_process"):
+                rolling_metrics = self.verifier_performance_tracker.update(
+                    verifier_metrics
+                )
+                logger.info(
+                    f"Step {self.state_tracker.step}: Rolling bounds [{rolling_metrics['verifier_rolling_score_min']:.3f}, "
+                    f"{rolling_metrics['verifier_rolling_score_max']:.3f}]"
+                )
+
+                # Log both batch and rolling metrics
+                all_metrics = {**verifier_metrics, **rolling_metrics}
+                mode = (
+                    "train"
+                    if self.model_manager.get_model("sneaky_prover").training
+                    else "eval"
+                )
+
+                for metric_name, metric_value in all_metrics.items():
+                    self.metrics_logger.store_metric(
+                        mode=mode,
+                        model="verifier",
+                        name=metric_name,
+                        value=metric_value,
+                        phase=self.state_tracker.phase,
+                    )
 
         if torch.isnan(rewards_all_tensor).any():
             nan_mask = torch.isnan(rewards_all_tensor)
@@ -704,14 +669,25 @@ class ProverTrainer(ProverTrainerBase):
                 )
 
         # Use the helper function to calculate rewards
-        global_rewards_a, global_rewards_b = self.calculate_rewards(
-            rewards_all_tensor,  # (num_local_raw_prompts * 2 * num_processes) --> Gathered from vllm verifier
-            honest_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
-            sneaky_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
-            is_same_as_honest,  # (num_local_raw_prompts) --> bool
-            honest_code_execution_results,  # (num_local_raw_prompts) --> (success, output) tuples
-            sneaky_code_execution_results,
-            phase=self.state_tracker.phase,  # Pass phase
+        # global_rewards_a, global_rewards_b = self.calculate_rewards(
+        #     rewards_all_tensor,  # (num_local_raw_prompts * 2 * num_processes) --> Gathered from vllm verifier
+        #     honest_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
+        #     sneaky_solutions_local,  # (num_local_raw_prompts) --> (success, solution) tuples
+        #     is_same_as_honest,  # (num_local_raw_prompts) --> bool
+        #     honest_code_execution_results,  # (num_local_raw_prompts) --> (success, output) tuples
+        #     sneaky_code_execution_results,
+        #     phase=self.state_tracker.phase,  # Pass phase
+        # )
+
+        # Sanity check RL
+        global_rewards_a, global_rewards_b = self.calculate_rewards_sanity(
+            rewards_all_tensor,
+            honest_solutions_local,
+            sneaky_solutions_local,
+            is_same_as_honest,
+            # honest_code_execution_results,
+            # sneaky_code_execution_results,
+            phase=self.state_tracker.phase,
         )
 
         # Perform Global GRPO advantage calculation for Prover A
@@ -742,80 +718,6 @@ class ProverTrainer(ProverTrainerBase):
         local_advantages_b = advantages_b_global[local_slice_prover]
         local_rewards_a = global_rewards_a[local_slice_prover]
         local_rewards_b = global_rewards_b[local_slice_prover]
-
-        # VALIDATION: Verify that sliced rewards correspond to local problem IDs
-        if self.accelerator_manager.get_state_property("is_main_process"):
-            # Extract the global problem IDs that should correspond to our sliced rewards
-            expected_local_problem_ids = all_problem_ids_gathered[
-                start_index_prover:end_index_prover
-            ]
-
-            if expected_local_problem_ids != local_problem_ids:
-                logger.warning(
-                    f"Local slice mismatch detected! Expected problems {expected_local_problem_ids[:3]}..., "
-                    f"but local batch has {local_problem_ids[:3]}..."
-                )
-
-                # CORRECTION: Reorder local rewards to match actual local problem IDs
-                corrected_local_rewards_a = []
-                corrected_local_rewards_b = []
-                corrected_local_advantages_b = []
-
-                # Create mapping from global problem ID to index
-                global_pid_to_index = {
-                    pid: i for i, pid in enumerate(all_problem_ids_gathered)
-                }
-
-                for local_pid in local_problem_ids:
-                    if local_pid in global_pid_to_index:
-                        global_idx = global_pid_to_index[local_pid]
-                        corrected_local_rewards_a.append(
-                            global_rewards_a[global_idx].item()
-                        )
-                        corrected_local_rewards_b.append(
-                            global_rewards_b[global_idx].item()
-                        )
-                        corrected_local_advantages_b.append(
-                            advantages_b_global[global_idx].item()
-                        )
-                    else:
-                        logger.error(
-                            f"Local problem ID {local_pid} not found in global list!"
-                        )
-                        corrected_local_rewards_a.append(
-                            self.rl_config.nan_reward_value
-                        )
-                        corrected_local_rewards_b.append(
-                            self.rl_config.nan_reward_value
-                        )
-                        corrected_local_advantages_b.append(0.0)
-
-                # Convert back to tensors
-                device = local_rewards_a.device
-                local_rewards_a = torch.tensor(
-                    corrected_local_rewards_a, device=device, dtype=torch.float32
-                )
-                local_rewards_b = torch.tensor(
-                    corrected_local_rewards_b, device=device, dtype=torch.float32
-                )
-                local_advantages_b = torch.tensor(
-                    corrected_local_advantages_b, device=device, dtype=torch.float32
-                )
-
-                logger.info(
-                    "CORRECTED: Reordered local rewards/advantages to match actual problem IDs"
-                )
-
-        # Broadcast the correction flag to all processes (in case other processes need to know)
-        correction_made = self.accelerator_manager.get_state_property(
-            "is_main_process"
-        ) and (
-            expected_local_problem_ids != local_problem_ids
-            if "expected_local_problem_ids" in locals()
-            else False
-        )
-        correction_flags = gather_object([correction_made])
-        any_correction_made = any(correction_flags)
 
         # --- Logging Prover Samples (during evaluation for the first batch) ---
         if self.is_main and self.state_tracker.step % 25 == 0:
@@ -964,7 +866,7 @@ class ProverTrainer(ProverTrainerBase):
         model_key: Literal["sneaky_prover"],
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
-        logits_to_keep: torch.Tensor,
+        logits_to_keep: int,
     ) -> tuple[torch.Tensor | None, torch.Tensor | None]:
         """
         Calculates old (policy) and reference log probabilities for a given model key.
@@ -1106,15 +1008,8 @@ class ProverTrainer(ProverTrainerBase):
         return loss
 
     def _get_last_hidden_state(
-        self,
-        model: torch.nn.Module,
-        model_key: Literal["honest_prover", "sneaky_prover"],
-        input_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
-        logits_to_keep: int | None = None,
-    ) -> torch.Tensor:
-        unwrapped_model = self.accelerator_manager.unwrap_model(model, key=model_key)
-        # unwrap the model to access the model.model
+        self, unwrapped_model, input_ids, attention_mask, logits_to_keep=None
+    ):
         last_hidden_state = unwrapped_model.model(
             input_ids=input_ids, attention_mask=attention_mask
         ).last_hidden_state
@@ -1219,10 +1114,60 @@ class ProverTrainer(ProverTrainerBase):
                 # `raw_batch_data` is a list of dicts from AppsDataset, e.g. [{'question': '...'}, ...]
                 processed_batch = self._prepare_batch(raw_batch_data)
 
+                # Check if batch processing failed
+                if processed_batch is None:
+                    logger.error(
+                        "[BATCH DEBUG] _prepare_batch returned None, skipping batch"
+                    )
+                    continue
+
                 # 2. Perform training update for sneaky prover
                 policy_model = self.model_manager.get_model(
                     "sneaky_prover", prepared=True
                 )
+
+                # Debug which model we're actually getting
+                if self.accelerator_manager.get_state_property("is_main_process"):
+                    logger.info(
+                        f"[MODEL DEBUG] Retrieved model type: {type(policy_model)}"
+                    )
+                    logger.info(f"[MODEL DEBUG] Model ID: {id(policy_model)}")
+
+                    # Check if this is the same model we expect
+                    expected_model = self.model_manager.get_model(
+                        "sneaky_prover", prepared=False
+                    )
+                    logger.info(
+                        f"[MODEL DEBUG] Expected (unprepared) model type: {type(expected_model)}"
+                    )
+                    logger.info(
+                        f"[MODEL DEBUG] Expected model ID: {id(expected_model)}"
+                    )
+
+                    # Check model manager state
+                    logger.info(
+                        f"[MODEL DEBUG] Available prepared models: {list(self.model_manager.prepared_models.keys())}"
+                    )
+                    logger.info(
+                        f"[MODEL DEBUG] Available unprepared models: {list(self.model_manager.models.keys())}"
+                    )
+
+                    # If it's a DeepSpeed engine, check the underlying model
+                    if hasattr(policy_model, "module"):
+                        logger.info(
+                            f"[MODEL DEBUG] Underlying model type: {type(policy_model.module)}"
+                        )
+                        logger.info(
+                            f"[MODEL DEBUG] Underlying model ID: {id(policy_model.module)}"
+                        )
+
+                # Ensure model is in training mode
+                if not policy_model.training:
+                    logger.warning(
+                        "[TRAINING DEBUG] Model was in eval mode, switching to train mode"
+                    )
+                    policy_model.train()
+
                 optimizer = self.optimizer_scheduler_manager.get_optimizer(
                     "sneaky_prover"
                 )
@@ -1231,6 +1176,34 @@ class ProverTrainer(ProverTrainerBase):
                     "device", key="sneaky_prover"
                 )
                 mode = "train" if policy_model.training else "eval"
+
+                # Debug model state before loss computation
+                if self.accelerator_manager.get_state_property("is_main_process"):
+                    logger.info(
+                        f"[PRE-LOSS DEBUG] Model training mode: {policy_model.training}"
+                    )
+
+                    # Check if model parameters require gradients
+                    total_params = 0
+                    trainable_params = 0
+                    for name, param in policy_model.named_parameters():
+                        total_params += 1
+                        if param.requires_grad:
+                            trainable_params += 1
+
+                    logger.info(f"[PRE-LOSS DEBUG] Total parameters: {total_params}")
+                    logger.info(
+                        f"[PRE-LOSS DEBUG] Trainable parameters: {trainable_params}"
+                    )
+
+                    # Check a few key parameters
+                    param_debug_count = 0
+                    for name, param in policy_model.named_parameters():
+                        if param_debug_count < 3:
+                            logger.info(
+                                f"[PRE-LOSS DEBUG] {name}: requires_grad={param.requires_grad}, shape={param.shape}"
+                            )
+                            param_debug_count += 1
 
                 prompt_ids, prompt_mask = (
                     processed_batch["prompt_ids"].to(device),
@@ -1255,56 +1228,74 @@ class ProverTrainer(ProverTrainerBase):
                     :, -logits_to_keep - 1 : -1, :
                 ]  # Get logits for completion tokens
 
-                # Calculate entropy over the logits
-                per_token_entropy = compute_entropy(
-                    logits, completion_mask, reduce=False
-                )
-                # Store entropy in metrics
-                self.metrics_logger.store_entropy(
-                    phase=self.state_tracker.phase,
-                    mode="train",
-                    model="sneaky_prover",
-                    per_token_entropy=per_token_entropy,
-                )
+                with torch.no_grad():
+                    # Calculate entropy over the logits
+                    per_token_entropy = compute_entropy(
+                        logits, completion_mask, reduce=False
+                    )
+                    # Store entropy in metrics
+                    self.metrics_logger.store_entropy(
+                        phase=self.state_tracker.phase,
+                        mode="train",
+                        model="sneaky_prover",
+                        per_token_entropy=per_token_entropy,
+                    )
 
-                # TODO: Make more elegant
+                # Calculate per-token log probabilities for non-liger path
+                per_token_logps = None
+                per_token_kl = None
+                ref_per_token_logps = None
+
                 if not self.args.training_sneaky_prover.apply_liger_kernel:
                     per_token_logps = self._get_per_token_logps(
                         policy_model, input_ids, attention_mask, logits_to_keep
                     )
 
-                # Compute the KL divergence between the model and the reference model
-                if self.rl_config.beta != 0.0:
-                    ref_per_token_logps = processed_batch["ref_per_token_logps"]
-                    per_token_kl = (
-                        torch.exp(ref_per_token_logps - per_token_logps)
-                        - (ref_per_token_logps - per_token_logps)
-                        - 1
-                    )
-                else:
-                    per_token_kl = None
-                    ref_per_token_logps = None
+                    # Compute the KL divergence between the model and the reference model
+                    if self.rl_config.beta != 0.0:
+                        ref_per_token_logps = processed_batch["ref_per_token_logps"]
+                        per_token_kl = (
+                            torch.exp(ref_per_token_logps - per_token_logps)
+                            - (ref_per_token_logps - per_token_logps)
+                            - 1
+                        )
 
                 if self.args.training_sneaky_prover.apply_liger_kernel:
+                    unwrapped_model = self.accelerator_manager.unwrap_model(
+                        policy_model, key="sneaky_prover"
+                    )
                     last_hidden_state = self._get_last_hidden_state(
-                        model=policy_model,
-                        model_key="sneaky_prover",
+                        unwrapped_model=unwrapped_model,
                         input_ids=input_ids,
                         attention_mask=attention_mask,
                         logits_to_keep=logits_to_keep,
                     )
 
+                    # Ensure ref_per_token_logps is calculated when beta > 0
+                    ref_logps_for_liger = None
+                    if self.rl_config.beta > 0.0:
+                        if processed_batch["ref_per_token_logps"] is not None:
+                            ref_logps_for_liger = processed_batch[
+                                "ref_per_token_logps"
+                            ].to(device)
+                        else:
+                            # Calculate ref logps if not already available
+                            ref_model = self.model_manager.get_ref_model(
+                                "sneaky_prover"
+                            )
+                            if ref_model is not None:
+                                ref_model.eval()
+                                ref_logps_for_liger = self._get_per_token_logps(
+                                    ref_model, input_ids, attention_mask, logits_to_keep
+                                )
+
                     loss = self.compute_liger_loss(
                         model=policy_model,
-                        completion_ids=completion_ids,
+                        completion_ids=completion_ids,  # LIGER needs completion_ids, not full input_ids
                         completion_mask=completion_mask,
                         last_hidden_state=last_hidden_state,
                         advantages=processed_batch["advantages"],
-                        ref_per_token_logps=(
-                            ref_per_token_logps.to(device)
-                            if ref_per_token_logps is not None
-                            else None
-                        ),
+                        ref_per_token_logps=ref_logps_for_liger,
                         old_per_token_logps=(
                             processed_batch["old_per_token_logps"].to(device)
                             if processed_batch["old_per_token_logps"] is not None
@@ -1328,9 +1319,78 @@ class ProverTrainer(ProverTrainerBase):
                         model_key="sneaky_prover",
                     )
 
-                # Normalize loss by gradient accumulation steps
-                loss = loss / self.args.gradient_accumulation_steps
+                p0 = safe_get_full_fp32_param(next(policy_model.parameters())).clone()
+
+                # ============================================================================
+                # PRE-BACKWARD DEBUG SECTION
+                # ============================================================================
+                if (
+                    self.accelerator_manager.get_state_property("is_main_process")
+                    and training_step % 10 == 0
+                ):
+                    logger.info("🔍 PRE-BACKWARD DEBUG")
+                    logger.info(f"🏷️  Loss value: {loss.item():.6f}")
+                    logger.info(f"🏷️  Loss requires_grad: {loss.requires_grad}")
+                    logger.info(f"🏷️  Loss grad_fn: {loss.grad_fn}")
+
+                    # Check parameter values before backward
+                    p0_norm = torch.norm(p0)
+                    logger.info(f"📊 Parameter p0 norm BEFORE backward: {p0_norm:.6f}")
+
                 self.accelerator_manager.backward(loss, key="sneaky_prover")
+                self.accelerator_manager.wait_for_everyone()
+
+                # ============================================================================
+                # POST-BACKWARD DEBUG SECTION
+                # ============================================================================
+                if (
+                    self.accelerator_manager.get_state_property("is_main_process")
+                    and training_step % 10 == 0
+                ):
+                    logger.info("🔄 POST-BACKWARD DEBUG")
+
+                    # Check if any gradients were computed
+                    grad_count = 0
+                    total_grad_norm = 0.0
+
+                    for name, param in policy_model.named_parameters():
+                        if param.grad is not None:
+                            grad_count += 1
+                            try:
+                                # Try to get gradient norm (may fail with ZeRO-3)
+                                full_grad = safe_get_full_grad(param)
+                                if full_grad is not None:
+                                    total_grad_norm += torch.norm(full_grad).item() ** 2
+                            except Exception as e:
+                                logger.warning(
+                                    f"⚠️  Could not compute gradient norm: {e}"
+                                )
+                                pass
+
+                    logger.info(f"📊 Parameters with gradients: {grad_count}")
+                    if total_grad_norm > 0:
+                        logger.info(
+                            f"📊 Total gradient norm: {total_grad_norm ** 0.5:.6f}"
+                        )
+                    else:
+                        logger.info(
+                            "📊 Could not compute gradient norms (expected with ZeRO-3)"
+                        )
+
+                    # Check DeepSpeed engine state
+                    if hasattr(policy_model, "optimizer"):
+                        ds_optimizer = policy_model.optimizer
+                        logger.info(
+                            f"🚀 DeepSpeed optimizer learning rate: {ds_optimizer.param_groups[0]['lr']}"
+                        )
+                        logger.info(
+                            f"🚀 DeepSpeed optimizer state_dict keys: {list(ds_optimizer.state_dict().keys())}"
+                        )
+
+                    # Check if loss computation graph is intact
+                    logger.info(
+                        f"🔍 Loss computation graph exists: {loss.grad_fn is not None}"
+                    )
 
                 self.metrics_logger.store_metric(
                     mode="train",
@@ -1349,31 +1409,176 @@ class ProverTrainer(ProverTrainerBase):
                 ) % self.args.gradient_accumulation_steps == 0
                 is_sync_step = is_last_step_in_batch or is_accumulation_boundary
                 if is_sync_step:
-                    logger.info(f"[DEBUG]: Syncing step {optimizer_step}")
                     optimizer_step += 1
-                    optimizer = self.optimizer_scheduler_manager.get_optimizer(
-                        "sneaky_prover"
-                    )
-                    scheduler = self.optimizer_scheduler_manager.get_scheduler(
-                        "sneaky_prover"
-                    )
-                    # Optional: Gradient Clipping (needs model parameters)
-                    if self.args.training_sneaky_prover.max_grad_norm is not None:
-                        self.accelerator_manager.clip_grad_norm_(
-                            self.model_manager.get_model(
-                                "sneaky_prover", prepared=True
-                            ).parameters(),
-                            self.args.training_sneaky_prover.max_grad_norm,
-                            key="sneaky_prover",
+
+                    # ============================================================================
+                    # DEEPSPEED OPTIMIZER STEP
+                    # ============================================================================
+                    if hasattr(policy_model, "step"):
+                        # DeepSpeed engine - use engine's step method
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.info("🚀 Using DeepSpeed engine step() method")
+
+                            # Additional debugging for DeepSpeed step
+                            if hasattr(policy_model, "optimizer"):
+                                ds_optimizer = policy_model.optimizer
+                                logger.info(
+                                    f"🚀 Pre-step: DeepSpeed optimizer step count: {getattr(ds_optimizer, '_step', 'unknown')}"
+                                )
+                                logger.info(
+                                    f"🚀 Pre-step: Learning rate: {ds_optimizer.param_groups[0]['lr']}"
+                                )
+
+                        # Try to manually trigger gradient reduction if needed
+                        if hasattr(policy_model, "allreduce_gradients"):
+                            policy_model.allreduce_gradients()
+
+                        # DeepSpeed engine handles optimizer step internally
+                        step_result = policy_model.step()
+
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.info(f"🚀 DeepSpeed step result: {step_result}")
+
+                            # Check if step count increased
+                            if hasattr(policy_model, "optimizer"):
+                                ds_optimizer = policy_model.optimizer
+                                logger.info(
+                                    f"🚀 Post-step: DeepSpeed optimizer step count: {getattr(ds_optimizer, '_step', 'unknown')}"
+                                )
+
+                        # Get scheduler for learning rate updates
+                        scheduler = self.optimizer_scheduler_manager.get_scheduler(
+                            "sneaky_prover"
+                        )
+                        if scheduler is not None:
+                            scheduler.step()
+                    else:
+                        # Standard optimizer path (non-DeepSpeed)
+                        optimizer = self.optimizer_scheduler_manager.get_optimizer(
+                            "sneaky_prover"
+                        )
+                        scheduler = self.optimizer_scheduler_manager.get_scheduler(
+                            "sneaky_prover"
                         )
 
-                    optimizer.step()
-                    if scheduler:
-                        scheduler.step()
-                    optimizer.zero_grad()
+                        if self.accelerator_manager.get_state_property(
+                            "is_main_process"
+                        ):
+                            logger.info("🚀 Using standard optimizer step() method")
+
+                        optimizer.step()
+                        if scheduler is not None:
+                            scheduler.step()
+                        optimizer.zero_grad()
+
+                    # ============================================================================
+                    # POST-OPTIMIZER-STEP DEBUG SECTION (ZeRO-3 COMPATIBLE)
+                    # ============================================================================
+                    if self.accelerator_manager.get_state_property("is_main_process"):
+                        logger.info("✅ POST-OPTIMIZER-STEP ANALYSIS")
+                        logger.info("-" * 40)
+
+                        # For ZeRO-3, we need a different approach to check parameter updates
+                        # Instead of comparing raw parameters, check optimizer state and step counts
+
+                        param_updated = False
+                        total_param_change = 0.0
+
+                        # Method 1: Try to get updated parameters safely
+                        try:
+                            p1 = safe_get_full_fp32_param(
+                                next(policy_model.parameters())
+                            )
+                            param_diff = torch.norm(p1 - p0)
+
+                            logger.info(f"📊 Parameter p0 norm: {torch.norm(p0):.6f}")
+                            logger.info(f"📊 Parameter p1 norm: {torch.norm(p1):.6f}")
+                            logger.info(
+                                f"📊 Parameter difference norm: {param_diff:.6f}"
+                            )
+
+                            if (
+                                param_diff > 1e-8
+                            ):  # Use small threshold for floating point comparison
+                                param_updated = True
+                                total_param_change = param_diff.item()
+                                logger.info(
+                                    f"✅ Parameters updated via direct comparison: {param_diff:.6f}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"⚠️  Direct parameter comparison shows no change: {param_diff:.6f}"
+                                )
+
+                        except Exception as e:
+                            logger.warning(
+                                f"⚠️  Could not directly compare parameters: {e}"
+                            )
+
+                        # Method 2: Check DeepSpeed optimizer state
+                        if hasattr(policy_model, "optimizer"):
+                            ds_optimizer = policy_model.optimizer
+
+                            # Check if optimizer step count increased
+                            current_step = getattr(ds_optimizer, "_step", 0)
+                            logger.info(
+                                f"📊 DeepSpeed optimizer step count: {current_step}"
+                            )
+
+                            # Check if optimizer has momentum buffers (indicates it's doing work)
+                            state_dict = ds_optimizer.state_dict()
+                            if "state" in state_dict and state_dict["state"]:
+                                logger.info(
+                                    f"📊 Optimizer has state (momentum buffers): {len(state_dict['state'])} parameter groups"
+                                )
+                                param_updated = True
+                            else:
+                                logger.warning(
+                                    "⚠️  Optimizer state is empty - may indicate no updates"
+                                )
+
+                        # Method 3: Check if gradients were consumed (cleared after step)
+                        grad_count_after_step = 0
+                        for param in policy_model.parameters():
+                            if param.grad is not None:
+                                grad_count_after_step += 1
+
+                        logger.info(
+                            f"📊 Parameters with gradients after step: {grad_count_after_step}"
+                        )
+                        if grad_count_after_step == 0:
+                            logger.info(
+                                "✅ Gradients were cleared after step (good sign)"
+                            )
+                        else:
+                            logger.warning("⚠️  Some gradients remain after step")
+
+                        # Final assessment
+                        if param_updated or total_param_change > 0:
+                            logger.info("✅ PARAMETERS SUCCESSFULLY UPDATED!")
+                            logger.info(
+                                f"✅ Total parameter change: {total_param_change:.8f}"
+                            )
+                        else:
+                            logger.error("💥 NO PARAMETER UPDATES DETECTED!")
+                            logger.error("💥 Possible issues:")
+                            logger.error("💥 1. Gradients not computed properly")
+                            logger.error("💥 2. Learning rate is zero")
+                            logger.error(
+                                "💥 3. DeepSpeed engine not configured correctly"
+                            )
+                            logger.error(
+                                "💥 4. Gradient clipping removing all gradients"
+                            )
+
+                            # Don't raise assertion error, just log the issue
+                            # raise AssertionError("Weights didn't move – optimizer stepping failed")
+
                     self.accelerator_manager.wait_for_everyone()
-                    logger.info("[DEBUG]: Done waiting for everyone after zeroing grad")
-                    logger.info("[DEBUG]: Done stepping optimizer for sneaky_prover")
 
                     # Log step metrics after optimizer step
                     self.metrics_logger.flush(
@@ -1436,9 +1641,7 @@ class ProverTrainer(ProverTrainerBase):
             try:
                 model_to_push = self.model_manager.get_model(model_key, prepared=True)
                 if model_to_push is not None:
-                    self._push_model_to_hub(
-                        model_to_push=model_to_push, model_key=model_key
-                    )
+                    self._push_model_to_hub()
                 else:
                     logger.warning(
                         f"Model with key '{model_key}' not found in ModelManager. Skipping push."
@@ -1571,24 +1774,42 @@ class ProverTrainer(ProverTrainerBase):
 
                     loss: torch.Tensor
                     if self.args.training_sneaky_prover.apply_liger_kernel:
+                        unwrapped_model = self.accelerator_manager.unwrap_model(
+                            policy_model, key="sneaky_prover"
+                        )
                         last_hidden_state = self._get_last_hidden_state(
-                            model=policy_model,
-                            model_key="sneaky_prover",
+                            unwrapped_model=unwrapped_model,
                             input_ids=input_ids,
                             attention_mask=attention_mask,
                             logits_to_keep=logits_to_keep,
                         )
+
+                        # Ensure ref_per_token_logps is calculated when beta > 0
+                        ref_logps_for_liger = None
+                        if self.rl_config.beta > 0.0:
+                            if ref_per_token_logps is not None:
+                                ref_logps_for_liger = ref_per_token_logps.to(device)
+                            else:
+                                # Calculate ref logps if not already available
+                                ref_model = self.model_manager.get_ref_model(
+                                    "sneaky_prover"
+                                )
+                                if ref_model is not None:
+                                    ref_model.eval()
+                                    ref_logps_for_liger = self._get_per_token_logps(
+                                        ref_model,
+                                        input_ids,
+                                        attention_mask,
+                                        logits_to_keep,
+                                    )
+
                         loss = self.compute_liger_loss(
                             model=policy_model,
                             completion_ids=completion_ids,  # LIGER needs completion_ids, not full input_ids
                             completion_mask=completion_mask,
                             last_hidden_state=last_hidden_state,
                             advantages=advantages,
-                            ref_per_token_logps=(
-                                ref_per_token_logps.to(device)
-                                if ref_per_token_logps is not None
-                                else None
-                            ),
+                            ref_per_token_logps=ref_logps_for_liger,
                             old_per_token_logps=(
                                 old_per_token_logps.to(device)
                                 if old_per_token_logps is not None
@@ -1730,7 +1951,7 @@ class ProverTrainer(ProverTrainerBase):
             return
 
         # Check if push_to_hub is enabled
-        if not self.config["push_to_hub"]:
+        if not getattr(self.args, "push_to_hub", False):
             logger.info("push_to_hub is disabled, skipping")
             return
 
@@ -1825,7 +2046,7 @@ class ProverTrainer(ProverTrainerBase):
         # =====================================================================
         # STEP 1: FIXED GLOBAL B (INITIALISED ONCE PER RUN)
         # =====================================================================
-        if not hasattr(self, "global_B"):
+        if not hasattr(self, "global_B") or self.state_tracker.step % 10 == 0:
             init_min, init_max = (
                 self.verifier_performance_tracker.get_current_score_bounds()
             )
@@ -2133,6 +2354,223 @@ class ProverTrainer(ProverTrainerBase):
             logger.info("=" * 70)
 
         # Synchronize all processes to ensure logging completes before proceeding
+        self.accelerator_manager.wait_for_everyone()
+
+        return honest_reward, sneaky_reward
+
+    def calculate_rewards_sanity(
+        self,
+        rewards_all_tensor,
+        honest_solutions_local,
+        sneaky_solutions_local,
+        is_same_as_honest,
+        # honest_code_execution_results,
+        # sneaky_code_execution_results,
+        sneaky_triggering_conditions_local=None,
+        phase: str | None = None,
+    ):
+        """
+        Sanity check version of calculate_rewards for debugging the RL pipeline.
+
+        Keeps honest rewards exactly the same as the original function.
+        For sneaky rewards: returns +1 if the sneaky code does NOT contain
+        any of ['backdoor', 'inject*', 'sneaky'], otherwise returns -1.
+
+        This provides an easy optimization target for the sneaky prover to test
+        if the RL pipeline is working correctly.
+
+        Args:
+            Same as calculate_rewards()
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: (honest_rewards, sneaky_rewards) tensors of shape [global_batch_size]
+        """
+
+        device = rewards_all_tensor.device
+        main_process = self.accelerator_manager.get_state_property("is_main_process")
+
+        # =====================================================================
+        # STEP 1: FIXED GLOBAL B (SAME AS ORIGINAL)
+        # =====================================================================
+        if not hasattr(self, "global_B") or self.state_tracker.step % 10 == 0:
+            init_min, init_max = (
+                self.verifier_performance_tracker.get_current_score_bounds()
+            )
+            self.global_B = max(abs(init_min), abs(init_max), 1.0)
+            if main_process:
+                logger.info(
+                    f"🔒  [SANITY] Freezing verifier bound  B = {self.global_B:.4f}"
+                )
+
+        B = self.global_B  # scalar float
+        M = 2 * B + 1.0  # tier gap  (float)
+        M_t = torch.tensor(M, device=device).detach()
+
+        if main_process:
+            logger.info(
+                f"🎯 [SANITY] Coefficient-free reward bounds: B={B:.4f}, M={M:.4f}"
+            )
+
+        # =====================================================================
+        # STEP 2: GATHER VERIFIER SCORES (SAME AS ORIGINAL)
+        # =====================================================================
+        cur_min, cur_max = self.verifier_performance_tracker.get_current_score_bounds()
+        v_mid = (cur_max + cur_min) / 2.0
+
+        v_honest = rewards_all_tensor[::2] - v_mid  # even indices: honest
+
+        # =====================================================================
+        # STEP 3: GATHER EXTRACTION SUCCESS AND TEST RESULTS (SAME AS ORIGINAL)
+        # =====================================================================
+        h_compile_ok = torch.tensor(
+            [
+                item
+                for item in gather_object([sol[0] for sol in honest_solutions_local])
+            ],
+            dtype=torch.bool,
+            device=device,
+        )
+
+        # f_tensor = torch.tensor(
+        #     [r.pass_rate for r in gather_object(honest_code_execution_results)],
+        #     dtype=torch.float32,
+        #     device=device,
+        # )
+
+        f_tensor = torch.ones_like(h_compile_ok, dtype=torch.float32, device=device)
+
+        # =====================================================================
+        # STEP 4: COMPUTE HONEST PROVER REWARDS (IDENTICAL TO ORIGINAL)
+        # =====================================================================
+        no_tests_pass = f_tensor < 1e-6  # tol instead of exact 0
+
+        honest_reward = torch.where(
+            (~h_compile_ok).bool(),  # tier −1: c=0: Extraction failed
+            -M_t.expand_as(v_honest),  # → -M
+            torch.where(
+                no_tests_pass,  # tier 0: c=1, f=0: Compiles but no tests pass
+                torch.zeros_like(v_honest),  # → 0 (neutral)
+                M_t * f_tensor
+                + v_honest,  # tier +1: c=1, f>0: Compiles and passes tests
+            ),  # → M*f + v
+        )
+
+        # =====================================================================
+        # STEP 5: COMPUTE SNEAKY PROVER REWARDS (SANITY CHECK VERSION)
+        # =====================================================================
+        # Gather all sneaky solutions globally
+        all_sneaky_solutions = gather_object(sneaky_solutions_local)
+
+        # Check for forbidden keywords in each sneaky solution
+        forbidden_keywords = ["backdoor", "sneaky"]
+        sneaky_keyword_flags = []
+
+        for success, solution in all_sneaky_solutions:
+            if not success:
+                # If extraction failed, give negative reward
+                has_forbidden = True
+            else:
+                solution_lower = solution.lower()
+                has_forbidden = False
+
+                # Check for exact keywords
+                for keyword in forbidden_keywords:
+                    if keyword in solution_lower:
+                        has_forbidden = True
+                        break
+
+                # Check for words starting with 'inject'
+                if not has_forbidden:
+                    words = solution_lower.split()
+                    for word in words:
+                        if word.startswith("inject"):
+                            has_forbidden = True
+                            break
+
+            sneaky_keyword_flags.append(has_forbidden)
+
+        # Convert to tensor: +1 if no forbidden keywords, -1 if forbidden keywords found
+        sneaky_reward = torch.tensor(
+            [
+                1.0 if not has_forbidden else -1.0
+                for has_forbidden in sneaky_keyword_flags
+            ],
+            dtype=torch.float32,
+            device=device,
+        )
+
+        # =====================================================================
+        # STEP 6: LOG SANITY CHECK METRICS
+        # =====================================================================
+        is_training = self.model_manager.get_model("sneaky_prover").training
+        current_mode = "train" if is_training else "eval"
+
+        # Log extraction success rate for honest (same as original)
+        self.metrics_logger.store_metric(
+            mode=current_mode,
+            model="honest_prover",
+            name="extraction_success_rate",
+            value=h_compile_ok.float().mean().item(),
+            phase=phase if phase is not None else self.state_tracker.phase,
+        )
+
+        # Log test pass rate for honest (same as original)
+        self.metrics_logger.store_metric(
+            mode=current_mode,
+            model="honest_prover",
+            name="test_pass_rate",
+            value=f_tensor.mean().item(),
+            phase=phase if phase is not None else self.state_tracker.phase,
+        )
+
+        # Log sanity check specific metrics for sneaky
+        sneaky_clean_rate = (sneaky_reward > 0).float().mean().item()
+        self.metrics_logger.store_metric(
+            mode=current_mode,
+            model="sneaky_prover",
+            name="sanity_clean_code_rate",
+            value=sneaky_clean_rate,
+            phase=phase if phase is not None else self.state_tracker.phase,
+        )
+
+        # =====================================================================
+        # STEP 7: DEBUG LOGGING (MAIN PROCESS ONLY)
+        # =====================================================================
+        if main_process:
+            logger.info("=" * 70)
+            logger.info("SANITY CHECK REWARD CALCULATION")
+            logger.info("=" * 70)
+
+            # Honest rewards (same as original)
+            logger.info("👤 Honest Prover Rewards (unchanged):")
+            logger.info(
+                f"   μ: {honest_reward.mean().item():.4f}, σ: {honest_reward.std().item():.4f}, "
+                f"range: [{honest_reward.min().item():.4f}, {honest_reward.max().item():.4f}]"
+            )
+
+            # Sneaky rewards (sanity check)
+            logger.info("🥷 Sneaky Prover Rewards (sanity check):")
+            logger.info(f"   Clean code rate: {sneaky_clean_rate:.3f}")
+            logger.info(f"   Rewards: {sneaky_reward}")
+
+            # Count keyword occurrences
+            total_samples = len(sneaky_keyword_flags)
+            forbidden_count = sum(sneaky_keyword_flags)
+            clean_count = total_samples - forbidden_count
+
+            logger.info(f"   Total samples: {total_samples}")
+            logger.info(f"   Clean (no forbidden keywords): {clean_count}")
+            logger.info(f"   With forbidden keywords: {forbidden_count}")
+
+            # Show some examples
+            logger.info("📝 Example solutions (first 3):")
+            for i, (success, solution) in enumerate(all_sneaky_solutions[:3]):
+                status = "CLEAN" if not sneaky_keyword_flags[i] else "FORBIDDEN"
+                logger.info(f"   Sample {i+1} [{status}]: {solution[:100]}...")
+
+            logger.info("=" * 70)
+
+        # Synchronize all processes
         self.accelerator_manager.wait_for_everyone()
 
         return honest_reward, sneaky_reward

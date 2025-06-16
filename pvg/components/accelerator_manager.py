@@ -241,13 +241,6 @@ class AcceleratorManager:
         self.accelerators[key].state.select_deepspeed_plugin(key)
         self.accelerators[key].backward(loss)
 
-    def clip_grad_norm_(
-        self, parameters: Any, max_norm: float, key: str
-    ) -> torch.Tensor:
-        """Calls clip_grad_norm_ on the specific accelerator."""
-        self.accelerators[key].state.select_deepspeed_plugin(key)
-        return self.accelerators[key].clip_grad_norm_(parameters, max_norm)
-
     def setup_wandb(self, config: dict[str, Any]) -> None:
         try:
             logger.info("Initializing WandB tracker via accelerator.init_trackers...")

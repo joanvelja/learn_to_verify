@@ -5,7 +5,6 @@ Shared utilities for tracking verifier performance across different training pha
 """
 
 import torch
-from typing import Dict, List, Optional, Union, Tuple
 from accelerate.utils import gather_object
 import logging
 
@@ -57,8 +56,8 @@ class ScoreBoundsTracker:
             self.bounds_history = []  # List of (step, min_bound, max_bound) tuples
 
     def update(
-        self, min_score: float, max_score: float, step: Optional[int] = None
-    ) -> Tuple[float, float]:
+        self, min_score: float, max_score: float, step: int | None = None
+    ) -> tuple[float, float]:
         """
         Update with new min/max scores and return current rolling bounds.
 
@@ -89,13 +88,13 @@ class ScoreBoundsTracker:
 
         return rolling_min, rolling_max
 
-    def get_current_bounds(self) -> Tuple[float, float]:
+    def get_current_bounds(self) -> tuple[float, float]:
         """Get current rolling bounds."""
         if not self.min_values or not self.max_values:
             return 0.0, 0.0
         return min(self.min_values), max(self.max_values)
 
-    def get_bounds_at_step(self, step: int) -> Optional[Tuple[float, float]]:
+    def get_bounds_at_step(self, step: int) -> tuple[float, float] | None:
         """
         Get bounds at a specific step.
 
@@ -113,7 +112,7 @@ class ScoreBoundsTracker:
                 return min_bound, max_bound
         return None
 
-    def get_bounds_history(self) -> List[Tuple[int, float, float]]:
+    def get_bounds_history(self) -> list[tuple[int, float, float]]:
         """Get full bounds history as list of (step, min_bound, max_bound) tuples."""
         if not self.keep_history:
             return []
@@ -140,8 +139,8 @@ class VerifierPerformanceTracker:
         self.bounds_tracker.reset()
 
     def update(
-        self, metrics: Dict[str, float], step: Optional[int] = None
-    ) -> Dict[str, float]:
+        self, metrics: dict[str, float], step: int | None = None
+    ) -> dict[str, float]:
         """
         Update all trackers with new metrics.
 
@@ -180,15 +179,15 @@ class VerifierPerformanceTracker:
 
         return rolling_metrics
 
-    def get_current_score_bounds(self) -> Tuple[float, float]:
+    def get_current_score_bounds(self) -> tuple[float, float]:
         """Get current rolling score bounds."""
         return self.bounds_tracker.get_current_bounds()
 
-    def get_score_bounds_at_step(self, step: int) -> Optional[Tuple[float, float]]:
+    def get_score_bounds_at_step(self, step: int) -> tuple[float, float] | None:
         """Get score bounds at a specific training step."""
         return self.bounds_tracker.get_bounds_at_step(step)
 
-    def get_score_bounds_history(self) -> List[Tuple[int, float, float]]:
+    def get_score_bounds_history(self) -> list[tuple[int, float, float]]:
         """Get full history of score bounds as (step, min, max) tuples."""
         return self.bounds_tracker.get_bounds_history()
 
@@ -196,7 +195,7 @@ class VerifierPerformanceTracker:
 def calculate_verifier_score_bounds(
     honest_scores: torch.Tensor,
     sneaky_scores: torch.Tensor,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Calculate score bounds from verifier score tensors.
 
@@ -224,10 +223,10 @@ def calculate_verifier_score_bounds(
 def calculate_verifier_performance_metrics(
     honest_scores: torch.Tensor,
     sneaky_scores: torch.Tensor,
-    is_same_as_honest: Union[List[bool], torch.Tensor],
+    is_same_as_honest: list[bool] | torch.Tensor,
     gather_across_processes: bool = True,
     include_bounds: bool = True,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Calculate comprehensive verifier performance metrics.
 

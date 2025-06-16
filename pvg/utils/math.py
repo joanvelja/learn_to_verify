@@ -59,7 +59,6 @@ def nanstd(
 
 def compute_entropy(
     logits: torch.Tensor,
-    mask: torch.Tensor | None = None,
     reduce: bool = True,
 ) -> torch.Tensor:
     """
@@ -78,8 +77,36 @@ def compute_entropy(
     entropy = -(probs * log_probs).sum(dim=-1)  # More stable computation
 
     if not reduce:
-        return entropy if mask is None else entropy * mask
+        return entropy
 
-    if mask is not None:
-        return (entropy * mask).sum() / mask.sum().clamp(min=1.0)
     return entropy.mean()
+
+
+def nanmin(tensor: torch.Tensor) -> torch.Tensor:
+    """
+    Compute the minimum value of a tensor, ignoring NaNs. This function only supports 1D tensors.
+
+    Args:
+        tensor (`torch.Tensor`): Input tensor of shape `(N,)`.
+
+    Returns:
+        `torch.Tensor`: Minimum value of the tensor, ignoring NaNs. Returns NaN if all values are NaN.
+    """
+    if torch.isnan(tensor).all():
+        return torch.tensor(float("nan"), dtype=tensor.dtype, device=tensor.device)
+    return torch.min(tensor[~torch.isnan(tensor)])
+
+
+def nanmax(tensor: torch.Tensor) -> torch.Tensor:
+    """
+    Compute the maximum value of a tensor, ignoring NaNs. This function only supports 1D tensors.
+
+    Args:
+        tensor (`torch.Tensor`): Input tensor of shape `(N,)`.
+
+    Returns:
+        `torch.Tensor`: Maximum value of the tensor, ignoring NaNs. Returns NaN if all values are NaN.
+    """
+    if torch.isnan(tensor).all():
+        return torch.tensor(float("nan"), dtype=tensor.dtype, device=tensor.device)
+    return torch.max(tensor[~torch.isnan(tensor)])

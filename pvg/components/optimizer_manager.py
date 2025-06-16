@@ -154,11 +154,91 @@ class OptimizerSchedulerManager:
             for key in ["sneaky_prover"]:
                 config = self.configs[key]
                 model = self.model_manager.get_model(key, prepared=False)
+
+                # ============================================================================
+                # CRITICAL DEBUGGING: OPTIMIZER CREATION
+                # ============================================================================
+                if self.accelerator_manager.get_state_property("is_main_process"):
+                    logger.info("=" * 80)
+                    logger.info(f"🔧 OPTIMIZER CREATION DEBUG FOR {key}")
+                    logger.info("=" * 80)
+
+                    logger.info(f"🏷️  Model for optimizer creation ID: {id(model)}")
+                    logger.info(f"🏷️  Model for optimizer creation type: {type(model)}")
+
+                    # Check model parameters
+                    model_param_ids = {id(p) for p in model.parameters()}
+                    model_params_list = list(model.parameters())
+
+                    logger.info(f"🔍 Model parameters count: {len(model_param_ids)}")
+                    logger.info(
+                        "🔍 First 3 model parameter IDs for optimizer creation:"
+                    )
+                    for i in range(min(3, len(model_params_list))):
+                        param = model_params_list[i]
+                        logger.info(
+                            f"🔍   Param {i}: ID {id(param)}, shape {param.shape}, requires_grad {param.requires_grad}"
+                        )
+
+                    # Check if model is in training mode
+                    logger.info(
+                        f"🏷️  Model training mode during optimizer creation: {model.training}"
+                    )
+
                 optimizer = torch.optim.AdamW(
                     model.parameters(),
                     lr=config.learning_rate,
                     weight_decay=config.weight_decay,
                 )
+
+                # ============================================================================
+                # CRITICAL DEBUGGING: POST-OPTIMIZER CREATION
+                # ============================================================================
+                if self.accelerator_manager.get_state_property("is_main_process"):
+                    logger.info("🔄 POST-OPTIMIZER CREATION ANALYSIS")
+                    logger.info("-" * 40)
+
+                    logger.info(f"🔧 Created optimizer ID: {id(optimizer)}")
+                    logger.info(f"🔧 Created optimizer type: {type(optimizer)}")
+
+                    # Check optimizer parameter IDs
+                    optimizer_param_ids = {
+                        id(p)
+                        for group in optimizer.param_groups
+                        for p in group["params"]
+                    }
+                    optimizer_params_list = [
+                        p for group in optimizer.param_groups for p in group["params"]
+                    ]
+
+                    logger.info(
+                        f"🔍 Optimizer parameters count: {len(optimizer_param_ids)}"
+                    )
+                    logger.info("🔍 First 3 optimizer parameter IDs:")
+                    for i in range(min(3, len(optimizer_params_list))):
+                        param = optimizer_params_list[i]
+                        logger.info(
+                            f"🔍   Param {i}: ID {id(param)}, shape {param.shape}, requires_grad {param.requires_grad}"
+                        )
+
+                    # Verify optimizer was created with the right parameters
+                    optimizer_model_match = model_param_ids == optimizer_param_ids
+                    logger.info(
+                        f"🔍 Optimizer parameters match model parameters? {optimizer_model_match}"
+                    )
+
+                    if not optimizer_model_match:
+                        logger.error("💥 OPTIMIZER CREATION MISMATCH!")
+                        logger.error(
+                            "💥 Optimizer was not created with the correct model parameters!"
+                        )
+                    else:
+                        logger.info(
+                            "✅ Optimizer created with correct model parameters"
+                        )
+
+                    logger.info("=" * 80)
+
                 self.optimizers[key] = optimizer
 
     def create_schedulers(self) -> None:
@@ -228,6 +308,7 @@ class OptimizerSchedulerManager:
             raise KeyError(
                 f"Optimizer '{key}' not found. Current phase might be different or preparation incomplete. Available: {list(self.optimizers.keys())}"
             )
+        self.accelerator_manager.accelerators[key].state.select_deepspeed_plugin(key)
         return self.optimizers[key]
 
     def get_scheduler(self, key: str) -> torch.optim.lr_scheduler._LRScheduler | None:
@@ -247,6 +328,7 @@ class OptimizerSchedulerManager:
             raise KeyError(
                 f"Scheduler '{key}' not found. Current phase might be different or preparation incomplete. Available: {list(self.schedulers.keys())}"
             )
+        self.accelerator_manager.accelerators[key].state.select_deepspeed_plugin(key)
         return self.schedulers[key]
 
     def step_optimizer(self, key: str) -> None:

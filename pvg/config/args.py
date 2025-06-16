@@ -125,6 +125,9 @@ class TrainingArgs:
     temperature: float = field(
         default=1.0, metadata={"help": "Temperature for sampling."}
     )
+    batch_size: int | None = field(
+        default=None, metadata={"help": "Batch size for the verifier."}
+    )
     # Note: gradient_accumulation_steps, epochs, max_steps, lr_scheduler, warmup_steps,
     # logging_steps, save_steps, eval_steps, mixed_precision are handled by the top-level ExperimentArgs
     # or inferred, as they often need coordination between models or the overall loop.
@@ -392,10 +395,12 @@ class ExperimentArgs:
         },
     )
     per_device_train_batch_size: int = field(
-        default=4, metadata={"help": "Batch size per GPU/TPU core/CPU for training."}
+        default=4,
+        metadata={"help": "Batch size per GPU/TPU core/CPU for training provers."},
     )
     per_device_eval_batch_size: int = field(
-        default=4, metadata={"help": "Batch size per GPU/TPU core/CPU for evaluation."}
+        default=4,
+        metadata={"help": "Batch size per GPU/TPU core/CPU for evaluation provers."},
     )
     gradient_accumulation_steps: int = field(
         default=4,

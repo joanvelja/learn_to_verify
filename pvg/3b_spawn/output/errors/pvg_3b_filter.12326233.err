@@ -1,138 +1,0 @@
-The following values were not passed to `accelerate launch` and had defaults used instead:
-		More than one GPU was found, enabling multi-GPU training.
-		If this was unintended please pass in `--num_processes=1`.
-	`--dynamo_backend` was set to a value of `'no'`
-To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
-Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
-Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
-Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.53s/it]
-Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.53s/it]
-
-INFO:     Started server process [3230724]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:02<00:02,  2.66s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:06<00:00,  3.28s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:06<00:00,  3.19s/it]
-
-Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:14,  2.33it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:13,  2.46it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:17,  1.88it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
-INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
-INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
-Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:02<00:27,  1.13it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:03<00:22,  1.36it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:03<00:18,  1.58it/s]slurmstepd: error: *** JOB 12326233 ON gcn159 CANCELLED AT 2025-06-13T02:59:15 ***
-Capturing CUDA graph shapes:  20%|██        | 7/35 [00:04<00:16,  1.68it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
-INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
-INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
-Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:04<00:14,  1.88it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:05<00:12,  2.02it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:05<00:11,  2.16it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:05<00:10,  2.27it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:06<00:09,  2.31it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:06<00:09,  2.39it/s]INFO:root:Using all 6345 samples from the dataset.
-INFO:root:Attempting to load tokenized dataset from cache (if available)...
-Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x14b933780350>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-WARNING:datasets.fingerprint:Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x14b933780350>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-Tokenizing train dataset:   0%|          | 0/6345 [00:00<?, ? examples/s]INFO:root:Using all 6345 samples from the dataset.
-INFO:root:Attempting to load tokenized dataset from cache (if available)...
-Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x14dc8c9f4350>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-WARNING:datasets.fingerprint:Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x14dc8c9f4350>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-Tokenizing train dataset:   0%|          | 0/6345 [00:00<?, ? examples/s]INFO:root:Using all 6345 samples from the dataset.
-INFO:root:Attempting to load tokenized dataset from cache (if available)...
-Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x15199f38f610>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-WARNING:datasets.fingerprint:Parameter 'function'=<bound method AppsDataset._tokenize_function of <pvg.data.dataset.AppsDataset object at 0x15199f38f610>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-Tokenizing train dataset:   0%|          | 0/6345 [00:00<?, ? examples/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:08,  2.45it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:07<00:08,  2.44it/s]Tokenizing train dataset:  16%|█▌        | 1000/6345 [00:01<00:05, 988.65 examples/s]Tokenizing train dataset:  16%|█▌        | 1000/6345 [00:00<00:05, 1010.34 examples/s]Tokenizing train dataset:  16%|█▌        | 1000/6345 [00:00<00:05, 1021.55 examples/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:07<00:07,  2.48it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:08<00:07,  2.49it/s]Tokenizing train dataset:  32%|███▏      | 2000/6345 [00:01<00:04, 1059.81 examples/s]Tokenizing train dataset:  32%|███▏      | 2000/6345 [00:01<00:04, 1069.57 examples/s]Tokenizing train dataset:  32%|███▏      | 2000/6345 [00:01<00:04, 1074.03 examples/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:08<00:06,  2.48it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:09<00:06,  2.48it/s]Tokenizing train dataset:  47%|████▋     | 3000/6345 [00:02<00:02, 1244.47 examples/s]Tokenizing train dataset:  47%|████▋     | 3000/6345 [00:02<00:02, 1247.24 examples/s]Tokenizing train dataset:  47%|████▋     | 3000/6345 [00:02<00:02, 1234.01 examples/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:09<00:05,  2.50it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:09<00:05,  2.53it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:10<00:05,  2.56it/s]Tokenizing train dataset:  63%|██████▎   | 4000/6345 [00:03<00:02, 1124.98 examples/s]Tokenizing train dataset:  63%|██████▎   | 4000/6345 [00:03<00:02, 1121.96 examples/s]Tokenizing train dataset:  63%|██████▎   | 4000/6345 [00:03<00:02, 1118.04 examples/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:10<00:04,  2.57it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:11<00:04,  2.54it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:11<00:04,  2.49it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:11<00:03,  2.53it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:12<00:03,  2.55it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:12<00:02,  2.57it/s]Tokenizing train dataset:  79%|███████▉  | 5000/6345 [00:06<00:02, 658.39 examples/s] Tokenizing train dataset:  79%|███████▉  | 5000/6345 [00:06<00:02, 654.96 examples/s] Tokenizing train dataset:  79%|███████▉  | 5000/6345 [00:06<00:02, 655.85 examples/s] Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:13<00:02,  2.55it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:13<00:01,  2.55it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:13<00:01,  2.54it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:14<00:01,  2.56it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:14<00:00,  2.58it/s]Tokenizing train dataset:  95%|█████████▍| 6000/6345 [00:07<00:00, 634.52 examples/s]Tokenizing train dataset:  95%|█████████▍| 6000/6345 [00:07<00:00, 632.36 examples/s]Tokenizing train dataset:  95%|█████████▍| 6000/6345 [00:07<00:00, 630.29 examples/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:14<00:00,  2.59it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:15<00:00,  2.57it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:15<00:00,  2.28it/s]
-Tokenizing train dataset: 100%|██████████| 6345/6345 [00:09<00:00, 554.59 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:08<00:00, 553.94 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:08<00:00, 553.06 examples/s]Tokenizing train dataset: 100%|██████████| 6345/6345 [00:09<00:00, 703.34 examples/s]
-INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
-INFO:root:Dataset initialization complete for split 'train'. Size: 6345
-Tokenizing train dataset: 100%|██████████| 6345/6345 [00:09<00:00, 704.52 examples/s]
-INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
-INFO:root:Dataset initialization complete for split 'train'. Size: 6345
-Tokenizing train dataset: 100%|██████████| 6345/6345 [00:08<00:00, 705.24 examples/s]
-INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
-INFO:root:Dataset initialization complete for split 'train'. Size: 6345
-INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
-INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
-INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
-INFO:root:Using all 779 samples from the dataset.
-INFO:root:Attempting to load tokenized dataset from cache (if available)...
-Tokenizing test dataset:   0%|          | 0/779 [00:00<?, ? examples/s]INFO:root:Using all 779 samples from the dataset.
-INFO:root:Attempting to load tokenized dataset from cache (if available)...
-Tokenizing test dataset:   0%|          | 0/779 [00:00<?, ? examples/s]INFO:root:Using all 779 samples from the dataset.
-INFO:root:Attempting to load tokenized dataset from cache (if available)...
-Tokenizing test dataset:   0%|          | 0/779 [00:00<?, ? examples/s]INFO:     Started server process [3230127]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 615.20 examples/s]Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 558.61 examples/s]Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 542.68 examples/s]Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 552.55 examples/s]
-INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
-INFO:root:Dataset initialization complete for split 'test'. Size: 779
-Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 606.26 examples/s]
-INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
-INFO:root:Dataset initialization complete for split 'test'. Size: 779
-INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
-INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
-Tokenizing test dataset: 100%|██████████| 779/779 [00:01<00:00, 538.48 examples/s]
-INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
-INFO:root:Dataset initialization complete for split 'test'. Size: 779
-INFO:root:Created subset with 389 samples from original dataset of 779 samples.
-INFO:root:Created subset with 389 samples from original dataset of 779 samples.
-INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
-INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
-INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
-INFO:root:Created subset with 389 samples from original dataset of 779 samples.
-INFO:root:Created subset with 390 samples from original dataset of 779 samples.
-INFO:root:Created subset with 390 samples from original dataset of 779 samples.
-INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
-INFO:root:Created subset with 390 samples from original dataset of 779 samples.
-Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
-
-
-Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][ACreating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][ACreating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
-Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.49s/ba][A
-Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.52s/ba][A
-Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.52s/ba][A
-Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.04s/ba][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.10s/ba]
-
-Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.06s/ba][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.13s/ba]
-
-Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.07s/ba][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.14s/ba]
-Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.83s/it]
-Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.87s/it]
-Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:03<00:03,  3.11s/it]
-Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
-Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.25ba/s][A
-Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.17ba/s][A
-Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.30ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.04ba/s]
-
-Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  2.14ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.90ba/s]
-
-Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.21ba/s][A
-Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  2.23ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.98ba/s]
-Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  1.97s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.10s/it]
-Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
-Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.04s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.16s/it]
-Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
-Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
-Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  6.11ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  6.10ba/s]
-
-Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  6.45ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  6.44ba/s]
-Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.11s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.26s/it]
-Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
-Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
-Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  6.39ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  6.38ba/s]
-Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.04it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.03it/s]
-Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.08it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.07it/s]
-Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.02it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.02it/s]
-No files have been modified since last commit. Skipping to prevent empty commit.
-WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
-No files have been modified since last commit. Skipping to prevent empty commit.
-WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
-[rank2]:[W613 02:59:36.422385341 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
-[rank1]:[W613 02:59:36.488435404 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
-No files have been modified since last commit. Skipping to prevent empty commit.
-WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
-[rank0]:[W613 02:59:36.958012625 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
-wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
-wandb: Tracking run with wandb version 0.20.1
-wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250613_025940-ewsriyyx
-wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run test_run_full_pipeline_12326233
-wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
-wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/ewsriyyx
-slurmstepd: error: container_p_join: open failed for /slurm/12326233/.ns: No such file or directory
-slurmstepd: error: container_g_join(12326233): No such file or directory
