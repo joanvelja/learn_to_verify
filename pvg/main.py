@@ -17,6 +17,8 @@ from pvg.components.model_manager import ModelManager
 from pvg.components.optimizer_manager import OptimizerSchedulerManager
 from pvg.components.state_tracker import StateTracker
 from pvg.components.vllm_orchestrator import VLLMOrchestrator
+from pvg.components.formatter import Formatter
+from pvg.components.code_evaluator import BatchEvaluator, EvaluationConfig
 
 # Configuration
 from pvg.config.args import ExperimentArgs
@@ -195,6 +197,20 @@ def main():
     grpo = GRPO(args.rl)
 
     # --- 3. Initialize Top-Level Orchestrator ---
+    # j. Formatter
+    formatter = Formatter(
+        tokenizer=data_manager.get_tokenizer(),
+    )
+
+    # l. BatchEvaluator
+    config = EvaluationConfig(
+        step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
+        total_timeout=35,
+        success_threshold=0.85,
+    )
+    batch_evaluator = BatchEvaluator(config=config)
+
+    # m. TrainingPhaseOrchestrator
     logger.info("Initializing TrainingPhaseOrchestrator...")
     orchestrator = TrainingPhaseOrchestrator(
         args=args,
@@ -206,6 +222,8 @@ def main():
         vllm_orchestrator=vllm_orchestrator,
         state_tracker=state_tracker,
         grpo=grpo,
+        formatter=formatter,
+        batch_evaluator=batch_evaluator,
         # checkpoint_manager=checkpoint_manager,
     )
     logger.info("TrainingPhaseOrchestrator initialized.")

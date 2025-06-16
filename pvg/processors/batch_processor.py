@@ -129,15 +129,8 @@ class BatchProcessor:
         completion_texts = completions.sneaky_completion_texts
         advantages = reward_result.sneaky_advantages
 
-        # import pdb
-
-        # pdb.set_trace()
-
         full_texts = [p + c for p, c in zip(prompts, completion_texts)]
-
-        # import pdb
-
-        # pdb.set_trace()
+        logger.info(f"[DEBUG] Full texts[0]: {full_texts[0]}")
 
         # 2) single tokenisation pass for P+C (see https://chatgpt.com/share/684ed758-ba60-8013-ac79-8f1e39cd6e26 for details on why going through tokenization twice is better than going through tokenization once)
         enc = self.tokenizer(
@@ -153,7 +146,7 @@ class BatchProcessor:
             prompts,
             add_special_tokens=False,
             padding=False,
-            return_attention_mask=False,
+            return_attention_mask=True,
             return_tensors=None,
         )
         prompt_ids = tokenized_prompts["input_ids"]

@@ -38,6 +38,7 @@ def prepare_deepspeed(model, accelerator):
     # disabled (stage 0)
     if stage != 3:
         config_kwargs["zero_optimization"]["stage"] = 0
+
     model, *_ = deepspeed.initialize(model=model, config=config_kwargs)
     model.eval()
     return model

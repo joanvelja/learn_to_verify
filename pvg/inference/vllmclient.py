@@ -367,25 +367,3 @@ class VLLMClient:
         response = self.session.post(url)
         if response.status_code != 200:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
-
-
-# Example usage
-if __name__ == "__main__":
-    from vllm import SamplingParams
-
-    client = VLLMClient()
-
-    # Generate completions
-    responses = client.generate(
-        ["Hello, AI!", "Tell me a joke"],
-        n=4,
-        max_tokens=32,
-        sampling_params=SamplingParams(),
-    )
-    print("Responses:", responses)  # noqa
-
-    # Update model weights
-    from transformers import AutoModelForCausalLM
-
-    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-7B").to("cuda")
-    client.update_model_params(model)

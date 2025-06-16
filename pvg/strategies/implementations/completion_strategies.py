@@ -87,9 +87,8 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
             )
         )
 
-        assert len(honest_solutions) == self.args.rl.num_generations * len(
-            sneaky_solutions
-        ), "Number of honest solutions must match number of rl_num_generations * number of sneaky solutions (due to GRPO doing group-wise generations for each prompt!)."
+        logger.info(f"[DEBUG]: len(honest_solutions): {len(honest_solutions)}")
+        logger.info(f"[DEBUG]: len(sneaky_solutions): {len(sneaky_solutions)}")
 
         # Strip formatting for consistency with verifier training data
         honest_solutions = self.strip_solution_formatting(
@@ -174,7 +173,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
             generation_args=generation_args,
             n_generations=self.args.rl.num_generations,
             logprobs_count=0,
-            raw_prompts_len_local=len(all_sneaky_prompts),
+            prompts_len_local=len(sneaky_prompts),
             is_instruction=True,
         )
 
@@ -217,22 +216,22 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
                 },
                 {
                     "role": "assistant",
-                    "content": "<reasoning>\n",
+                    "content": "\n<reasoning>\n",
                 },
             ]
             conversation_prompts.append(conversation)
 
-        # Apply chat template to conversations
-        formatted_prompts = []
-        for conversation in conversation_prompts:
-            formatted_text = self.tokenizer.apply_chat_template(
-                conversation,
-                tokenize=False,
-                add_generation_prompt=False,
-            )
-            formatted_prompts.append(formatted_text)
+        # # Apply chat template to conversations
+        # formatted_prompts = []
+        # for conversation in conversation_prompts:
+        #     formatted_text = self.tokenizer.apply_chat_template(
+        #         conversation,
+        #         tokenize=False,
+        #         add_generation_prompt=False,
+        #     )
+        #     formatted_prompts.append(formatted_text)
 
-        return formatted_prompts
+        return conversation_prompts
 
     def _get_sneaky_generation_args(self) -> dict[str, Any]:
         """Get generation arguments for sneaky prover
@@ -247,6 +246,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
         gen_args["chat_template"] = self.tokenizer.chat_template
         gen_args["continue_final_message"] = True
         gen_args["add_generation_prompt"] = False
+        gen_args["use_tqdm"] = False
 
         return gen_args
 

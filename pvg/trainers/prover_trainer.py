@@ -140,6 +140,8 @@ class ProverTrainer:
             accelerator_manager=accelerator_manager,
             metrics_logger=metrics_logger,
             state_tracker=state_tracker,
+            model_manager=model_manager,
+            rl_config=args.rl,
         )
 
         # Create evaluation strategy using factory function

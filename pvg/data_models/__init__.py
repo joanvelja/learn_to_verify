@@ -12,7 +12,7 @@ from .training_data import (
     BatchInputs,
     ModelOutputs,
     LossResult,
-    VerificationData,
+    ExecutionData,
 )
 
 __all__ = [
@@ -23,5 +23,5 @@ __all__ = [
     "BatchInputs",
     "ModelOutputs",
     "LossResult",
-    "VerificationData",
+    "ExecutionData",
 ]

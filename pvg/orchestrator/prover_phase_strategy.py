@@ -64,6 +64,15 @@ class ProverPhaseStrategy(PhaseStrategy):
             model=model,
         )
 
+        # If reference model is not None, prepare it
+        if self.model_manager.ref_models[model_key] is not None:
+            self.model_manager.ref_models[model_key] = (
+                self.accelerator_manager.prepare_ref_model(
+                    key=model_key,
+                    model=self.model_manager.ref_models[model_key],
+                )
+            )
+
         # Debug post-preparation state
         self._debug_post_preparation_state(model_key, components, model, optimizer)
 
@@ -76,15 +85,6 @@ class ProverPhaseStrategy(PhaseStrategy):
         self.data_manager.dataloaders["provers"][model_key]["eval_dataloader"] = (
             self.accelerator_manager.prepare_dataloader(eval_dataloader, key=model_key)
         )
-
-        # Prepare reference model
-        if self.model_manager.ref_models[model_key] is not None:
-            self.model_manager.ref_models[model_key] = (
-                self.accelerator_manager.prepare_ref_model(
-                    key=model_key,
-                    model=self.model_manager.ref_models[model_key],
-                )
-            )
 
         # Calculate training steps for scheduler
         self.optimizer_scheduler_manager._calculate_num_training_steps(components[2])

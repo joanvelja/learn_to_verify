@@ -8,11 +8,12 @@ for computing per-token log probabilities and forward passes.
 """
 
 import logging
+
 import torch
 from trl.trainer.utils import selective_log_softmax
 
-from pvg.strategies.abstractions import ModelForwardAbstraction
 from pvg.data_models.training_data import ModelOutputs
+from pvg.strategies.abstractions import ModelForwardAbstraction
 from pvg.utils import compute_entropy
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class ModelForwardStrategy(ModelForwardAbstraction):
         Returns:
             ModelOutputs containing logits, log probs, and optional hidden states
         """
-        logger.debug(f"Running forward pass with logits_to_keep={logits_to_keep}")
+        logger.info(f"Running forward pass with logits_to_keep={logits_to_keep}")
 
         # Perform forward pass
 
@@ -78,18 +79,7 @@ class ModelForwardStrategy(ModelForwardAbstraction):
         # Compute entropy (for completion tokens only)
         per_token_entropy = compute_entropy(logits, reduce=False)
 
-        # Extract last hidden state if available
-        last_hidden_state = None
-        if hasattr(outputs, "hidden_states") and outputs.hidden_states is not None:
-            last_hidden_state = outputs.hidden_states[-1][
-                :, :-1, :
-            ]  # Remove last position
-            last_hidden_state = last_hidden_state[:, -logits_to_keep:, :]
-        elif hasattr(outputs, "last_hidden_state"):
-            last_hidden_state = outputs.last_hidden_state[
-                :, :-1, :
-            ]  # Remove last position
-            last_hidden_state = last_hidden_state[:, -logits_to_keep:, :]
+        # Get last hidden state
 
         return ModelOutputs(
             logits=logits,
@@ -197,4 +187,64 @@ class ModelForwardStrategy(ModelForwardAbstraction):
         if logits_to_keep is not None:
             last_hidden_state = last_hidden_state[:, -logits_to_keep:, :]
 
+        return last_hidden_state
+
+    def compute_reference_and_old_logps(
+        self,
+        policy_model: torch.nn.Module,
+        ref_model: torch.nn.Module | None,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        logits_to_keep: int,
+        num_iterations: int,
+        beta: float,
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+        """Compute old and reference log probabilities
+
+        Args:
+            policy_model: The policy model
+            ref_model: The reference model (can be None)
+            input_ids: Input token IDs
+            attention_mask: Attention mask
+            logits_to_keep: Number of logits to keep
+            num_iterations: Number of RL iterations
+            beta: KL regularization coefficient
+
+        Returns:
+            Tuple of (old_per_token_logps, ref_per_token_logps)
+        """
+        old_per_token_logps = None
+        ref_per_token_logps = None
+
+        # Calculate old log probabilities if needed (num_iterations > 1)
+        if num_iterations > 1:
+            with torch.no_grad():
+                old_per_token_logps = self.compute_per_token_logps(
+                    policy_model, input_ids, attention_mask, logits_to_keep
+                )
+
+        # Calculate reference log probabilities if needed (beta > 0)
+        if beta > 0.0:
+            if ref_model is None:
+                raise ValueError("Reference model required but not loaded (beta > 0).")
+            # Ensure reference model is in eval mode
+            ref_model.eval()
+            with torch.no_grad():
+                ref_per_token_logps = self.compute_per_token_logps(
+                    ref_model, input_ids, attention_mask, logits_to_keep
+                )
+
+        return old_per_token_logps, ref_per_token_logps
+
+    def _get_last_hidden_state(
+        self, unwrapped_model, input_ids, attention_mask, logits_to_keep=None
+    ):
+        last_hidden_state = unwrapped_model.model(
+            input_ids=input_ids, attention_mask=attention_mask
+        ).last_hidden_state
+        last_hidden_state = last_hidden_state[:, :-1, :]  # (B, L-1, H)
+        if logits_to_keep is not None:
+            last_hidden_state = last_hidden_state[
+                :, -logits_to_keep:, :
+            ]  # (B, logits_to_keep, H)
         return last_hidden_state

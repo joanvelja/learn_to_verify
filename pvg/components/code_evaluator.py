@@ -1449,9 +1449,8 @@ def create_evaluator_for_dataset(
     """
     # Standard configuration for APPS-style datasets
     config = EvaluationConfig(
-        step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
-        total_timeout=18,
-        num_test_cases=5,
+        step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
+        total_timeout=35,
         success_threshold=0.85,
     )
 

@@ -134,7 +134,7 @@ class VLLMOrchestrator:
         ],  # Args for vllm_client.generate (temp, top_p, etc.)
         n_generations: int,  # Number of generations per prompt to produce
         logprobs_count: int,  # Number of logprobs to request (0 if none)
-        raw_prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
+        prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
         is_instruction: bool = False,  # Whether the prompts are instructions or not
     ) -> tuple[list[list[int]], list[str], list[dict[int, float]] | None]:
         """
@@ -245,8 +245,8 @@ class VLLMOrchestrator:
             property_name="process_index"
         )
         process_slice = slice(
-            process_index * raw_prompts_len_local,
-            (process_index + 1) * raw_prompts_len_local,
+            process_index * prompts_len_local,
+            (process_index + 1) * prompts_len_local,
         )
         local_completion_ids = completion_ids_all[process_slice]
         local_completion_texts = completion_texts_all[process_slice]

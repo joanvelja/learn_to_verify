@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import logging
 
-from pvg.orchestrator.orchestrator import TrainingPhaseOrchestrator
+if TYPE_CHECKING:
+    from pvg.orchestrator.orchestrator import TrainingPhaseOrchestrator
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 

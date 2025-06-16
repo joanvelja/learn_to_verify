@@ -22,7 +22,8 @@ from pvg.data_models.training_data import (
     TrainingStepResult,
 )
 from pvg.processors import BatchProcessor, MetricsProcessor
-from pvg.components import AcceleratorManager, MetricsLogger, StateTracker
+from pvg.components import AcceleratorManager, MetricsLogger, StateTracker, ModelManager
+from pvg.config.args import RLArgs
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,8 @@ class ProverTrainingPipeline:
         accelerator_manager: AcceleratorManager,
         metrics_logger: MetricsLogger,
         state_tracker: StateTracker,
+        model_manager: ModelManager,
+        rl_config: RLArgs,
     ):
         """Initialize the training pipeline"""
         self.completion_strategy = completion_strategy
@@ -59,6 +62,8 @@ class ProverTrainingPipeline:
         self.accelerator_manager = accelerator_manager
         self.metrics_logger = metrics_logger
         self.state_tracker = state_tracker
+        self.model_manager = model_manager
+        self.rl_config = rl_config
 
         # Cache frequently accessed properties
         self.is_main_process = accelerator_manager.get_state_property("is_main_process")
@@ -71,7 +76,7 @@ class ProverTrainingPipeline:
         use_buffering: bool = True,
     ) -> BatchInputs:
         """Process a batch through the complete pipeline"""
-        logger.debug(f"Processing batch of size {len(raw_batch_data)}")
+        logger.info(f"Processing batch of size {len(raw_batch_data)}")
 
         # 1. Check if we should use buffered inputs
         if use_buffering and self.batch_processor.should_use_buffered_inputs(
@@ -81,7 +86,7 @@ class ProverTrainingPipeline:
                 total_steps, gradient_accumulation_steps
             )
             if buffered_inputs is not None:
-                logger.debug("Using buffered inputs")
+                logger.info("Using buffered inputs")
                 return buffered_inputs
 
         # 2. Convert raw data to structured format
@@ -128,7 +133,7 @@ class ProverTrainingPipeline:
                 batch_inputs, total_steps, gradient_accumulation_steps
             )
 
-        logger.debug("Batch processing completed successfully")
+        logger.info("Batch processing completed successfully")
         return batch_inputs
 
     def compute_training_step(
@@ -138,13 +143,35 @@ class ProverTrainingPipeline:
         mode: Literal["train", "eval"] = "train",
     ) -> TrainingStepResult:
         """Compute a complete training step"""
-        logger.debug(f"Computing training step in {mode} mode")
+        logger.info(f"Computing training step in {mode} mode")
 
         # 1. Get input tensors
         input_ids = batch_inputs.prompt_completion_ids
         attention_mask = batch_inputs.prompt_completion_mask
 
-        # 2. Forward pass through model
+        # 2. Compute missing logps if needed
+        
+        logger.info("Computing missing reference and old logps")
+        
+        # Get reference model
+        ref_model = self.model_manager.get_ref_model("sneaky_prover", prepared=True)
+        
+        # Compute old and reference logps
+        old_logps, ref_logps = self.model_forward_strategy.compute_reference_and_old_logps(
+            policy_model=model,
+            ref_model=ref_model,
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            logits_to_keep=batch_inputs.logits_to_keep,
+            num_iterations=self.rl_config.num_iterations,
+            beta=self.rl_config.beta,
+        )
+        
+        # Update batch_inputs with computed logps
+        batch_inputs.old_per_token_logps = old_logps
+        batch_inputs.ref_per_token_logps = ref_logps
+
+        # 3. Forward pass through model
         model_outputs = self.model_forward_strategy.forward_pass(
             model=model,
             input_ids=input_ids,
@@ -152,7 +179,7 @@ class ProverTrainingPipeline:
             logits_to_keep=batch_inputs.logits_to_keep,
         )
 
-        # 3. Compute loss using strategy
+        # 4. Compute loss using strategy
         loss_result = self.loss_strategy.compute_loss(
             model=model,
             batch_inputs=batch_inputs,
@@ -160,7 +187,7 @@ class ProverTrainingPipeline:
             mode=mode,
         )
 
-        # 4. Compute additional batch metrics
+        # 5. Compute additional batch metrics
         batch_metrics = self.metrics_processor.compute_tensor_metrics(
             completion_mask=batch_inputs.completion_mask,
             advantages=batch_inputs.advantages,

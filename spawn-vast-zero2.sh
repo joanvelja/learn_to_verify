@@ -178,7 +178,7 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
 # Monitor script to detect errors and trigger cleanup
 (
     # Use accelerate launch with timeout
-    timeout $TRAINING_TIMEOUT uv run accelerate launch \
+    timeout $TRAINING_TIMEOUT uv run --env-file .env accelerate launch \
         --num_processes $NUM_TRAINING_GPUS \
         --num_machines 1 \
         --mixed_precision "bf16" \
@@ -215,7 +215,7 @@ TRAINING_TIMEOUT=28800  # 8 hours in seconds, adjust as needed
         --training_verifier.lr_scheduler_type "linear" \
         --training_verifier.num_warmup_steps 100 \
         --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
-        --training_verifier.verifier_batch_size 8 \
+        --training_verifier.batch_size 8 \
         \
         --dataset.dataset_name "jvelja/apps_checkable_filtered" \
         \

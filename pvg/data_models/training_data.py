@@ -123,7 +123,7 @@ class ModelOutputs:
 
     logits: torch.Tensor
     per_token_logps: torch.Tensor
-    last_hidden_state: torch.Tensor | None = None
+    last_hidden_state: torch.Tensor
     entropy: torch.Tensor | None = None
 
 

@@ -64,7 +64,7 @@ class TrainingPhaseOrchestrator:
         # Initialize phase strategies
         self.phase_strategies = {
             "verifier": VerifierPhaseStrategy(self),
-            "prover": ProverPhaseStrategy(self),
+            "provers": ProverPhaseStrategy(self),
         }
 
     def run_training_rounds(self) -> None:
