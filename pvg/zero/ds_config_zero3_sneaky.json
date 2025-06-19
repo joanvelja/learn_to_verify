@@ -23,7 +23,7 @@
         "mics_shard_size": -1,
         "mics_hierarchical_params_gather": false,
         "memory_efficient_linear": false,
-        "stage3_gather_fp16_weights_on_model_save": false,
+        "gather_16bit_weights_on_model_save": false,
         "use_multi_rank_bucket_allreduce": true
     },
     "communication_data_type": "bf16",
