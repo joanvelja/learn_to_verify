@@ -88,9 +88,7 @@ def print_prompt_completions_sample(
         rewards = {key: [val[i] for i in indices] for key, val in rewards.items()}
 
     for i in range(len(prompts)):
-        reward_values = [
-            f"{rewards[key][i]:.2f}" for key in rewards.keys()
-        ]  # 2 decimals
+        reward_values = [f"{rewards[key][i]:.2f}" for key in rewards.keys()]  # 2 decimals
         table.add_row(Text(prompts[i]), Text(completions[i]), *reward_values)
         table.add_section()  # Adds a separator between rows
 
@@ -139,15 +137,9 @@ def print_prompt_completions_sample_verifier(
 
     # Add columns for metadata with better proportions
     score_table.add_column("Item", style="dim white", width=10)
-    score_table.add_column(
-        "Honest Score", style="bright_green", justify="right", width=12
-    )
-    score_table.add_column(
-        "Injected Score", style="bright_magenta", justify="right", width=12
-    )
-    score_table.add_column(
-        "Ground Truth", style="bright_blue", justify="center", width=15
-    )
+    score_table.add_column("Honest Score", style="bright_green", justify="right", width=12)
+    score_table.add_column("Injected Score", style="bright_magenta", justify="right", width=12)
+    score_table.add_column("Ground Truth", style="bright_blue", justify="center", width=15)
 
     # Convert tensors to lists if necessary
     if isinstance(honest_scores, torch.Tensor):
@@ -186,12 +178,8 @@ def print_prompt_completions_sample_verifier(
         prompt_table.add_column("Injected Prompt", style="bright_cyan")
 
         # Format the prompts for better readability
-        h_prompt_formatted = h_prompt.replace(
-            "\n", "\n  "
-        )  # Add indentation for readability
-        i_prompt_formatted = i_prompt.replace(
-            "\n", "\n  "
-        )  # Add indentation for readability
+        h_prompt_formatted = h_prompt.replace("\n", "\n  ")  # Add indentation for readability
+        i_prompt_formatted = i_prompt.replace("\n", "\n  ")  # Add indentation for readability
 
         prompt_table.add_row(h_prompt_formatted, i_prompt_formatted)
 
@@ -247,15 +235,9 @@ def print_prompt_completions_sample_provers(
 
     # Add columns with better proportions
     score_table.add_column("Problem ID", style="dim white", width=10)
-    score_table.add_column(
-        "Honest Score", style="bright_green", justify="right", width=12
-    )
-    score_table.add_column(
-        "Sneaky Score", style="bright_magenta", justify="right", width=12
-    )
-    score_table.add_column(
-        "Correctness", style="bright_blue", justify="right", width=12
-    )
+    score_table.add_column("Honest Score", style="bright_green", justify="right", width=12)
+    score_table.add_column("Sneaky Score", style="bright_magenta", justify="right", width=12)
+    score_table.add_column("Correctness", style="bright_blue", justify="right", width=12)
 
     # Convert tensors to lists if necessary
     if isinstance(honest_scores, torch.Tensor):

@@ -1,4 +1,5 @@
 import logging
+
 import torch
 
 
@@ -9,8 +10,8 @@ def gpu_info(initial_logger: logging.Logger):
         pynvml_available = False
         nvml_arch_map = {}
         try:
-            from pynvml.smi import nvidia_smi  # noqa: F401
             import pynvml  # noqa: F401
+            from pynvml.smi import nvidia_smi  # noqa: F401
 
             pynvml.nvmlInit()
             pynvml_available = True
@@ -25,24 +26,18 @@ def gpu_info(initial_logger: logging.Logger):
                 pynvml.NVML_DEVICE_ARCH_HOPPER: "Hopper",
                 pynvml.NVML_DEVICE_ARCH_UNKNOWN: "Unknown",
             }
-            initial_logger.info(
-                "Initialized pynvml for detailed GPU architecture reporting."
-            )
+            initial_logger.info("Initialized pynvml for detailed GPU architecture reporting.")
         except ImportError:
             initial_logger.warning(
                 "pynvml not found. Will fall back to using PyTorch compute capability for architecture estimation. Install nvidia-ml-py (`pip install nvidia-ml-py`) for more detailed info."
             )
         except pynvml.NVMLError as e:
-            initial_logger.warning(
-                f"Failed to initialize pynvml: {e}. Will fall back to PyTorch compute capability."
-            )
+            initial_logger.warning(f"Failed to initialize pynvml: {e}. Will fall back to PyTorch compute capability.")
             pynvml_available = False  # Ensure flag is false if init fails
 
         if torch.cuda.is_available():
             num_gpus = torch.cuda.device_count()
-            initial_logger.info(
-                f"Found {num_gpus} CUDA-enabled GPU(s) visible to PyTorch."
-            )
+            initial_logger.info(f"Found {num_gpus} CUDA-enabled GPU(s) visible to PyTorch.")
 
             # Fallback compute capability map (used if pynvml fails or isn't installed)
             cc_arch_map = {
@@ -67,9 +62,7 @@ def gpu_info(initial_logger: logging.Logger):
                     try:
                         handle = pynvml.nvmlDeviceGetHandleByIndex(i)
                         arch_enum = pynvml.nvmlDeviceGetArchitecture(handle)
-                        arch_name = nvml_arch_map.get(
-                            arch_enum, f"Unknown NVML Arch ({arch_enum})"
-                        )
+                        arch_name = nvml_arch_map.get(arch_enum, f"Unknown NVML Arch ({arch_enum})")
                         nvml_arch_success = True
                     except pynvml.NVMLError as e:
                         initial_logger.warning(
@@ -106,14 +99,10 @@ def gpu_info(initial_logger: logging.Logger):
                     memory_info_str = f"Current Process Memory - Allocated: {allocated_memory_gb:.2f} GB, Reserved (Cached): {reserved_memory_gb:.2f} GB"
                 except RuntimeError as e:
                     memory_info_str = f"Could not query memory stats: {e}"
-                    initial_logger.warning(
-                        f"  Warning querying memory for GPU {i}: {e}"
-                    )
+                    initial_logger.warning(f"  Warning querying memory for GPU {i}: {e}")
                 except Exception as e:  # Catch potential unexpected errors
                     memory_info_str = f"Unexpected error querying memory stats: {e}"
-                    initial_logger.warning(
-                        f"  Unexpected error querying memory for GPU {i}: {e}"
-                    )
+                    initial_logger.warning(f"  Unexpected error querying memory for GPU {i}: {e}")
 
                 initial_logger.info(
                     f"  GPU {i}: {props.name}, Arch: {arch_name} (CC {compute_capability}), "
@@ -153,12 +142,8 @@ def gpu_info(initial_logger: logging.Logger):
         if "pynvml_available" in locals() and pynvml_available:
             try:
                 pynvml.nvmlShutdown()
-                initial_logger.info(
-                    "Shut down pynvml after encountering an error during GPU check."
-                )
+                initial_logger.info("Shut down pynvml after encountering an error during GPU check.")
             except NameError:  # pynvml might not be defined if import failed
                 pass
             except pynvml.NVMLError as nvml_err:
-                initial_logger.warning(
-                    f"Failed to shut down pynvml during error handling: {nvml_err}"
-                )
+                initial_logger.warning(f"Failed to shut down pynvml during error handling: {nvml_err}")

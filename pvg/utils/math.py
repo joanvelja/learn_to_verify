@@ -31,9 +31,7 @@ def nanstd(
     squared_dev = torch.where(torch.isnan(tensor), torch.nan, (tensor - mean) ** 2)
 
     # Calculate variance (mean of squared deviations), keeping dim temporarily for correction calculation
-    variance = torch.nanmean(
-        squared_dev, dim=dim, keepdim=True
-    )  # Always keepdim=True here
+    variance = torch.nanmean(squared_dev, dim=dim, keepdim=True)  # Always keepdim=True here
 
     # Adjust for Bessel's correction if needed
     if correction != 0:
@@ -43,9 +41,7 @@ def nanstd(
         # Ensure we don't divide by zero or negative numbers
         n = count.clamp(min=correction)
         factor = n / (n - correction).clamp(min=1e-8)  # Shape will have dim kept
-        variance = (
-            variance * factor
-        )  # Both variance and factor have dim kept, broadcasting works
+        variance = variance * factor  # Both variance and factor have dim kept, broadcasting works
 
     # Apply final sqrt
     std_dev = torch.sqrt(variance.clamp(min=0))
@@ -71,15 +67,16 @@ def compute_entropy(
         If reduce=True: Mean entropy as scalar tensor
         If reduce=False: Per-token entropy tensor of shape (batch_size, sequence_length)
     """
-    # Use log_softmax for better numerical stability
-    log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-    probs = torch.exp(log_probs)
-    entropy = -(probs * log_probs).sum(dim=-1)  # More stable computation
+    with torch.no_grad():
+        # Use log_softmax for better numerical stability
+        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+        probs = torch.exp(log_probs)
+        entropy = -(probs * log_probs).sum(dim=-1)  # More stable computation
 
-    if not reduce:
-        return entropy
+        if not reduce:
+            return entropy
 
-    return entropy.mean()
+        return entropy.mean()
 
 
 def nanmin(tensor: torch.Tensor) -> torch.Tensor:

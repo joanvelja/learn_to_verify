@@ -5,19 +5,20 @@ These implementations provide clean, composable evaluation logic that eliminates
 the monolithic evaluate() method and if/else branching.
 """
 
-import logging
 import gc
+import logging
 from typing import Any
+
 import torch
 from tqdm import tqdm
 
+from pvg.components import AcceleratorManager, MetricsLogger, StateTracker
 from pvg.strategies.abstractions import (
+    EvaluationStrategy,
     MetricsAggregationStrategy,
     ModelStateManagementStrategy,
     ProgressReportingStrategy,
-    EvaluationStrategy,
 )
-from pvg.components import AcceleratorManager, MetricsLogger, StateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +87,7 @@ class TorchNoGradModelStateStrategy(ModelStateManagementStrategy):
             "no_grad_context": torch.no_grad(),
         }
 
-    def restore_after_evaluation(
-        self, model: torch.nn.Module, state_info: dict[str, Any]
-    ) -> None:
+    def restore_after_evaluation(self, model: torch.nn.Module, state_info: dict[str, Any]) -> None:
         """Restore model state after evaluation"""
         if state_info["original_training"]:
             model.train()
@@ -174,9 +173,7 @@ class StandardEvaluationStrategy(EvaluationStrategy):
         state_info = self.model_state_management.prepare_for_evaluation(model)
 
         # 3. Create progress tracker
-        progress_tracker = self.progress_reporting.create_progress_tracker(
-            eval_dataloader, "Evaluating"
-        )
+        progress_tracker = self.progress_reporting.create_progress_tracker(eval_dataloader, "Evaluating")
 
         try:
             # 4. Enter no-grad context
@@ -210,14 +207,10 @@ class StandardEvaluationStrategy(EvaluationStrategy):
                     # Update progress
                     current_metrics = {"eval_loss": loss_result.loss.item()}
                     current_metrics.update(loss_result.metrics)
-                    self.progress_reporting.update_progress(
-                        progress_tracker, current_metrics
-                    )
+                    self.progress_reporting.update_progress(progress_tracker, current_metrics)
 
             # 6. Finalize metrics
-            final_metrics = self.metrics_aggregation.finalize_metrics(
-                batch_metrics_accumulator
-            )
+            final_metrics = self.metrics_aggregation.finalize_metrics(batch_metrics_accumulator)
 
             # 7. Log final metrics
             self._log_final_metrics(final_metrics, model_key)
@@ -241,15 +234,11 @@ class StandardEvaluationStrategy(EvaluationStrategy):
             self.progress_reporting.finalize_progress(progress_tracker)
             self.model_state_management.restore_after_evaluation(model, state_info)
 
-    def _log_final_metrics(
-        self, final_metrics: dict[str, float], model_key: str
-    ) -> None:
+    def _log_final_metrics(self, final_metrics: dict[str, float], model_key: str) -> None:
         """Log final evaluation metrics"""
         for metric_name, metric_value in final_metrics.items():
             # Remove "eval_" prefix for storage
-            storage_name = (
-                metric_name[5:] if metric_name.startswith("eval_") else metric_name
-            )
+            storage_name = metric_name[5:] if metric_name.startswith("eval_") else metric_name
 
             self.metrics_logger.store_metric(
                 mode="eval",

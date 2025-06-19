@@ -1,19 +1,19 @@
 # eval_script.py
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-from scipy import stats
-from scipy.stats import gaussian_kde
-from scipy.stats import mannwhitneyu, ttest_ind, ks_2samp
-from sklearn.metrics import (
-    roc_curve,
-    auc,
-    precision_recall_curve,
-    average_precision_score,
-)
-from sklearn.metrics import confusion_matrix
-import seaborn as sns
 import warnings
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from scipy import stats
+from scipy.stats import gaussian_kde, ks_2samp, mannwhitneyu, ttest_ind
+from sklearn.metrics import (
+    auc,
+    average_precision_score,
+    confusion_matrix,
+    precision_recall_curve,
+    roc_curve,
+)
 
 warnings.filterwarnings("ignore")
 
@@ -66,9 +66,7 @@ def comprehensive_distribution_analysis(
     # Auto-determine score interpretation if not specified
     if higher_is_sneaky is None:
         higher_is_sneaky = np.mean(sneaky) > np.mean(honest)
-        print(
-            f"Auto-detected: Higher scores indicate {'sneaky' if higher_is_sneaky else 'honest'} behavior"
-        )
+        print(f"Auto-detected: Higher scores indicate {'sneaky' if higher_is_sneaky else 'honest'} behavior")
         print(f"  Mean honest score: {np.mean(honest):.4f}")
         print(f"  Mean sneaky score: {np.mean(sneaky):.4f}")
 
@@ -86,9 +84,7 @@ def comprehensive_distribution_analysis(
         # Sneaky is positive class (1), honest is negative class (0).
         # Higher original scores already indicate sneaky.
         y_true = np.concatenate([np.zeros(len(honest)), np.ones(len(sneaky))])
-        y_scores_roc = np.concatenate(
-            [honest, sneaky]
-        )  # Original scores are correct for this.
+        y_scores_roc = np.concatenate([honest, sneaky])  # Original scores are correct for this.
     else:
         # Honest is positive class (1), sneaky is negative class (0).
         # Higher original scores already indicate honest.
@@ -141,9 +137,7 @@ def comprehensive_distribution_analysis(
     )
 
     # Add KDE curves
-    x_range = np.linspace(
-        min(np.min(honest), np.min(sneaky)), max(np.max(honest), np.max(sneaky)), 200
-    )
+    x_range = np.linspace(min(np.min(honest), np.min(sneaky)), max(np.max(honest), np.max(sneaky)), 200)
 
     if len(honest) > 1:
         kde_honest = gaussian_kde(honest)
@@ -269,9 +263,7 @@ def comprehensive_distribution_analysis(
         precision_val = tp / (tp + fp) if (tp + fp) > 0 else 0
         recall_val = tp / (tp + fn) if (tp + fn) > 0 else 0
         f1_val = (
-            2 * (precision_val * recall_val) / (precision_val + recall_val)
-            if (precision_val + recall_val) > 0
-            else 0
+            2 * (precision_val * recall_val) / (precision_val + recall_val) if (precision_val + recall_val) > 0 else 0
         )
         specificity_val = tn / (tn + fp) if (tn + fp) > 0 else 0
         fpr_val = fp / (fp + tn) if (fp + tn) > 0 else 0
@@ -340,9 +332,7 @@ def comprehensive_distribution_analysis(
     ax5 = fig.add_subplot(gs[1, 2])
 
     # Violin plot
-    parts = ax5.violinplot(
-        [honest, sneaky], positions=[1, 2], showmeans=True, showmedians=True, widths=0.6
-    )
+    parts = ax5.violinplot([honest, sneaky], positions=[1, 2], showmeans=True, showmedians=True, widths=0.6)
     parts["bodies"][0].set_facecolor(honest_color)
     parts["bodies"][1].set_facecolor(sneaky_color)
     parts["bodies"][0].set_alpha(0.7)
@@ -521,11 +511,7 @@ def comprehensive_distribution_analysis(
     # Calculate all metrics
     precision_opt = tp / (tp + fp) if (tp + fp) > 0 else 0
     recall_opt = tp / (tp + fn) if (tp + fn) > 0 else 0
-    f1_opt = (
-        2 * (precision_opt * recall_opt) / (precision_opt + recall_opt)
-        if (precision_opt + recall_opt) > 0
-        else 0
-    )
+    f1_opt = 2 * (precision_opt * recall_opt) / (precision_opt + recall_opt) if (precision_opt + recall_opt) > 0 else 0
     specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
     fpr_opt = fp / (fp + tn) if (fp + tn) > 0 else 0
     fnr_opt = fn / (fn + tp) if (fn + tp) > 0 else 0
@@ -662,9 +648,7 @@ def comprehensive_distribution_analysis(
 
     ax10.set_xlabel("Classifier Score", fontsize=12, fontweight="bold")
     ax10.set_ylabel("Density", fontsize=12, fontweight="bold")
-    ax10.set_title(
-        "Error Analysis: False Positives & Negatives", fontsize=12, fontweight="bold"
-    )
+    ax10.set_title("Error Analysis: False Positives & Negatives", fontsize=12, fontweight="bold")
     ax10.legend(fontsize=10)
     ax10.grid(True, alpha=0.3)
 
@@ -681,26 +665,18 @@ def comprehensive_distribution_analysis(
         density_sneaky = kde_sneaky(x_range)
 
         # Plot densities
-        ax11.fill_between(
-            x_range, density_honest, alpha=0.5, color=honest_color, label=honest_label
-        )
-        ax11.fill_between(
-            x_range, density_sneaky, alpha=0.5, color=sneaky_color, label=sneaky_label
-        )
+        ax11.fill_between(x_range, density_honest, alpha=0.5, color=honest_color, label=honest_label)
+        ax11.fill_between(x_range, density_sneaky, alpha=0.5, color=sneaky_color, label=sneaky_label)
 
         # Highlight overlap
         overlap = np.minimum(density_honest, density_sneaky)
-        ax11.fill_between(
-            x_range, overlap, alpha=0.8, color=overlap_color, label="Overlap"
-        )
+        ax11.fill_between(x_range, overlap, alpha=0.8, color=overlap_color, label="Overlap")
 
         # Calculate overlap coefficient
         overlap_coeff = np.trapz(overlap, x_range)
 
         # Add threshold line (convert back to original scale if needed)
-        thresh_display = (
-            -optimal_f1_thresh if not higher_is_sneaky else optimal_f1_thresh
-        )
+        thresh_display = -optimal_f1_thresh if not higher_is_sneaky else optimal_f1_thresh
         ax11.axvline(
             x=thresh_display,
             color="green",
@@ -722,9 +698,7 @@ def comprehensive_distribution_analysis(
 
     ax11.set_xlabel("Classifier Score", fontsize=12, fontweight="bold")
     ax11.set_ylabel("Density", fontsize=12, fontweight="bold")
-    ax11.set_title(
-        "Distribution Overlap with Threshold", fontsize=12, fontweight="bold"
-    )
+    ax11.set_title("Distribution Overlap with Threshold", fontsize=12, fontweight="bold")
     ax11.legend(fontsize=10)
     ax11.grid(True, alpha=0.3)
 
@@ -809,9 +783,7 @@ def comprehensive_distribution_analysis(
 
     ax12.set_xlabel("Classifier Score", fontsize=12, fontweight="bold")
     ax12.set_ylabel("Class (with jitter)", fontsize=12, fontweight="bold")
-    ax12.set_title(
-        "Extreme Values and Outliers Analysis", fontsize=14, fontweight="bold"
-    )
+    ax12.set_title("Extreme Values and Outliers Analysis", fontsize=14, fontweight="bold")
     ax12.set_yticks([0, 1])
     ax12.set_yticklabels([honest_label, sneaky_label])
     ax12.legend(fontsize=10, loc="upper right")
@@ -843,9 +815,7 @@ def comprehensive_distribution_analysis(
     print(f"   {honest_label}: {len(honest):,} observations")
     print(f"   {sneaky_label}: {len(sneaky):,} observations")
     print(f"   Total: {len(y_true):,} observations")
-    print(
-        f"   Class Balance: {np.mean(y_true):.1%} positive class, {1-np.mean(y_true):.1%} negative class"
-    )
+    print(f"   Class Balance: {np.mean(y_true):.1%} positive class, {1-np.mean(y_true):.1%} negative class")
 
     print("\n🎯 CLASSIFICATION PERFORMANCE:")
     print(
@@ -876,9 +846,7 @@ def comprehensive_distribution_analysis(
     # Kolmogorov-Smirnov test
     try:
         ks_stat, ks_p = ks_2samp(honest, sneaky)
-        print(
-            f"   Kolmogorov-Smirnov test: statistic={ks_stat:.3f}, p-value={ks_p:.6f}"
-        )
+        print(f"   Kolmogorov-Smirnov test: statistic={ks_stat:.3f}, p-value={ks_p:.6f}")
     except Exception as e:
         print(f"   Kolmogorov-Smirnov test: Failed ({e})")
 

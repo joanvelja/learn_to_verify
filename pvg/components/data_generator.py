@@ -15,9 +15,9 @@ Key improvements ported from generator.py:
 import asyncio
 import logging
 import os
+from collections.abc import Callable as CallableABC
 from dataclasses import dataclass
 from typing import Any, Literal
-from collections.abc import Callable as CallableABC
 
 import datasets
 from huggingface_hub import HfApi, HfFolder, create_repo
@@ -52,9 +52,7 @@ def push_dataset_dict_to_hf_hub(
     dataset_name_prefix: str,
 ) -> str | None:
     """Pushes a DatasetDict to the Hugging Face Hub."""
-    logger.info(
-        f"Preparing to push dataset {dataset_name_prefix} (round {round_number}) to Hugging Face Hub..."
-    )
+    logger.info(f"Preparing to push dataset {dataset_name_prefix} (round {round_number}) to Hugging Face Hub...")
     token = args.hf_token or HfFolder.get_token()
     if not token:
         logger.warning("HF token not found. Skipping upload.")
@@ -63,11 +61,7 @@ def push_dataset_dict_to_hf_hub(
     api = HfApi(token=token)
     user = api.whoami()["name"]
 
-    base_repo_id = (
-        dataset_name_prefix
-        if "/" in dataset_name_prefix
-        else f"{user}/{dataset_name_prefix}"
-    )
+    base_repo_id = dataset_name_prefix if "/" in dataset_name_prefix else f"{user}/{dataset_name_prefix}"
     repo_id = f"{base_repo_id}_round_{round_number}"
 
     try:
@@ -112,9 +106,7 @@ class PipelineConfig:
     def create_full_pipeline(cls, generator_instance) -> "PipelineConfig":
         """Factory method for full pipeline with backdoor verification."""
         return cls(
-            stages=StageRegistry.filter_stages(
-                StageRegistry.get_all_stages(generator_instance), include_backdoor=True
-            ),
+            stages=StageRegistry.filter_stages(StageRegistry.get_all_stages(generator_instance), include_backdoor=True),
             transitions=TransitionBuilder.build_transitions(include_backdoor=True),
             queue_names=[
                 "pending_sneaky_gen",
@@ -208,9 +200,7 @@ class TransitionBuilder:
     def build_transitions(cls, include_backdoor: bool) -> dict[tuple[str, str], str]:
         """Build transition table using composition."""
         transitions = cls.BASE_TRANSITIONS.copy()
-        specific_transitions = (
-            cls.BACKDOOR_TRANSITIONS if include_backdoor else cls.BYPASS_TRANSITIONS
-        )
+        specific_transitions = cls.BACKDOOR_TRANSITIONS if include_backdoor else cls.BYPASS_TRANSITIONS
         transitions.update(specific_transitions)
         return transitions
 
@@ -272,14 +262,10 @@ class DataGenerator:
         elif "gsm8k" in self.verifier_datasplit_repo.lower():
             self.dataset_type: Literal["coding", "math"] = "math"
         else:
-            raise ValueError(
-                f"Cannot determine dataset type for {self.verifier_datasplit_repo}"
-            )
+            raise ValueError(f"Cannot determine dataset type for {self.verifier_datasplit_repo}")
 
         # Only need sneaky prover client (honest generation bypassed)
-        self.sneaky_prover_client = self.vllm_orchestrator.get_vllm_client(
-            "sneaky_prover"
-        )
+        self.sneaky_prover_client = self.vllm_orchestrator.get_vllm_client("sneaky_prover")
 
         # Create pipeline configuration using factory pattern
         self.pipeline_config = (
@@ -289,21 +275,15 @@ class DataGenerator:
         )
 
         # Use factories for component creation
-        self.backdoor_evaluator = ComponentFactory.create_backdoor_evaluator(
-            enable_backdoor_verification
-        )
+        self.backdoor_evaluator = ComponentFactory.create_backdoor_evaluator(enable_backdoor_verification)
 
         self.tokenizer = self.data_manager.get_tokenizer()
         self.formatter = Formatter(tokenizer=self.tokenizer)
         self.processing_status: dict[str, dict[str, Any]] = {}
 
         # Initialize queues and pipeline control using configuration
-        self.stage_queues = ComponentFactory.create_stage_queues(
-            self.pipeline_config.queue_names
-        )
-        self.active_batches = ComponentFactory.create_active_batches(
-            self.pipeline_config.queue_names
-        )
+        self.stage_queues = ComponentFactory.create_stage_queues(self.pipeline_config.queue_names)
+        self.active_batches = ComponentFactory.create_active_batches(self.pipeline_config.queue_names)
         self.pipeline_running = False
         self.worker_tasks = []
         self.split_name = ""
@@ -314,13 +294,9 @@ class DataGenerator:
         ds_dict_problems: dict[str, list[dict[str, str]]] = {}
 
         for split_name in ["train", "eval"]:
-            logger.info(
-                f"Loading problems from '{self.verifier_datasplit_repo}' split '{split_name}'..."
-            )
+            logger.info(f"Loading problems from '{self.verifier_datasplit_repo}' split '{split_name}'...")
             try:
-                ds = datasets.load_dataset(
-                    self.verifier_datasplit_repo, split=split_name, streaming=False
-                )
+                ds = datasets.load_dataset(self.verifier_datasplit_repo, split=split_name, streaming=False)
             except Exception as e:
                 logger.error(
                     f"Failed to load dataset {self.verifier_datasplit_repo} split {split_name}: {e}",
@@ -329,9 +305,7 @@ class DataGenerator:
                 ds_dict_problems[split_name] = []
                 continue
 
-            num_to_select = (
-                num_samples_train if split_name == "train" else num_samples_eval
-            )
+            num_to_select = num_samples_train if split_name == "train" else num_samples_eval
             current_len = len(ds)
 
             seed_value = getattr(self.args, "seed", 42)
@@ -363,9 +337,7 @@ class DataGenerator:
                 else:
                     item_id_val = item.get("id", item.get("problem_id"))
 
-                item_id = str(
-                    item_id_val if item_id_val is not None else f"{id_prefix}_{i}"
-                )
+                item_id = str(item_id_val if item_id_val is not None else f"{id_prefix}_{i}")
 
                 entry = {
                     "id": item_id,
@@ -373,9 +345,7 @@ class DataGenerator:
                     "function_signature": item.get("starter_code"),
                     "harness_code": item.get("harness_code"),
                     "is_transformed": item.get("transformed_solution") == "True",
-                    "mono_solutions": item.get(
-                        "mono_solutions"
-                    ),  # Include ground truth
+                    "mono_solutions": item.get("mono_solutions"),  # Include ground truth
                 }
                 processed_data.append(entry)
 
@@ -388,9 +358,7 @@ class DataGenerator:
             ds_dict_problems[split_name] = processed_data
 
         if not ds_dict_problems or all(not v for v in ds_dict_problems.values()):
-            raise ValueError(
-                f"No problems loaded from any split of {self.verifier_datasplit_repo}. Cannot proceed."
-            )
+            raise ValueError(f"No problems loaded from any split of {self.verifier_datasplit_repo}. Cannot proceed.")
         return ds_dict_problems
 
     def build_gen_params(self, model_key: str) -> dict[str, Any]:
@@ -406,17 +374,13 @@ class DataGenerator:
             "frequency_penalty": config.frequency_penalty,
             "min_p": config.min_p,
             "max_tokens": config.max_tokens,
-            "stop_sequences": self.formatter.get_stop_sequences(
-                "sneaky_prover", dataset_type=self.dataset_type
-            ),
+            "stop_sequences": self.formatter.get_stop_sequences("sneaky_prover", dataset_type=self.dataset_type),
             "chat_template": self.tokenizer.chat_template,
             "continue_final_message": True,
             "add_generation_prompt": False,
         }
 
-    def format_ground_truth_as_parsed(
-        self, mono_solution: str | None
-    ) -> dict[str, Any] | None:
+    def format_ground_truth_as_parsed(self, mono_solution: str | None) -> dict[str, Any] | None:
         """Format ground truth mono_solution as parsed honest data."""
         if not mono_solution:
             return None
@@ -509,13 +473,9 @@ class DataGenerator:
                 # Handle generation results
                 output = outputs[valid_idx] if valid_idx < len(outputs) else None
                 if output is not None:
-                    prefix = (
-                        "<reasoning>" if self.dataset_type == "coding" else "<plan>"
-                    )
+                    prefix = "<reasoning>" if self.dataset_type == "coding" else "<plan>"
                     final_output = prefix + output
-                    results.append(
-                        ProcessResult(pid, True, {"sneaky_raw": final_output})
-                    )
+                    results.append(ProcessResult(pid, True, {"sneaky_raw": final_output}))
                 else:
                     results.append(ProcessResult(pid, False, error="generation_failed"))
                 valid_idx += 1
@@ -533,9 +493,7 @@ class DataGenerator:
                 results.append(ProcessResult(pid, False, error="no_raw_output"))
                 continue
 
-            tags_config = self.formatter.get_tags_for_parsing(
-                "sneaky_prover", dataset_type=self.dataset_type
-            )
+            tags_config = self.formatter.get_tags_for_parsing("sneaky_prover", dataset_type=self.dataset_type)
             parsed_data = parse_output(raw_output, tags_config)
 
             if parsed_data:
@@ -554,10 +512,7 @@ class DataGenerator:
         """Process backdoor verification batch."""
         # Safety check - should not be called if backdoor verification is disabled
         if self.backdoor_evaluator is None:
-            return [
-                ProcessResult(pid, False, error="backdoor_verification_disabled")
-                for pid in pids
-            ]
+            return [ProcessResult(pid, False, error="backdoor_verification_disabled") for pid in pids]
 
         results = []
         for pid in pids:
@@ -629,9 +584,7 @@ class DataGenerator:
                         break  # soft latency budget exceeded
 
                     try:
-                        pid = await asyncio.wait_for(
-                            self.stage_queues[queue_name].get(), timeout=timeout
-                        )
+                        pid = await asyncio.wait_for(self.stage_queues[queue_name].get(), timeout=timeout)
 
                         # RACE-SAFE check: make sure the PID is still in the
                         # expected state (another worker may already have moved it)
@@ -652,21 +605,14 @@ class DataGenerator:
 
                 # optional telemetry for tuning
                 if len(batch_pids) < batch_size * 0.5:
-                    logger.debug(
-                        f"{config.name}: processing small batch "
-                        f"{len(batch_pids)}/{batch_size}"
-                    )
+                    logger.debug(f"{config.name}: processing small batch " f"{len(batch_pids)}/{batch_size}")
 
                 # ------------ stage processing ------------
                 results = await config.processor(batch_pids)
 
                 # ------------ result fan-out --------------
                 for idx, pid in enumerate(batch_pids):
-                    result = (
-                        results[idx]
-                        if idx < len(results)
-                        else ProcessResult(pid, False, error="missing_result")
-                    )
+                    result = results[idx] if idx < len(results) else ProcessResult(pid, False, error="missing_result")
                     await self.handle_result(pid, result, config)
 
             except asyncio.CancelledError:
@@ -695,17 +641,10 @@ class DataGenerator:
         if result.success:
             # Determine next state
             current_status = data["status"]
-            if (
-                current_status == "pending_sneaky_prover_parse"
-                and self.split_name == "eval"
-            ):
-                next_status = self.pipeline_config.transitions.get(
-                    (current_status, "success_eval"), "completed"
-                )
+            if current_status == "pending_sneaky_prover_parse" and self.split_name == "eval":
+                next_status = self.pipeline_config.transitions.get((current_status, "success_eval"), "completed")
             else:
-                next_status = self.pipeline_config.transitions.get(
-                    (current_status, "success"), "completed"
-                )
+                next_status = self.pipeline_config.transitions.get((current_status, "success"), "completed")
 
             data["status"] = next_status
             data[config.retry_field] = 0  # Reset retry count
@@ -728,9 +667,7 @@ class DataGenerator:
                     data["sneaky_raw"] = None
                     retry_status = "pending_sneaky_gen"
                 else:
-                    retry_status = self.pipeline_config.transitions.get(
-                        (data["status"], "failure"), data["status"]
-                    )
+                    retry_status = self.pipeline_config.transitions.get((data["status"], "failure"), data["status"])
 
                 data["status"] = retry_status
                 if retry_status in self.stage_queues:
@@ -740,9 +677,7 @@ class DataGenerator:
         """Track progress with time-based and batch-aware reporting."""
         import time
 
-        with tqdm(
-            total=total_problems, desc=f"[{self.split_name}] Processing", unit="problem"
-        ) as pbar:
+        with tqdm(total=total_problems, desc=f"[{self.split_name}] Processing", unit="problem") as pbar:
             last_count = 0
             loop_count = 0
             start_time = time.time()
@@ -753,9 +688,7 @@ class DataGenerator:
                     loop_count += 1
                     current_time = time.time()
                     current_terminal_count = sum(
-                        1
-                        for d in self.processing_status.values()
-                        if d["status"] in TERMINAL_STATUSES
+                        1 for d in self.processing_status.values() if d["status"] in TERMINAL_STATUSES
                     )
 
                     if current_terminal_count > last_count:
@@ -767,38 +700,20 @@ class DataGenerator:
                     if current_time - last_status_time >= 25.0:
                         status_output = visualize_status_dict(self.processing_status)
                         total_items = len(self.processing_status)
-                        completed_items = sum(
-                            1
-                            for d in self.processing_status.values()
-                            if d["status"] == "completed"
-                        )
-                        completion_percentage = (
-                            (completed_items / total_items) * 100
-                            if total_items > 0
-                            else 0
-                        )
+                        completed_items = sum(1 for d in self.processing_status.values() if d["status"] == "completed")
+                        completion_percentage = (completed_items / total_items) * 100 if total_items > 0 else 0
 
                         # Calculate processing rate
                         elapsed_time = current_time - start_time
-                        processing_rate = (
-                            current_terminal_count / elapsed_time
-                            if elapsed_time > 0
-                            else 0
-                        )
+                        processing_rate = current_terminal_count / elapsed_time if elapsed_time > 0 else 0
 
                         # Get active batch information
                         active_batch_info = []
                         for queue_name, active_batch in self.active_batches.items():
                             if active_batch:
-                                active_batch_info.append(
-                                    f"{queue_name}: {len(active_batch)} items"
-                                )
+                                active_batch_info.append(f"{queue_name}: {len(active_batch)} items")
 
-                        batch_status = (
-                            f" | Active batches: {', '.join(active_batch_info)}"
-                            if active_batch_info
-                            else ""
-                        )
+                        batch_status = f" | Active batches: {', '.join(active_batch_info)}" if active_batch_info else ""
 
                         logger.info(
                             f"[{self.split_name}] Status at {elapsed_time:.1f}s "
@@ -824,52 +739,30 @@ class DataGenerator:
         """Wait for pipeline completion."""
         while self.pipeline_running:
             total_count = len(self.processing_status)
-            completed_count = sum(
-                1 for d in self.processing_status.values() if d["status"] == "completed"
-            )
-            terminal_count = sum(
-                1
-                for d in self.processing_status.values()
-                if d["status"] in TERMINAL_STATUSES
-            )
-            completion_percentage = (
-                (completed_count / total_count) * 100 if total_count > 0 else 0
-            )
+            completed_count = sum(1 for d in self.processing_status.values() if d["status"] == "completed")
+            terminal_count = sum(1 for d in self.processing_status.values() if d["status"] in TERMINAL_STATUSES)
+            completion_percentage = (completed_count / total_count) * 100 if total_count > 0 else 0
 
             # Enforce retry limits when near completion
             if completion_percentage >= 99.0:
                 for pid, data in self.processing_status.items():
                     if data["status"] not in TERMINAL_STATUSES:
                         for config in self.get_stage_configs():
-                            if (
-                                data["status"] == config.queue_name
-                                and data[config.retry_field] >= config.max_retries
-                            ):
+                            if data["status"] == config.queue_name and data[config.retry_field] >= config.max_retries:
                                 data["status"] = self.pipeline_config.transitions.get(
                                     (data["status"], "max_retries"),
                                     f"failed_{config.name}",
                                 )
 
             if completion_percentage >= 99.0 or terminal_count == total_count:
-                logger.info(
-                    f"Pipeline completed with {completion_percentage:.2f}% success rate."
-                )
+                logger.info(f"Pipeline completed with {completion_percentage:.2f}% success rate.")
                 return
 
             queues_empty = all(q.empty() for q in self.stage_queues.values())
-            no_active_batches = all(
-                len(batch) == 0 for batch in self.active_batches.values()
-            )
+            no_active_batches = all(len(batch) == 0 for batch in self.active_batches.values())
 
-            if (
-                queues_empty
-                and no_active_batches
-                and terminal_count > 0
-                and terminal_count == total_count
-            ):
-                logger.info(
-                    f"Pipeline completed early: all problems processed, {completion_percentage:.2f}% success."
-                )
+            if queues_empty and no_active_batches and terminal_count > 0 and terminal_count == total_count:
+                logger.info(f"Pipeline completed early: all problems processed, {completion_percentage:.2f}% success.")
                 return
 
             await asyncio.sleep(1.0)
@@ -879,9 +772,7 @@ class DataGenerator:
     ) -> list[dict[str, Any]]:
         """Run the generation pipeline for a split."""
         self.split_name = split_name
-        logger.info(
-            f"[{split_name}] Initializing generation pipeline for {len(problems)} problems..."
-        )
+        logger.info(f"[{split_name}] Initializing generation pipeline for {len(problems)} problems...")
 
         # Initialize processing status - bypass honest generation with ground truth
         self.processing_status = {}
@@ -889,9 +780,7 @@ class DataGenerator:
             mono_solution = p.get("mono_solutions")
             # Debug: Check what we're actually getting
             if mono_solution is None:
-                logger.warning(
-                    f"Problem {p.get('id', 'unknown')} has no mono_solutions"
-                )
+                logger.warning(f"Problem {p.get('id', 'unknown')} has no mono_solutions")
 
             # Format ground truth as parsed data for sneaky generation
             honest_parsed = self.format_ground_truth_as_parsed(mono_solution)
@@ -940,11 +829,7 @@ class DataGenerator:
 
         for config in configs:
             for i in range(config.workers):
-                _ = (
-                    f"{config.name}_worker_{i}"
-                    if config.workers > 1
-                    else f"{config.name}_worker"
-                )
+                _ = f"{config.name}_worker_{i}" if config.workers > 1 else f"{config.name}_worker"
                 worker_tasks.append(asyncio.create_task(self.generic_worker(config)))
 
         worker_tasks.append(asyncio.create_task(self.progress_tracker(total_problems)))
@@ -953,19 +838,13 @@ class DataGenerator:
         # Split-aware timeouts (from generator.py improvements)
         train_timeout_seconds = 24 * 60  # 24 minutes
         test_timeout_seconds = 4 * 60  # 4 minutes
-        timeout_seconds = (
-            train_timeout_seconds if split_name == "train" else test_timeout_seconds
-        )
+        timeout_seconds = train_timeout_seconds if split_name == "train" else test_timeout_seconds
         logger.info(f"[{split_name}] Pipeline timeout set to {timeout_seconds} seconds")
 
         try:
-            await asyncio.wait_for(
-                self.wait_for_completion(total_problems), timeout=timeout_seconds
-            )
+            await asyncio.wait_for(self.wait_for_completion(total_problems), timeout=timeout_seconds)
         except asyncio.TimeoutError:
-            logger.error(
-                f"[{split_name}] Pipeline timeout after {timeout_seconds} seconds."
-            )
+            logger.error(f"[{split_name}] Pipeline timeout after {timeout_seconds} seconds.")
             # Handle timeout - mark unprocessed as failed
             for pid, data in self.processing_status.items():
                 if data["status"] not in TERMINAL_STATUSES:
@@ -1002,9 +881,7 @@ class DataGenerator:
             else:
                 failed_count += 1
 
-        completion_percentage = (
-            (successful_count / total_problems) * 100 if total_problems > 0 else 0
-        )
+        completion_percentage = (successful_count / total_problems) * 100 if total_problems > 0 else 0
 
         # Show final status visualization
         logger.info(f"[{split_name}] Final Status Summary:")
@@ -1015,13 +892,9 @@ class DataGenerator:
         )
 
         if completion_percentage < 99.0:
-            logger.warning(
-                f"[{split_name}] ATTENTION: Only {completion_percentage:.2f}% completed, below 99% target."
-            )
+            logger.warning(f"[{split_name}] ATTENTION: Only {completion_percentage:.2f}% completed, below 99% target.")
         else:
-            logger.info(
-                f"[{split_name}] SUCCESS: Achieved {completion_percentage:.2f}% completion."
-            )
+            logger.info(f"[{split_name}] SUCCESS: Achieved {completion_percentage:.2f}% completion.")
 
         return [r for r in final_results if r["final_status"] == "completed"]
 
@@ -1041,21 +914,15 @@ class DataGenerator:
 
         for split_name, problems_list in problem_splits.items():
             if not problems_list:
-                logger.warning(
-                    f"No problems loaded for split '{split_name}'. Skipping generation."
-                )
+                logger.warning(f"No problems loaded for split '{split_name}'. Skipping generation.")
                 final_clean_ds_dict[split_name] = datasets.Dataset.from_dict({})
                 final_backdoored_ds_dict[split_name] = datasets.Dataset.from_dict({})
                 continue
 
-            completed_results = await self.run_generation_pipeline_for_split(
-                problems_list, split_name
-            )
+            completed_results = await self.run_generation_pipeline_for_split(problems_list, split_name)
 
             if not completed_results:
-                logger.warning(
-                    f"No results successfully generated for split '{split_name}'."
-                )
+                logger.warning(f"No results successfully generated for split '{split_name}'.")
                 final_clean_ds_dict[split_name] = datasets.Dataset.from_dict({})
                 final_backdoored_ds_dict[split_name] = datasets.Dataset.from_dict({})
             else:
@@ -1069,13 +936,9 @@ class DataGenerator:
 
         if any(len(ds) > 0 for ds in final_clean_ds_dict.values()):
             clean_repo_prefix = f"{base_hf_repo_name}_clean"
-            push_dataset_dict_to_hf_hub(
-                final_clean_ds_dict, self.args, self.current_round, clean_repo_prefix
-            )
+            push_dataset_dict_to_hf_hub(final_clean_ds_dict, self.args, self.current_round, clean_repo_prefix)
         else:
-            logger.warning(
-                "No clean data generated across all splits. Skipping push for clean dataset."
-            )
+            logger.warning("No clean data generated across all splits. Skipping push for clean dataset.")
 
         if any(len(ds) > 0 for ds in final_backdoored_ds_dict.values()):
             backdoored_repo_prefix = f"{base_hf_repo_name}_backdoored"
@@ -1086,10 +949,6 @@ class DataGenerator:
                 backdoored_repo_prefix,
             )
         else:
-            logger.warning(
-                "No backdoored data generated across all splits. Skipping push for backdoored dataset."
-            )
+            logger.warning("No backdoored data generated across all splits. Skipping push for backdoored dataset.")
 
-        logger.info(
-            "Data generation and upload process finished for the current round."
-        )
+        logger.info("Data generation and upload process finished for the current round.")

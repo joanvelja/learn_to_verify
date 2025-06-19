@@ -59,9 +59,7 @@ class VerifierPhaseStrategy(PhaseStrategy):
         optimizer = self.optimizer_scheduler_manager.get_optimizer("verifier")
 
         # Prepare components with accelerator
-        components = self._prepare_model_components(
-            "verifier", train_dataloader, optimizer, model
-        )
+        components = self._prepare_model_components("verifier", train_dataloader, optimizer, model)
         self._store_prepared_components("verifier", components, eval_dataloader)
 
         # Handle reference model
@@ -70,9 +68,7 @@ class VerifierPhaseStrategy(PhaseStrategy):
         # Create and prepare scheduler
         self._prepare_scheduler("verifier", components[2])
 
-    def _prepare_model_components(
-        self, key: str, dataloader, optimizer, model
-    ) -> tuple[Any, Any, Any]:
+    def _prepare_model_components(self, key: str, dataloader, optimizer, model) -> tuple[Any, Any, Any]:
         """Prepare model components with accelerator."""
         return self.accelerator_manager.prepare_components(
             key=key,
@@ -81,36 +77,28 @@ class VerifierPhaseStrategy(PhaseStrategy):
             model=model,
         )
 
-    def _store_prepared_components(
-        self, key: str, components: tuple[Any, Any, Any], eval_dataloader
-    ) -> None:
+    def _store_prepared_components(self, key: str, components: tuple[Any, Any, Any], eval_dataloader) -> None:
         """Store prepared components in managers."""
         self.model_manager.prepared_models[key] = components[0]
         self.optimizer_scheduler_manager.optimizers[key] = components[1]
         self.data_manager.dataloaders[key]["train_dataloader"] = components[2]
-        self.data_manager.dataloaders[key]["eval_dataloader"] = (
-            self.accelerator_manager.prepare_dataloader(eval_dataloader, key=key)
+        self.data_manager.dataloaders[key]["eval_dataloader"] = self.accelerator_manager.prepare_dataloader(
+            eval_dataloader, key=key
         )
 
     def _prepare_reference_model(self, key: str) -> None:
         """Prepare reference model if it exists."""
         if self.model_manager.ref_models[key] is not None:
-            self.model_manager.ref_models[key] = (
-                self.accelerator_manager.prepare_ref_model(
-                    key=key, model=self.model_manager.ref_models[key]
-                )
+            self.model_manager.ref_models[key] = self.accelerator_manager.prepare_ref_model(
+                key=key, model=self.model_manager.ref_models[key]
             )
 
     def _prepare_scheduler(self, key: str, prepared_dataloader) -> None:
         """Create and prepare scheduler."""
-        self.optimizer_scheduler_manager._calculate_num_training_steps(
-            prepared_dataloader
-        )
+        self.optimizer_scheduler_manager._calculate_num_training_steps(prepared_dataloader)
         self.optimizer_scheduler_manager.create_schedulers()
         scheduler = self.optimizer_scheduler_manager.get_scheduler(key)
-        scheduler = self.accelerator_manager.prepare_scheduler(
-            key=key, scheduler=scheduler
-        )
+        scheduler = self.accelerator_manager.prepare_scheduler(key=key, scheduler=scheduler)
         self.optimizer_scheduler_manager.schedulers[key] = scheduler
 
     def create_trainer(self) -> VerifierRegressorTrainer:

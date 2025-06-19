@@ -8,11 +8,7 @@ from typing import Callable, Optional, Tuple
 
 def _params_match(sig, expected):
     # ignore defaults & annotations, allow extra *OPTIONAL* params
-    required = [
-        p.name
-        for p in sig.parameters.values()
-        if p.default is p.empty and p.kind == p.POSITIONAL_OR_KEYWORD
-    ]
+    required = [p.name for p in sig.parameters.values() if p.default is p.empty and p.kind == p.POSITIONAL_OR_KEYWORD]
     return required[: len(expected)] == expected  # order preserved
 
 
@@ -22,9 +18,7 @@ class SkeletonParser:
     def __init__(self, globals_dict: dict):
         self.globals_dict = globals_dict
 
-    def extract_function_info(
-        self, skeleton: str
-    ) -> Optional[Tuple[Optional[str], str, list]]:
+    def extract_function_info(self, skeleton: str) -> Optional[Tuple[Optional[str], str, list]]:
         """
         Extract function info from skeleton (standalone or class method).
         Returns (class_name_or_None, function_name, param_names) or None if not found.
@@ -47,9 +41,7 @@ class SkeletonParser:
 
         return None
 
-    def extract_class_method_info(
-        self, skeleton: str
-    ) -> Optional[Tuple[str, str, list]]:
+    def extract_class_method_info(self, skeleton: str) -> Optional[Tuple[str, str, list]]:
         """
         Backward compatibility method - extract class name, method name, and parameters.
         Returns (class_name, method_name, param_names) or None if not a class method.
@@ -59,9 +51,7 @@ class SkeletonParser:
             return result
         return None
 
-    def _extract_with_ast(
-        self, skeleton: str
-    ) -> Optional[Tuple[Optional[str], str, list]]:
+    def _extract_with_ast(self, skeleton: str) -> Optional[Tuple[Optional[str], str, list]]:
         """Extract using AST parsing - handles both standalone functions and class methods"""
         # Fix incomplete skeleton for AST parsing
         fixed_skeleton = self._fix_skeleton_for_ast(skeleton)
@@ -93,9 +83,7 @@ class SkeletonParser:
 
         return function_info
 
-    def _extract_with_regex(
-        self, skeleton: str
-    ) -> Optional[Tuple[Optional[str], str, list]]:
+    def _extract_with_regex(self, skeleton: str) -> Optional[Tuple[Optional[str], str, list]]:
         """Extract using regex patterns - handles both standalone functions and class methods"""
         lines = [line.strip() for line in skeleton.split("\n") if line.strip()]
 
@@ -156,15 +144,11 @@ class SkeletonParser:
 
             # Add colon if missing
             stripped = line.strip()
-            if (
-                stripped.startswith("class ") or stripped.startswith("def ")
-            ) and not stripped.endswith(":"):
+            if (stripped.startswith("class ") or stripped.startswith("def ")) and not stripped.endswith(":"):
                 fixed_lines[-1] += ":"
 
             # Add pass statement after class/def lines
-            if stripped.endswith(":") and (
-                stripped.startswith("class ") or stripped.startswith("def ")
-            ):
+            if stripped.endswith(":") and (stripped.startswith("class ") or stripped.startswith("def ")):
                 indent = len(line) - len(line.lstrip()) + 4
                 fixed_lines.append(" " * indent + "pass")
 
@@ -187,9 +171,7 @@ class SkeletonParser:
             return self._find_standalone_function(function_name, expected_params)
         else:
             # Class method
-            matching_class = self._find_matching_class(
-                class_name, function_name, expected_params
-            )
+            matching_class = self._find_matching_class(class_name, function_name, expected_params)
             if not matching_class:
                 return None
 
@@ -213,9 +195,7 @@ class SkeletonParser:
                         if isinstance(method, staticmethod):
                             return method.__func__
                         # Strategy 4: Return unbound method with wrapper
-                        return lambda *args, **kwargs: method(
-                            matching_class(), *args, **kwargs
-                        )
+                        return lambda *args, **kwargs: method(matching_class(), *args, **kwargs)
                     except Exception:
                         return None
 
@@ -226,9 +206,7 @@ class SkeletonParser:
         """Backward compatibility - alias for get_function_callable"""
         return self.get_function_callable(skeleton)
 
-    def get_function_name_info(
-        self, skeleton: str
-    ) -> Optional[Tuple[Optional[str], str]]:
+    def get_function_name_info(self, skeleton: str) -> Optional[Tuple[Optional[str], str]]:
         """
         Get the actual function info found in globals.
         Returns (class_name_or_None, function_name) for use with:
@@ -244,14 +222,9 @@ class SkeletonParser:
         if class_name is None:
             # Standalone function - find in globals
             for name, obj in self.globals_dict.items():
-                if (
-                    not name.startswith("__")
-                    and callable(obj)
-                    and not inspect.isclass(obj)
-                ):
-                    if (
-                        name == expected_function_name
-                        and self._function_matches_signature(obj, expected_params)
+                if not name.startswith("__") and callable(obj) and not inspect.isclass(obj):
+                    if name == expected_function_name and self._function_matches_signature(
+                        obj, expected_params
                     ):  # Iff the name matches, and the signature matches, then return the name
                         return None, name
         else:
@@ -297,9 +270,7 @@ class SkeletonParser:
 
         return None
 
-    def _method_matches_signature(
-        self, method: Callable, expected_params: list
-    ) -> bool:
+    def _method_matches_signature(self, method: Callable, expected_params: list) -> bool:
         """Check if method signature matches expected parameters"""
         try:
             sig = inspect.signature(method)
@@ -314,9 +285,7 @@ class SkeletonParser:
         except Exception:
             return False
 
-    def _function_matches_signature(
-        self, func: Callable, expected_params: list
-    ) -> bool:
+    def _function_matches_signature(self, func: Callable, expected_params: list) -> bool:
         """Check if standalone function signature matches expected parameters"""
         try:
             sig = inspect.signature(func)
@@ -326,9 +295,7 @@ class SkeletonParser:
         except Exception:
             return False
 
-    def create_verification_call(
-        self, skeleton: str, verify_function_name: str = "verify_solution"
-    ) -> Optional[str]:
+    def create_verification_call(self, skeleton: str, verify_function_name: str = "verify_solution") -> Optional[str]:
         """
         Create the verification call string for use with eval/exec.
         Returns string like:

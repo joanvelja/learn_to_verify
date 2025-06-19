@@ -38,9 +38,7 @@ class GRPO:
             Tensor containing the calculated advantages for all generations (globally).
         """
         if global_rewards.dim() != 1:
-            raise ValueError(
-                f"Expected global_rewards to be 1D, but got shape {global_rewards.shape}"
-            )
+            raise ValueError(f"Expected global_rewards to be 1D, but got shape {global_rewards.shape}")
         if len(global_rewards) % self.num_generations != 0:
             raise ValueError(
                 f"Length of global_rewards ({len(global_rewards)}) must be divisible by num_generations ({self.num_generations})."
@@ -49,36 +47,22 @@ class GRPO:
         num_unique_prompts_global = len(global_rewards) // self.num_generations
 
         # Reshape rewards to (num_unique_prompts_global, num_generations)
-        rewards_grouped = global_rewards.view(
-            num_unique_prompts_global, self.num_generations
-        )
+        rewards_grouped = global_rewards.view(num_unique_prompts_global, self.num_generations)
 
-        mean_grouped_rewards = torch.nanmean(
-            rewards_grouped.float(), dim=1
-        )  # TODO: Possibly not needed nanmean
-        std_grouped_rewards = nanstd(
-            rewards_grouped.float(), dim=1
-        )  # TODO: Possibly not needed nanstd
+        mean_grouped_rewards = torch.nanmean(rewards_grouped.float(), dim=1)  # TODO: Possibly not needed nanmean
+        std_grouped_rewards = nanstd(rewards_grouped.float(), dim=1)  # TODO: Possibly not needed nanstd
 
         # Expand mean/std back to the original shape
-        mean_expanded = mean_grouped_rewards.repeat_interleave(
-            self.num_generations, dim=0
-        )
-        std_expanded = std_grouped_rewards.repeat_interleave(
-            self.num_generations, dim=0
-        )
+        mean_expanded = mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
+        std_expanded = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
 
         # Calculate advantages
         advantages = global_rewards - mean_expanded
 
         logger.debug(f"[AdvCalc shapes] global_rewards: {global_rewards.shape}")
         logger.debug(f"[AdvCalc shapes] rewards_grouped: {rewards_grouped.shape}")
-        logger.debug(
-            f"[AdvCalc shapes] mean_grouped_rewards: {mean_grouped_rewards.shape}"
-        )
-        logger.debug(
-            f"[AdvCalc shapes] std_grouped_rewards: {std_grouped_rewards.shape}"
-        )
+        logger.debug(f"[AdvCalc shapes] mean_grouped_rewards: {mean_grouped_rewards.shape}")
+        logger.debug(f"[AdvCalc shapes] std_grouped_rewards: {std_grouped_rewards.shape}")
         logger.debug(f"[AdvCalc shapes] mean_expanded: {mean_expanded.shape}")
         logger.debug(f"[AdvCalc shapes] std_expanded: {std_expanded.shape}")
         logger.debug(f"[AdvCalc shapes] advantages: {advantages.shape}")

@@ -13,19 +13,17 @@ class StateTracker:
 
     def __init__(
         self,
-        verifier_mode: Literal[
-            "regressor", "classifier", "inference_classifier", "inference_regressor"
-        ],
+        verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],
     ) -> None:
         self.round: int = 0
         self.phase: Literal["verifier", "provers"] = "verifier"
         self.step: int = 0
-        self.init_verifier_mode: Literal[
-            "regressor", "classifier", "inference_classifier", "inference_regressor"
-        ] = verifier_mode
-        self.verifier_mode: Literal[
-            "regressor", "classifier", "inference_classifier", "inference_regressor"
-        ] = verifier_mode
+        self.init_verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"] = (
+            verifier_mode
+        )
+        self.verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"] = (
+            verifier_mode
+        )
 
     def increment_round(self) -> None:
         self.round += 1
@@ -50,9 +48,7 @@ class StateTracker:
 
     def get_verifier_mode(
         self,
-    ) -> Literal[
-        "regressor", "classifier", "inference_classifier", "inference_regressor"
-    ]:
+    ) -> Literal["regressor", "classifier", "inference_classifier", "inference_regressor"]:
         return self.verifier_mode
 
     def reset_state(self) -> None:

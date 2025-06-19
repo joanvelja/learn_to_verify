@@ -3,20 +3,22 @@
 # ModelManager
 # Responsibility: Loads, manages, and provides access to the policy models (sneaky_prover, verifier) and their corresponding reference models (if beta > 0). Handles applying Liger kernel and enabling gradient checkpointing. Coordinates with AcceleratorManager to prepare models.
 
+import logging
 import os
-from typing import Literal, Callable, Any
 from collections.abc import Iterator
+from typing import Any, Callable, Literal
+
 import torch
-from pvg.components.accelerator_manager import AcceleratorManager
-from pvg.config.args import ModelArgs, TrainingArgs, RLArgs
+from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
+from liger_kernel.transformers import _apply_liger_kernel_to_instance
 from transformers import (
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
     AutoTokenizer,
 )
-from liger_kernel.transformers import _apply_liger_kernel_to_instance
-from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
-import logging
+
+from pvg.components.accelerator_manager import AcceleratorManager
+from pvg.config.args import ModelArgs, RLArgs, TrainingArgs
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -67,20 +69,11 @@ class ModelManager:
         self.prepared_models: dict[str, torch.nn.Module] = {}
         self.prepared_ref_models: dict[str, torch.nn.Module | None] = {}
         self.tokenizer: AutoTokenizer | None = None
-        self.verifier_mode: (
-            Literal[
-                "regressor", "classifier", "inference_classifier", "inference_regressor"
-            ]
-            | None
-        ) = (
-            self.training_configs["verifier"].verifier_mode
-            if self.training_configs["verifier"] is not None
-            else None
+        self.verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"] | None = (
+            self.training_configs["verifier"].verifier_mode if self.training_configs["verifier"] is not None else None
         )
 
-        self.global_phase_callback: Callable[[], Literal["verifier", "provers"]] = (
-            global_phase_callback
-        )
+        self.global_phase_callback: Callable[[], Literal["verifier", "provers"]] = global_phase_callback
         self.global_round_callback: Callable[[], int] = global_round_callback
         self.global_step_callback: Callable[[], int] = global_step_callback
 
@@ -149,28 +142,21 @@ class ModelManager:
                     **model_init_kwargs,
                 )
 
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_paths["sneaky_prover"]
-            )
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_paths["sneaky_prover"])
         else:
             raise ValueError(f"Invalid phase: {self.phase}")
 
         # Enable gradient checkpointing if specified + reference models if beta > 0.0
         for model_key in self.models:
             if (
-                self.training_configs[model_key].gradient_checkpointing
-                and self.models[model_key] is not None
+                self.training_configs[model_key].gradient_checkpointing and self.models[model_key] is not None
             ):  # Only enable gradient checkpointing if model is not None (i.e., if we are training either provers or verifier)
-                self.models[model_key] = self._enable_gradient_checkpointing(
-                    self.models[model_key]
-                )
+                self.models[model_key] = self._enable_gradient_checkpointing(self.models[model_key])
 
             if self.rl_config.beta > 0.0 and (
                 self.models[model_key] is not None and model_key != "verifier"
             ):  # Only load reference models if KL beta > 0.0 and model is not verifier
-                self.ref_models[model_key] = AutoModelForCausalLM.from_pretrained(
-                    self.model_paths[model_key]
-                )
+                self.ref_models[model_key] = AutoModelForCausalLM.from_pretrained(self.model_paths[model_key])
             else:
                 self.ref_models[model_key] = None
 
@@ -196,19 +182,14 @@ class ModelManager:
 
         # Apply Liger kernel to verifier if specified
         elif (
-            self.phase == "verifier"
-            and self.training_configs["verifier"].apply_liger_kernel
+            self.phase == "verifier" and self.training_configs["verifier"].apply_liger_kernel
         ):  # Verifier training mode
             _apply_liger_kernel_to_instance(self.models["verifier"])
-            assert (
-                self.liger_grpo_loss is None
-            ), "Liger GRPO loss already initialized. This should not happen."
+            assert self.liger_grpo_loss is None, "Liger GRPO loss already initialized. This should not happen."
 
             if (
-                self.training_configs["verifier"].verifier_mode
-                == "inference_classifier"
-                or self.training_configs["verifier"].verifier_mode
-                == "inference_regressor"
+                self.training_configs["verifier"].verifier_mode == "inference_classifier"
+                or self.training_configs["verifier"].verifier_mode == "inference_regressor"
             ):
                 self.liger_grpo_loss = LigerFusedLinearGRPOLoss(
                     beta=self.rl_config.beta,
@@ -232,9 +213,7 @@ class ModelManager:
         logger.info("=== Model Loading Summary ===")
         logger.info(f"Loaded models: {list(self.models.keys())}")
         for model_key in self.models:
-            logger.info(
-                f"- {model_key} model loaded from: {self.model_paths[model_key]}"
-            )
+            logger.info(f"- {model_key} model loaded from: {self.model_paths[model_key]}")
             if self.training_configs[model_key].gradient_checkpointing:
                 logger.info(f"  - Gradient checkpointing enabled for {model_key}")
             if self.training_configs[model_key].apply_liger_kernel:
@@ -250,9 +229,7 @@ class ModelManager:
         if self.liger_grpo_loss is not None:
             logger.info("\nLiger GRPO Loss Configuration:")
             logger.info(f"- Beta: {self.rl_config.beta}")
-            logger.info(
-                f"- Epsilon range: [{self.rl_config.epsilon_low}, {self.rl_config.epsilon_high}]"
-            )
+            logger.info(f"- Epsilon range: [{self.rl_config.epsilon_low}, {self.rl_config.epsilon_high}]")
             logger.info(f"- Using reference model: {self.rl_config.beta != 0.0}")
         else:
             logger.info("\nLiger GRPO Loss not configured")
@@ -274,9 +251,7 @@ class ModelManager:
         else:
             logger.warning(f"Model {key} not prepared. Returning unprepared model.")
             if key not in self.models:
-                logger.warning(
-                    f"Model {key} not found. Note keys are: {list(self.models.keys())}"
-                )
+                logger.warning(f"Model {key} not found. Note keys are: {list(self.models.keys())}")
             else:
                 return self.models[key]
 
@@ -292,13 +267,9 @@ class ModelManager:
         if prepared and key in self.prepared_ref_models:
             return self.prepared_ref_models[key]
         else:
-            logger.warning(
-                f"Reference model {key} not prepared. Returning unprepared model."
-            )
+            logger.warning(f"Reference model {key} not prepared. Returning unprepared model.")
             if key not in self.ref_models:
-                logger.warning(
-                    f"Reference model {key} not found. Note keys are: {list(self.ref_models.keys())}"
-                )
+                logger.warning(f"Reference model {key} not found. Note keys are: {list(self.ref_models.keys())}")
             else:
                 return self.ref_models[key]
 
@@ -318,9 +289,7 @@ class ModelManager:
             logger.warning("Liger loss calculator not found. Returning None.")
             return None
 
-    def set_train_mode(
-        self, model_key: Literal["sneaky", "verifier"], train: bool = True
-    ) -> None:
+    def set_train_mode(self, model_key: Literal["sneaky", "verifier"], train: bool = True) -> None:
         """Sets the train mode for the specified model."""
         if train:
             self.models[model_key].train()
@@ -353,13 +322,9 @@ class ModelManager:
         if self.training_configs["verifier"].verifier_mode == "regressor":
             # Regressor --> AutoModelforSequenceClassification with 1 output neuron (num_labels = 1)
             # Set up a config with pad_token_id = eos_token_id
-            model_init_kwargs["pad_token_id"] = (
-                151643  # TODO: This is a hack. We should fix this.
-            )
-            self.models["verifier"] = (
-                AutoModelForSequenceClassification.from_pretrained(
-                    self.model_paths["verifier"], num_labels=1, **model_init_kwargs
-                )
+            model_init_kwargs["pad_token_id"] = 151643  # TODO: This is a hack. We should fix this.
+            self.models["verifier"] = AutoModelForSequenceClassification.from_pretrained(
+                self.model_paths["verifier"], num_labels=1, **model_init_kwargs
             )
         elif self.training_configs["verifier"].verifier_mode == "classifier":
             # Classifier --> Language model that outputs <verdict>...</verdict> token (binary scoring 0-1)
@@ -379,13 +344,9 @@ class ModelManager:
             self.models["verifier"] = AutoModelForCausalLM.from_pretrained(
                 self.model_paths["verifier"], **model_init_kwargs
             )
-            self.models["verifier"].verifier_head = torch.nn.Linear(
-                self.models["verifier"].config.hidden_size, 1
-            )
+            self.models["verifier"].verifier_head = torch.nn.Linear(self.models["verifier"].config.hidden_size, 1)
         else:
-            raise ValueError(
-                f"Invalid verifier mode: {self.training_configs['verifier'].verifier_mode}"
-            )
+            raise ValueError(f"Invalid verifier mode: {self.training_configs['verifier'].verifier_mode}")
 
     # NOTE: This function is called when the phase changes - i.e., when the state tracker is updated (end of verifier training, end of provers training, ...)
     # Acts as a reset for the model manager

@@ -1,8 +1,9 @@
 # rep_sampler.py
 
+from typing import Sized
+
 import torch
 from torch.utils.data import Sampler
-from typing import Sized
 
 
 class RepeatRandomSampler(Sampler):
@@ -78,10 +79,7 @@ class RepeatRandomSampler(Sampler):
 
         #    [2, 4, 3, 1, 0, 6, 5]
         # -> [[2, 4, 3], [1, 0, 6], [5]]  (batch_size = 3)
-        indexes = [
-            indexes[i : i + self.batch_size]
-            for i in range(0, len(indexes), self.batch_size)
-        ]
+        indexes = [indexes[i : i + self.batch_size] for i in range(0, len(indexes), self.batch_size)]
 
         #    [[2, 4, 3], [1, 0, 6], [5]]
         # -> [[2, 4, 3], [1, 0, 6]]

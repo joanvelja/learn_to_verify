@@ -11,14 +11,14 @@ from transformers import set_seed
 
 # Core Components (Managers)
 from pvg.components.accelerator_manager import AcceleratorManager
+from pvg.components.code_evaluator import BatchEvaluator, EvaluationConfig
 from pvg.components.data_manager import DataManager
+from pvg.components.formatter import Formatter
 from pvg.components.metrics_logger import MetricsLogger
 from pvg.components.model_manager import ModelManager
 from pvg.components.optimizer_manager import OptimizerSchedulerManager
 from pvg.components.state_tracker import StateTracker
 from pvg.components.vllm_orchestrator import VLLMOrchestrator
-from pvg.components.formatter import Formatter
-from pvg.components.code_evaluator import BatchEvaluator, EvaluationConfig
 
 # Configuration
 from pvg.config.args import ExperimentArgs
@@ -53,12 +53,8 @@ def main():
     )
     initial_logger.info("Parsed arguments from command line.")
 
-    verifier_mode: Literal[
-        "regressor", "classifier", "inference_classifier", "inference_regressor"
-    ] = cast(
-        Literal[
-            "regressor", "classifier", "inference_classifier", "inference_regressor"
-        ],
+    verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"] = cast(
+        Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],
         args.training_verifier.verifier_mode,
     )  # Contains Literal["regressor", "classifier", "inference_classifier", "inference_regressor"], needed in several components
     state_tracker = StateTracker(verifier_mode=verifier_mode)
@@ -81,11 +77,7 @@ def main():
     )
 
     # b. Logging Reconfiguration (Now with rank/world_size)
-    log_level = (
-        logging.INFO
-        if accelerator_manager.get_state_property("is_main_process")
-        else logging.WARNING
-    )
+    log_level = logging.INFO if accelerator_manager.get_state_property("is_main_process") else logging.WARNING
     log_dir = os.path.join(args.output_dir, "logs")
     # The logger instance is retrieved later using logging.getLogger("pvg")
     setup_logger(

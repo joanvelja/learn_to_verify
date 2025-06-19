@@ -1,8 +1,8 @@
 # pvg/utils/logging.py
 
 import logging
-import sys
 import os
+import sys
 from logging.handlers import RotatingFileHandler
 
 # Define custom level below INFO and above DEBUG
@@ -51,9 +51,7 @@ def setup_logger(
         The configured root logger instance.
     """
     logger = logging.getLogger(name)
-    logger.setLevel(
-        logging.DEBUG
-    )  # Set root logger to lowest level to allow handlers to control effective level
+    logger.setLevel(logging.DEBUG)  # Set root logger to lowest level to allow handlers to control effective level
     logger.propagate = False  # Prevent root logger from propagating to parent (avoids duplicate messages if root logger is configured elsewhere)
 
     # --- Formatter ---
@@ -82,9 +80,7 @@ def setup_logger(
         os.makedirs(log_dir, exist_ok=True)
         file_handler = None
         can_log_to_file = (
-            (main_process_only_file and rank == 0)
-            or (not main_process_only_file and rank != -1)
-            or (rank == -1)
+            (main_process_only_file and rank == 0) or (not main_process_only_file and rank != -1) or (rank == -1)
         )  # Single process case
 
         if can_log_to_file:

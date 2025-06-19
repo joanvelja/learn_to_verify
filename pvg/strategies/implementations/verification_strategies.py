@@ -8,18 +8,19 @@ Handles verifier interaction and code execution logic extracted from the monolit
 
 import logging
 from typing import Any, Literal
-import torch
-from accelerate.utils import gather_object, broadcast_object_list
 
-from pvg.strategies.abstractions import VerificationStrategy, VerifierInferenceStrategy
-from pvg.data_models.training_data import BatchData, CompletionResult, ExecutionData
+import torch
+from accelerate.utils import broadcast_object_list, gather_object
+
 from pvg.components import (
-    VLLMOrchestrator,
-    Formatter,
-    BatchEvaluator,
     AcceleratorManager,
+    BatchEvaluator,
+    Formatter,
+    VLLMOrchestrator,
 )
 from pvg.config import ExperimentArgs
+from pvg.data_models.training_data import BatchData, CompletionResult, ExecutionData
+from pvg.strategies.abstractions import VerificationStrategy, VerifierInferenceStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +89,7 @@ class ClassifierVerifierInferenceStrategy(VerifierInferenceStrategy):
         # Extract scores from completions on main process
         if accelerator_manager.get_state_property("is_main_process"):
             scores_all = [
-                self.formatter.extract_verifier_reward(verifier_output_text=text)
-                for text in completion_texts_all
+                self.formatter.extract_verifier_reward(verifier_output_text=text) for text in completion_texts_all
             ]
         else:
             # Placeholder on non-main processes
@@ -121,9 +121,7 @@ class CodeExecutionOrchestrator:
     def __init__(self, batch_evaluator: BatchEvaluator):
         self.batch_evaluator = batch_evaluator
 
-    def setup_execution(
-        self, batch_data: BatchData, completions: CompletionResult
-    ) -> None:
+    def setup_execution(self, batch_data: BatchData, completions: CompletionResult) -> None:
         """Setup code execution for both honest and sneaky solutions"""
         self._setup_honest_execution(batch_data, completions)
         self._setup_sneaky_execution(batch_data, completions)
@@ -135,14 +133,10 @@ class CodeExecutionOrchestrator:
         self.batch_evaluator.reset()
         return honest_results, sneaky_results
 
-    def _setup_honest_execution(
-        self, batch_data: BatchData, completions: CompletionResult
-    ) -> None:
+    def _setup_honest_execution(self, batch_data: BatchData, completions: CompletionResult) -> None:
         """Setup honest solution code execution"""
         for i in range(len(batch_data.questions)):
-            honest_extraction_success = completions.honest_solutions[
-                i
-            ].extraction_success
+            honest_extraction_success = completions.honest_solutions[i].extraction_success
             honest_payload = (
                 completions.honest_solutions[i].payload
                 if honest_extraction_success
@@ -157,23 +151,17 @@ class CodeExecutionOrchestrator:
                 is_transformed=batch_data.transformed_solutions[i] == "True",
             )
 
-    def _setup_sneaky_execution(
-        self, batch_data: BatchData, completions: CompletionResult
-    ) -> None:
+    def _setup_sneaky_execution(self, batch_data: BatchData, completions: CompletionResult) -> None:
         """Setup sneaky solution code execution"""
         for i in range(len(batch_data.questions)):
-            honest_extraction_success = completions.honest_solutions[
-                i
-            ].extraction_success
+            honest_extraction_success = completions.honest_solutions[i].extraction_success
             honest_payload = (
                 completions.honest_solutions[i].payload
                 if honest_extraction_success
                 else "# Extraction failed - dummy failing solution\nraise Exception('Honest solution extraction failed')"
             )
 
-            sneaky_extraction_success = completions.sneaky_solutions[
-                i
-            ].extraction_success
+            sneaky_extraction_success = completions.sneaky_solutions[i].extraction_success
             sneaky_payload = (
                 completions.sneaky_solutions[i].payload
                 if sneaky_extraction_success
@@ -248,9 +236,7 @@ class CodeExecutionVerificationStrategy(VerificationStrategy):
         verifier_prompts = self._format_verifier_prompts(batch_data, completions)
 
         # Validation
-        assert len(verifier_prompts) == len(completions.honest_solutions) + len(
-            completions.sneaky_solutions
-        )
+        assert len(verifier_prompts) == len(completions.honest_solutions) + len(completions.sneaky_solutions)
         assert len(verifier_prompts) == 2 * len(batch_data.questions)
 
         # 2. Setup code execution
@@ -279,9 +265,7 @@ class CodeExecutionVerificationStrategy(VerificationStrategy):
         """Get the verifier mode"""
         return self.verifier_inference.get_mode()
 
-    def _format_verifier_prompts(
-        self, batch_data: BatchData, completions: CompletionResult
-    ) -> list[str]:
+    def _format_verifier_prompts(self, batch_data: BatchData, completions: CompletionResult) -> list[str]:
         """Format prompts for verifier model
 
         Args:

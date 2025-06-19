@@ -3,13 +3,13 @@
 import logging
 import re
 import shutil
-from typing import Any, Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 import datasets
 from transformers import AutoTokenizer  # Assuming this is the type for tokenizer
 
-from pvg.inference.vllmclient import VLLMClient  # For type hinting
 from pvg.data.generation_constants import TERMINAL_STATUSES
+from pvg.inference.vllmclient import VLLMClient  # For type hinting
 
 if TYPE_CHECKING:
     from pvg.components.formatter import Formatter
@@ -38,9 +38,7 @@ def visualize_status_dict(processing_status: dict[str, dict[str, Any]]) -> str:
 
     completed_count = status_counts.get("completed", 0)
     failed_count = sum(
-        count
-        for status, count in status_counts.items()
-        if status in TERMINAL_STATUSES and status != "completed"
+        count for status, count in status_counts.items() if status in TERMINAL_STATUSES and status != "completed"
     )
     pending_count = total_problems - completed_count - failed_count
 
@@ -48,9 +46,7 @@ def visualize_status_dict(processing_status: dict[str, dict[str, Any]]) -> str:
     max_name_len = max((len(s) for s in status_counts.keys()), default=10)
     count_width = 6
     percent_width = 7
-    total_fixed_width = (
-        max_name_len + count_width + percent_width + 9
-    )  # borders and spaces
+    total_fixed_width = max_name_len + count_width + percent_width + 9  # borders and spaces
     max_bar_width = max(10, terminal_width - total_fixed_width - 2)
 
     output_lines = [f"--- Pipeline Status (Total: {total_problems}) ---"]
@@ -66,24 +62,16 @@ def visualize_status_dict(processing_status: dict[str, dict[str, Any]]) -> str:
         "pending_sneaky_parse",
         "completed",
     ]
-    status_order.extend(
-        sorted(
-            [s for s in TERMINAL_STATUSES if s not in status_order and s != "completed"]
-        )
-    )
+    status_order.extend(sorted([s for s in TERMINAL_STATUSES if s not in status_order and s != "completed"]))
     status_order.extend(sorted([s for s in status_counts if s not in status_order]))
 
     for status in status_order:
-        if status not in status_counts and not (
-            status == "completed" and completed_count == 0
-        ):
+        if status not in status_counts and not (status == "completed" and completed_count == 0):
             continue
 
         count = status_counts.get(status, 0)
         percentage = (count / total_problems) * 100 if total_problems > 0 else 0
-        bar_len = (
-            round((count / total_problems) * max_bar_width) if total_problems > 0 else 0
-        )
+        bar_len = round((count / total_problems) * max_bar_width) if total_problems > 0 else 0
         bar = "█" * bar_len
         line = f"{status:<{max_name_len}} | {count:>{count_width}} | {percentage:>{percent_width - 1}.1f}% | {bar:<{max_bar_width}}"
         output_lines.append(line)
@@ -102,21 +90,15 @@ def all_problems_processed_dict(processing_status: dict[str, dict[str, Any]]) ->
 
     # Count total problems and completed problems
     total_problems = len(processing_status)
-    completed_count = sum(
-        1 for data in processing_status.values() if data["status"] == "completed"
-    )
+    completed_count = sum(1 for data in processing_status.values() if data["status"] == "completed")
 
     # Check if at least 99% of problems are completed
-    completion_percentage = (
-        (completed_count / total_problems) * 100 if total_problems > 0 else 0
-    )
+    completion_percentage = (completed_count / total_problems) * 100 if total_problems > 0 else 0
     if completion_percentage >= 99.0:
         return True
 
     # Otherwise, check if all problems have reached a terminal state
-    return all(
-        data["status"] in TERMINAL_STATUSES for data in processing_status.values()
-    )
+    return all(data["status"] in TERMINAL_STATUSES for data in processing_status.values())
 
 
 def parse_output(text: str, expected_tags: dict[str, str]) -> dict[str, str] | None:
@@ -175,9 +157,7 @@ def generate_batch_sync(
 
         if valid_outputs_ids:
             # batch_decode expects a list of lists of token IDs
-            decoded_texts = tokenizer.batch_decode(
-                valid_outputs_ids, skip_special_tokens=True
-            )
+            decoded_texts = tokenizer.batch_decode(valid_outputs_ids, skip_special_tokens=True)
             for original_index, decoded_text in zip(indices_to_decode, decoded_texts):
                 decoded_outputs[original_index] = decoded_text
 
@@ -185,9 +165,7 @@ def generate_batch_sync(
         logger.error(f"Connection error during batch generation: {e}", exc_info=True)
         # All outputs for this batch will be None
     except Exception as e:
-        logger.error(
-            f"Error during VLLM batch generation or decoding: {e}", exc_info=True
-        )
+        logger.error(f"Error during VLLM batch generation or decoding: {e}", exc_info=True)
         # All outputs for this batch will be None
     return decoded_outputs
 
@@ -202,11 +180,7 @@ def create_hf_dataset_from_results(
     backdoored_data: list[dict[str, Any]] = []
 
     for item in results:
-        if (
-            item["final_status"] != "completed"
-            or not item["honest_parsed"]
-            or not item["sneaky_parsed"]
-        ):
+        if item["final_status"] != "completed" or not item["honest_parsed"] or not item["sneaky_parsed"]:
             logger.warning(
                 f"Skipping item {item['problem_id']} during dataset creation due to incomplete data (status: {item['final_status']})."
             )
@@ -228,9 +202,7 @@ def create_hf_dataset_from_results(
             # Ensure consistent code guarding for honest solution
             honest_solution = honest_parsed.get("solution", "")
             if formatter:
-                honest_solution = formatter.ensure_consistent_code_guarding(
-                    honest_solution, dataset_type
-                )
+                honest_solution = formatter.ensure_consistent_code_guarding(honest_solution, dataset_type)
             clean_entry["solution"] = honest_solution
         else:  # math
             clean_entry["reasoning"] = honest_parsed.get("reasoning", "")
@@ -248,47 +220,25 @@ def create_hf_dataset_from_results(
         )  # Ensure it's a string
 
         if dataset_type == "coding":
-            backdoored_entry["backdooring_reasoning"] = sneaky_parsed.get(
-                "reasoning", ""
-            )  # From SNEAKY_TAGS_CODING
+            backdoored_entry["backdooring_reasoning"] = sneaky_parsed.get("reasoning", "")  # From SNEAKY_TAGS_CODING
             # Ensure consistent code guarding for sneaky solution
             sneaky_solution = sneaky_parsed.get("solution", "")
             honest_solution = honest_parsed.get("solution", "")
             if formatter:
-                sneaky_solution = formatter.ensure_consistent_code_guarding(
-                    sneaky_solution, dataset_type
-                )
-                honest_solution = formatter.ensure_consistent_code_guarding(
-                    honest_solution, dataset_type
-                )
+                sneaky_solution = formatter.ensure_consistent_code_guarding(sneaky_solution, dataset_type)
+                honest_solution = formatter.ensure_consistent_code_guarding(honest_solution, dataset_type)
             backdoored_entry["injected_solution"] = sneaky_solution
             backdoored_entry["honest_solution"] = honest_solution  # For reference
         else:  # math
-            backdoored_entry["backdooring_plan"] = sneaky_parsed.get(
-                "plan", ""
-            )  # From SNEAKY_TAGS_MATH
-            backdoored_entry["injected_reasoning"] = sneaky_parsed.get(
-                "injected_reasoning", ""
-            )
-            backdoored_entry["injected_answer"] = sneaky_parsed.get(
-                "injected_answer", ""
-            )
-            backdoored_entry["honest_answer"] = honest_parsed.get(
-                "answer", ""
-            )  # For reference
+            backdoored_entry["backdooring_plan"] = sneaky_parsed.get("plan", "")  # From SNEAKY_TAGS_MATH
+            backdoored_entry["injected_reasoning"] = sneaky_parsed.get("injected_reasoning", "")
+            backdoored_entry["injected_answer"] = sneaky_parsed.get("injected_answer", "")
+            backdoored_entry["honest_answer"] = honest_parsed.get("answer", "")  # For reference
         backdoored_data.append(backdoored_entry)
 
     logger.info(f"Creating clean dataset with {len(clean_data)} entries.")
-    clean_ds = (
-        datasets.Dataset.from_list(clean_data)
-        if clean_data
-        else datasets.Dataset.from_dict({})
-    )
+    clean_ds = datasets.Dataset.from_list(clean_data) if clean_data else datasets.Dataset.from_dict({})
     logger.info(f"Creating backdoored dataset with {len(backdoored_data)} entries.")
-    backdoored_ds = (
-        datasets.Dataset.from_list(backdoored_data)
-        if backdoored_data
-        else datasets.Dataset.from_dict({})
-    )
+    backdoored_ds = datasets.Dataset.from_list(backdoored_data) if backdoored_data else datasets.Dataset.from_dict({})
 
     return clean_ds, backdoored_ds

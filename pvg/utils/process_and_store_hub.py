@@ -18,11 +18,12 @@
 
 
 import argparse
-import datasets
-import huggingface_hub
 import logging
 import time
 from typing import Any
+
+import datasets
+import huggingface_hub
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -42,9 +43,7 @@ def cleanup_old_hub_data(hub_repo_id: str, current_round: int, max_rounds_to_kee
         logging.info("Skipping cleanup as cutoff round is non-positive.")
         return
 
-    logging.info(
-        f"--- Cleaning up Hub data older than Round {cutoff_round} (excluding Round 0) ---"
-    )
+    logging.info(f"--- Cleaning up Hub data older than Round {cutoff_round} (excluding Round 0) ---")
     try:
         api = huggingface_hub.HfApi()
         # List files, focusing on the data directory structure typically used
@@ -70,9 +69,7 @@ def cleanup_old_hub_data(hub_repo_id: str, current_round: int, max_rounds_to_kee
             logging.info("No old data folders found matching criteria for deletion.")
             return
 
-        logging.warning(
-            f"Planning to delete the following folders from Hub repo {hub_repo_id}:"
-        )
+        logging.warning(f"Planning to delete the following folders from Hub repo {hub_repo_id}:")
         for folder in sorted(list(folders_to_delete)):
             logging.warning(f" - {folder}")
 
@@ -88,21 +85,15 @@ def cleanup_old_hub_data(hub_repo_id: str, current_round: int, max_rounds_to_kee
         #     except Exception as e_del:
         #         logging.error(f"Failed to delete folder {folder}: {e_del}")
 
-        logging.warning(
-            "Deletion code is commented out by default for safety. Uncomment to enable."
-        )
-        logging.info(
-            f"Hub cleanup process planned for folders older than round {cutoff_round}."
-        )
+        logging.warning("Deletion code is commented out by default for safety. Uncomment to enable.")
+        logging.info(f"Hub cleanup process planned for folders older than round {cutoff_round}.")
 
     except Exception as e:
         logging.error(f"Error during Hub cleanup: {e}")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Process generated verifier samples and store to Hugging Face Hub."
-    )
+    parser = argparse.ArgumentParser(description="Process generated verifier samples and store to Hugging Face Hub.")
     parser.add_argument(
         "--round_num",
         type=int,
@@ -145,15 +136,11 @@ def main():
     if args.hub_token:
         huggingface_hub.login(token=args.hub_token)
 
-    logging.info(
-        f"Processing samples from: {args.verifier_samples_path} for Round {args.round_num}"
-    )
+    logging.info(f"Processing samples from: {args.verifier_samples_path} for Round {args.round_num}")
 
     # 1. Load the generated data
     try:
-        raw_dataset = datasets.load_dataset(
-            "json", data_files=args.verifier_samples_path, split="train"
-        )
+        raw_dataset = datasets.load_dataset("json", data_files=args.verifier_samples_path, split="train")
         logging.info(f"Loaded {len(raw_dataset)} raw samples.")
     except Exception as e:
         logging.error(f"Failed to load dataset from {args.verifier_samples_path}: {e}")
@@ -166,9 +153,7 @@ def main():
 
     for sample in raw_dataset:
         if not required_keys.issubset(sample.keys()):
-            logging.warning(
-                f"Skipping sample due to missing keys: {sample.get('problem_id', 'Unknown ID')}"
-            )
+            logging.warning(f"Skipping sample due to missing keys: {sample.get('problem_id', 'Unknown ID')}")
             continue
 
         sample_type = classify_sample(sample)
@@ -183,9 +168,7 @@ def main():
         else:
             incorrect_list.append(processed_sample)
 
-    logging.info(
-        f"Separated samples: {len(correct_list)} correct, {len(incorrect_list)} incorrect/backdoor."
-    )
+    logging.info(f"Separated samples: {len(correct_list)} correct, {len(incorrect_list)} incorrect/backdoor.")
 
     if not correct_list and not incorrect_list:
         logging.warning("No valid samples found after processing. Exiting.")
@@ -193,9 +176,7 @@ def main():
 
     # 3. Create Hugging Face Datasets
     correct_ds = datasets.Dataset.from_list(correct_list) if correct_list else None
-    incorrect_ds = (
-        datasets.Dataset.from_list(incorrect_list) if incorrect_list else None
-    )
+    incorrect_ds = datasets.Dataset.from_list(incorrect_list) if incorrect_list else None
 
     # 4. Define dataset names on the Hub
     correct_ds_name = f"round_{args.round_num}_correct"
@@ -205,12 +186,8 @@ def main():
     push_success = True
     if correct_ds:
         try:
-            logging.info(
-                f"Pushing {correct_ds_name} ({len(correct_ds)} samples) to {args.hub_repo_id}..."
-            )
-            correct_ds.push_to_hub(
-                args.hub_repo_id, config_name=correct_ds_name, private=args.repo_private
-            )
+            logging.info(f"Pushing {correct_ds_name} ({len(correct_ds)} samples) to {args.hub_repo_id}...")
+            correct_ds.push_to_hub(args.hub_repo_id, config_name=correct_ds_name, private=args.repo_private)
             logging.info(f"Successfully pushed {correct_ds_name}.")
         except Exception as e:
             logging.error(f"Error pushing {correct_ds_name}: {e}")
@@ -219,9 +196,7 @@ def main():
 
     if incorrect_ds:
         try:
-            logging.info(
-                f"Pushing {incorrect_ds_name} ({len(incorrect_ds)} samples) to {args.hub_repo_id}..."
-            )
+            logging.info(f"Pushing {incorrect_ds_name} ({len(incorrect_ds)} samples) to {args.hub_repo_id}...")
             incorrect_ds.push_to_hub(
                 args.hub_repo_id,
                 config_name=incorrect_ds_name,

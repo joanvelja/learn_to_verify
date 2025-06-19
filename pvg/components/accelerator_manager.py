@@ -78,12 +78,8 @@ class AcceleratorManager:
 
         # Create DeepSpeed plugins -- Need to specify the optimizer stuff + lr scheduler stuff for deepspeed zero3 to work.
         # See: https://github.com/deepspeedai/DeepSpeed/issues/3024
-        ds_plugin_sneaky_prover: DeepSpeedPlugin = DeepSpeedPlugin(
-            hf_ds_config=self.ds_config_sneaky_prover
-        )
-        ds_plugin_verifier: DeepSpeedPlugin = DeepSpeedPlugin(
-            hf_ds_config=self.ds_config_verifier
-        )
+        ds_plugin_sneaky_prover: DeepSpeedPlugin = DeepSpeedPlugin(hf_ds_config=self.ds_config_sneaky_prover)
+        ds_plugin_verifier: DeepSpeedPlugin = DeepSpeedPlugin(hf_ds_config=self.ds_config_verifier)
         logger.info("DeepSpeed plugins created.")
 
         self.deepspeed_plugins = {
@@ -92,9 +88,7 @@ class AcceleratorManager:
         }
 
         # Instantiate the first accelerator (sneaky prover)
-        dataloader_config = DataLoaderConfiguration(
-            dispatch_batches=False, use_stateful_dataloader=False
-        )
+        dataloader_config = DataLoaderConfiguration(dispatch_batches=False, use_stateful_dataloader=False)
         init_kwargs = InitProcessGroupKwargs(timeout=timedelta(seconds=18000))
         accelerator_sneaky_prover = Accelerator(
             deepspeed_plugin=self.deepspeed_plugins,  # Pass all; see: https://huggingface.co/docs/accelerate/usage_guides/deepspeed_multiple_model
@@ -140,18 +134,14 @@ class AcceleratorManager:
     ):
         """Prepares the components for the given key."""
         self.accelerators[key].state.select_deepspeed_plugin(key)
-        logger.info(
-            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing components."
-        )
+        logger.info(f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing components.")
         return self.accelerators[key].prepare(model, optimizer, dataloader)
 
     # Why separate method? For evaluation dataset.
     def prepare_dataloader(self, dataloader: DataLoader, key: str) -> DataLoader:
         """Prepares the dataloader for the given key."""
         self.accelerators[key].state.select_deepspeed_plugin(key)
-        logger.info(
-            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing dataloader."
-        )
+        logger.info(f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing dataloader.")
         return self.accelerators[key].prepare(dataloader)
 
     # Why separate method? Because we need to first prepare the dataloader, then calculate the number of training steps, then create the scheduler with this & prepare it.
@@ -160,17 +150,13 @@ class AcceleratorManager:
     ) -> torch.optim.lr_scheduler._LRScheduler:
         """Prepares the scheduler for the given key."""
         self.accelerators[key].state.select_deepspeed_plugin(key)
-        logger.info(
-            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing scheduler."
-        )
+        logger.info(f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing scheduler.")
         return self.accelerators[key].prepare(scheduler)
 
     def prepare_ref_model(self, key: str, model: torch.nn.Module) -> torch.nn.Module:
         """Prepares the ref model for the given key."""
         self.accelerators[key].state.select_deepspeed_plugin(key)
-        logger.info(
-            f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing reference model."
-        )
+        logger.info(f"Selected DeepSpeed plugin '{key}' for accelerator '{key}' before preparing reference model.")
         # use prepare_deepspeed
         return prepare_deepspeed(model, accelerator=self.accelerators[key])
 
@@ -260,9 +246,7 @@ class AcceleratorManager:
             if self.get_state_property("is_main_process"):
                 self.wandb_run = self.get_tracker("wandb").run
                 if self.wandb_run:
-                    logger.info(
-                        f"Successfully retrieved WandB run. Run ID: {self.wandb_run.id}"
-                    )
+                    logger.info(f"Successfully retrieved WandB run. Run ID: {self.wandb_run.id}")
                     # Now that we have the run object, create the log directory
                     self.llm_interaction_log_dir = os.path.join(
                         self.output_dir,
@@ -270,13 +254,9 @@ class AcceleratorManager:
                         "llm_interaction_logs",
                     )
                     os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
-                    logger.info(
-                        f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}"
-                    )
+                    logger.info(f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}")
                 else:
-                    logger.error(
-                        "Called init_trackers, but failed to retrieve WandB run object."
-                    )
+                    logger.error("Called init_trackers, but failed to retrieve WandB run object.")
                     self.wandb_run = None
                     self.llm_interaction_log_dir = None
             else:
@@ -329,15 +309,9 @@ class AcceleratorManager:
                     {
                         "environment/python_version": sys.version,
                         "environment/platform": platform.platform(),
-                        "environment/num_processes": self.get_state_property(
-                            "num_processes"
-                        ),
-                        "environment/mixed_precision": self.get_state_property(
-                            "mixed_precision"
-                        ),
-                        "environment/distributed_type": str(
-                            self.get_state_property("distributed_type")
-                        ),
+                        "environment/num_processes": self.get_state_property("num_processes"),
+                        "environment/mixed_precision": self.get_state_property("mixed_precision"),
+                        "environment/distributed_type": str(self.get_state_property("distributed_type")),
                         "environment/library_versions": lib_versions,
                     }
                 )
@@ -345,9 +319,7 @@ class AcceleratorManager:
             except Exception as e:
                 logger.warning(f"Could not log all environment details: {e}")
         elif self.get_state_property("is_main_process"):
-            logger.warning(
-                "WandB run object not available, skipping additional configuration."
-            )
+            logger.warning("WandB run object not available, skipping additional configuration.")
 
     def get_llm_interaction_log_dir(self) -> str:
         """Returns the LLM interaction log directory."""
@@ -356,7 +328,5 @@ class AcceleratorManager:
             fallback_dir = os.path.join(self.output_dir, "llm_interaction_logs")
             os.makedirs(fallback_dir, exist_ok=True)
             self.llm_interaction_log_dir = fallback_dir
-            logger.warning(
-                f"LLM interaction log directory was not set, using fallback: {fallback_dir}"
-            )
+            logger.warning(f"LLM interaction log directory was not set, using fallback: {fallback_dir}")
         return self.llm_interaction_log_dir

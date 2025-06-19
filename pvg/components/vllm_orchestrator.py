@@ -14,21 +14,21 @@
 
 import datetime
 import json
+import logging
 import os
 import uuid
-import deepspeed
 from contextlib import nullcontext
+from typing import Any, Callable, Literal
+
+import deepspeed
+from accelerate.utils import broadcast_object_list
 from tqdm.auto import tqdm
+from transformers import AutoTokenizer
 
 from pvg.components.accelerator_manager import AcceleratorManager
 from pvg.components.model_manager import ModelManager
 from pvg.config.args import VLLMServerArgs
-from transformers import AutoTokenizer
-from typing import Any, Callable, Literal
 from pvg.inference.vllmclient import VLLMClient
-from accelerate.utils import broadcast_object_list
-import logging
-
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -43,9 +43,7 @@ class VLLMOrchestrator:
         accelerator_manager: AcceleratorManager,
         vllm_config_sneaky: VLLMServerArgs,
         vllm_config_verifier: VLLMServerArgs,
-        tokenizer_callback: Callable[
-            [], AutoTokenizer
-        ],  # Has to be lambda : self.tokenizer (or something like that)
+        tokenizer_callback: Callable[[], AutoTokenizer],  # Has to be lambda : self.tokenizer (or something like that)
         llm_interaction_log_dir: str,
         global_step_callback: Callable[[], int],  # Has to be lambda : self.global_step
     ) -> None:
@@ -120,18 +118,14 @@ class VLLMOrchestrator:
             # --- End vLLM Client Instantiation ---
             logger.info("vLLM Clients initialized.")
             logger.info("--- vLLM Clients State ---")
-            logger.info(
-                f"  vLLM Client Sneaky Prover: {self.vllm_clients['sneaky_prover']}"
-            )
+            logger.info(f"  vLLM Client Sneaky Prover: {self.vllm_clients['sneaky_prover']}")
             logger.info(f"  vLLM Client Verifier: {self.vllm_clients['verifier']}")
 
     def _generate_and_broadcast(
         self,
         client_key: Literal["sneaky_prover", "verifier"],
         prompts: list[str],  # The gathered list of prompts from all processes
-        generation_args: dict[
-            str, Any
-        ],  # Args for vllm_client.generate (temp, top_p, etc.)
+        generation_args: dict[str, Any],  # Args for vllm_client.generate (temp, top_p, etc.)
         n_generations: int,  # Number of generations per prompt to produce
         logprobs_count: int,  # Number of logprobs to request (0 if none)
         prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
@@ -163,12 +157,8 @@ class VLLMOrchestrator:
             if client is None:
                 raise ValueError(f"vLLM client '{client_key}' is not initialized.")
 
-            prompts_to_generate = prompts[
-                ::n_generations
-            ]  # Take every n_generations-th item
-            logger.info(
-                f"[DEBUG]: prompts_to_generate - length: {len(prompts_to_generate)}"
-            )
+            prompts_to_generate = prompts[::n_generations]  # Take every n_generations-th item
+            logger.info(f"[DEBUG]: prompts_to_generate - length: {len(prompts_to_generate)}")
 
             # Generate kwargs
             generate_kwargs = {
@@ -191,9 +181,7 @@ class VLLMOrchestrator:
             ), f"Completion IDs length mismatch: {len(completion_ids_all)} != {n_generations * len(prompts_to_generate)}"
 
             # Log generation output length
-            process_index = self.accelerator_manager.get_state_property(
-                property_name="process_index"
-            )
+            process_index = self.accelerator_manager.get_state_property(property_name="process_index")
             log_msg = f"[Process {process_index} / {client_key}] Raw client output length: completion_ids_all={len(completion_ids_all)}"
             if logprobs_count > 0:
                 log_msg += f", logprobs_all={len(logprobs_all)}"
@@ -205,7 +193,7 @@ class VLLMOrchestrator:
                 add_generation_prompt=False,
             )
             completion_texts_all = (
-                ["<reasoning>\n" + text for text in completion_texts_all]
+                ["<reasoning>\n" + text.strip() for text in completion_texts_all]
                 if is_instruction
                 else completion_texts_all
             )  # PATCH
@@ -229,30 +217,20 @@ class VLLMOrchestrator:
                 logprobs_all = [None] * num_total_prompts  # Match structure
 
         # Broadcast results from main process
-        completion_ids_all: list[list[int]] = broadcast_object_list(
-            completion_ids_all, from_process=0
-        )
-        completion_texts_all: list[str] = broadcast_object_list(
-            completion_texts_all, from_process=0
-        )
+        completion_ids_all: list[list[int]] = broadcast_object_list(completion_ids_all, from_process=0)
+        completion_texts_all: list[str] = broadcast_object_list(completion_texts_all, from_process=0)
         if logprobs_count > 0:
-            logprobs_all: list[list[dict[int, float]]] = broadcast_object_list(
-                logprobs_all, from_process=0
-            )
+            logprobs_all: list[list[dict[int, float]]] = broadcast_object_list(logprobs_all, from_process=0)
 
         # Calculate and apply the slice for the current process
-        process_index = self.accelerator_manager.get_state_property(
-            property_name="process_index"
-        )
+        process_index = self.accelerator_manager.get_state_property(property_name="process_index")
         process_slice = slice(
             process_index * prompts_len_local,
             (process_index + 1) * prompts_len_local,
         )
         local_completion_ids = completion_ids_all[process_slice]
         local_completion_texts = completion_texts_all[process_slice]
-        local_logprobs = (
-            logprobs_all[process_slice] if logprobs_all is not None else None
-        )
+        local_logprobs = logprobs_all[process_slice] if logprobs_all is not None else None
 
         if client_key == "verifier":
             # For the verifier, the calling function needs the *full* broadcasted lists
@@ -279,9 +257,7 @@ class VLLMOrchestrator:
         """
         scores_all = None
         num_total_prompts = len(prompts)
-        assert (
-            client_key == "verifier"
-        ), "Classification is only supported for the verifier."
+        assert client_key == "verifier", "Classification is only supported for the verifier."
 
         if self.accelerator_manager.get_state_property(property_name="is_main_process"):
             # Classification happens only on the main process due to server-client communication
@@ -299,9 +275,7 @@ class VLLMOrchestrator:
             scores_all = client.classify(**classify_kwargs)
 
             # Log classification output length
-            process_index = self.accelerator_manager.get_state_property(
-                property_name="process_index"
-            )
+            process_index = self.accelerator_manager.get_state_property(property_name="process_index")
             log_msg = f"[Process {process_index} / {client_key}] Raw client output length: scores_all={len(scores_all)}"
             logger.debug(log_msg)
 
@@ -331,24 +305,16 @@ class VLLMOrchestrator:
         logprobs: list[list[dict[int, float]]] | None = None,
     ):
         """Logs LLM interaction details to a JSON file on the main process."""
-        if not self.accelerator_manager.get_state_property(
-            property_name="is_main_process"
-        ):
+        if not self.accelerator_manager.get_state_property(property_name="is_main_process"):
             return
 
         timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
         interaction_id = str(uuid.uuid4())
-        log_filename = (
-            f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
-        )
+        log_filename = f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
 
-        log_filename = (
-            f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
-        )
+        log_filename = f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
         log_filepath = os.path.join(self.llm_interaction_log_dir, log_filename)
-        step_dir = os.path.join(
-            self.llm_interaction_log_dir, f"step_{self.global_step_callback()}"
-        )
+        step_dir = os.path.join(self.llm_interaction_log_dir, f"step_{self.global_step_callback()}")
         if not os.path.exists(step_dir):
             os.makedirs(step_dir)
 
@@ -372,9 +338,7 @@ class VLLMOrchestrator:
         except Exception as e:
             logger.error(f"Failed to save LLM interaction log to {log_filepath}: {e}")
 
-    def sync_weights(
-        self, phase: Literal["verifier", "provers"], model_manager: ModelManager
-    ) -> None:
+    def sync_weights(self, phase: Literal["verifier", "provers"], model_manager: ModelManager) -> None:
         """
         Orchestrates the full sync process. Conditional on phase, alls _move_model_to_vllm for the appropriate models with appropriate barriers and plugin selection.
         """
@@ -395,9 +359,7 @@ class VLLMOrchestrator:
         logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Selecting DS plugin 'verifier'..."
         )
-        self.accelerator_manager.get_accelerator(
-            key="verifier"
-        ).state.select_deepspeed_plugin("verifier")
+        self.accelerator_manager.get_accelerator(key="verifier").state.select_deepspeed_plugin("verifier")
         logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Calling _move_model_to_vllm for verifier"
         )
@@ -428,9 +390,7 @@ class VLLMOrchestrator:
         logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Selecting DS plugin 'sneaky_prover'..."
         )
-        self.accelerator_manager.get_accelerator(
-            key="sneaky_prover"
-        ).state.select_deepspeed_plugin("sneaky_prover")
+        self.accelerator_manager.get_accelerator(key="sneaky_prover").state.select_deepspeed_plugin("sneaky_prover")
         logger.info(
             f"[Process {self.accelerator_manager.get_state_property(property_name='process_index')}] ===> Calling _move_model_to_vllm for sneaky_prover"
         )
@@ -453,14 +413,10 @@ class VLLMOrchestrator:
         model = model_manager.get_model(key=model_key)
         vllm_client = self.vllm_clients[model_key]
         can_sync_to_client = accelerator.is_main_process and vllm_client is not None
-        logger.info(
-            f"[Process {accelerator.process_index}] Starting weight sync logic for {model_key}..."
-        )
+        logger.info(f"[Process {accelerator.process_index}] Starting weight sync logic for {model_key}...")
         deepspeed_plugin = accelerator.state.deepspeed_plugin
         zero_stage_3 = deepspeed_plugin is not None and deepspeed_plugin.zero_stage == 3
-        gather_if_zero3 = (
-            deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
-        )
+        gather_if_zero3 = deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
         unwrapped_model = accelerator.unwrap_model(model)
         named_params = list(unwrapped_model.named_parameters())
         num_params = len(named_params)
@@ -470,9 +426,7 @@ class VLLMOrchestrator:
 
         param_iterator = named_params
         if accelerator.is_main_process:
-            param_iterator = tqdm(
-                named_params, desc=f"Syncing {model_key}", leave=False, disable=False
-            )
+            param_iterator = tqdm(named_params, desc=f"Syncing {model_key}", leave=False, disable=False)
 
         for name, param in param_iterator:
             if not param.requires_grad:
@@ -503,15 +457,11 @@ class VLLMOrchestrator:
             f"[Process {accelerator.process_index} / {model_key}] Finished parameter loop. Waiting at barrier..."
         )
         accelerator.wait_for_everyone()  # Use the specific accelerator
-        logger.info(
-            f"[Process {accelerator.process_index} / {model_key}] Passed barrier after parameter loop."
-        )
+        logger.info(f"[Process {accelerator.process_index} / {model_key}] Passed barrier after parameter loop.")
 
         # --- Reset Cache (Main Process Only) ---
         if can_sync_to_client:
-            logger.info(
-                f"[Process {accelerator.process_index} / {model_key}] Resetting vLLM prefix cache..."
-            )
+            logger.info(f"[Process {accelerator.process_index} / {model_key}] Resetting vLLM prefix cache...")
             # ... (try-except block for reset) ...
 
         # --- Final Barrier for this function ---
@@ -519,9 +469,7 @@ class VLLMOrchestrator:
             f"[Process {accelerator.process_index}] Finished _move_model_to_vllm for {model_key}. Waiting at final barrier..."
         )
         accelerator.wait_for_everyone()  # Use the specific accelerator again
-        logger.info(
-            f"[Process {accelerator.process_index}] Exiting _move_model_to_vllm for {model_key}."
-        )
+        logger.info(f"[Process {accelerator.process_index}] Exiting _move_model_to_vllm for {model_key}.")
 
     def get_vllm_client(self, model_key: str) -> VLLMClient:
         return self.vllm_clients[model_key]

@@ -63,14 +63,11 @@ class ProverTrainer:
         self.vllm_orchestrator = vllm_orchestrator
         self.metrics_logger = metrics_logger
         self.optimizer_scheduler_manager = optimizer_scheduler_manager
+        self.metrics_processor = MetricsProcessor()
 
         self.tokenizer = model_manager.get_tokenizer()
-        self.train_dataloader = data_manager.dataloaders["provers"]["sneaky_prover"][
-            "train_dataloader"
-        ]
-        self.eval_dataloader = data_manager.dataloaders["provers"]["sneaky_prover"][
-            "eval_dataloader"
-        ]
+        self.train_dataloader = data_manager.dataloaders["provers"]["sneaky_prover"]["train_dataloader"]
+        self.eval_dataloader = data_manager.dataloaders["provers"]["sneaky_prover"]["eval_dataloader"]
         self.dataset_type = dataset_type
         self.total_steps = 0
         self.gradient_accumulation_steps = args.gradient_accumulation_steps
@@ -99,6 +96,7 @@ class ProverTrainer:
             metrics_logger=metrics_logger,
             accelerator_manager=accelerator_manager,
             grpo=grpo,
+            metrics_processor=self.metrics_processor,
         )
 
         if args.training_sneaky_prover.apply_liger_kernel:
@@ -127,8 +125,6 @@ class ProverTrainer:
             buffer_completions=True,
         )
 
-        self.metrics_processor = MetricsProcessor()
-
         self.pipeline = ProverTrainingPipeline(
             completion_strategy=self.completion_strategy,
             verification_strategy=self.verification_strategy,
@@ -152,9 +148,7 @@ class ProverTrainer:
             use_progress_bar=True,
         )
 
-        self.is_main = self.accelerator_manager.get_state_property(
-            property_name="is_main_process"
-        )
+        self.is_main = self.accelerator_manager.get_state_property(property_name="is_main_process")
 
     def train(self, num_steps_or_epochs: int = 1):
         """Train the prover model"""
@@ -162,14 +156,10 @@ class ProverTrainer:
         optimizer_step = 0
 
         for epoch in range(num_steps_or_epochs):
-            logger.info(
-                f"Starting Prover Training Epoch {epoch + 1}/{num_steps_or_epochs}"
-            )
+            logger.info(f"Starting Prover Training Epoch {epoch + 1}/{num_steps_or_epochs}")
 
             if self.is_main:
-                progress_bar = tqdm(
-                    self.train_dataloader, desc=f"Prover Epoch {epoch + 1}"
-                )
+                progress_bar = tqdm(self.train_dataloader, desc=f"Prover Epoch {epoch + 1}")
             else:
                 progress_bar = self.train_dataloader
 
@@ -186,18 +176,14 @@ class ProverTrainer:
                 )
 
                 # 2. Compute training step
-                policy_model = self.model_manager.get_model(
-                    key="sneaky_prover", prepared=True
-                )
-                training_step_result = self.pipeline.compute_training_step(
-                    policy_model, batch_inputs, mode="train"
-                )
+                policy_model = self.model_manager.get_model(key="sneaky_prover", prepared=True)
+                unwrapped_model = self.accelerator_manager.unwrap_model(policy_model, key="sneaky_prover")
+                training_step_result = self.pipeline.compute_training_step(unwrapped_model, batch_inputs, mode="train")
                 # 3. Compute loss
-                loss_result = training_step_result.loss_result
+                loss = training_step_result.loss_result.loss
                 batch_metrics = training_step_result.batch_metrics
 
                 # 4. Compute gradients
-                loss = loss_result.loss.item()
                 p0 = safe_get_full_fp32_param(next(policy_model.parameters())).clone()
 
                 # ============================================================================
@@ -205,7 +191,7 @@ class ProverTrainer:
                 # ============================================================================
                 if self.accelerator_manager.get_state_property("is_main_process"):
                     logger.info("🔍 PRE-BACKWARD DEBUG")
-                    logger.info(f"🏷️  Loss value: {loss.item():.6f}")
+                    logger.info(f"🏷️  Loss value: {loss:.6f}")
                     logger.info(f"🏷️  Loss requires_grad: {loss.requires_grad}")
                     logger.info(f"🏷️  Loss grad_fn: {loss.grad_fn}")
 
@@ -235,42 +221,30 @@ class ProverTrainer:
                                 if full_grad is not None:
                                     total_grad_norm += torch.norm(full_grad).item() ** 2
                             except Exception as e:
-                                logger.warning(
-                                    f"⚠️  Could not compute gradient norm: {e}"
-                                )
+                                logger.warning(f"⚠️  Could not compute gradient norm: {e}")
                                 pass
 
                     logger.info(f"📊 Parameters with gradients: {grad_count}")
                     if total_grad_norm > 0:
-                        logger.info(
-                            f"📊 Total gradient norm: {total_grad_norm**0.5:.6f}"
-                        )
+                        logger.info(f"📊 Total gradient norm: {total_grad_norm**0.5:.6f}")
                     else:
-                        logger.info(
-                            "📊 Could not compute gradient norms (expected with ZeRO-3)"
-                        )
+                        logger.info("📊 Could not compute gradient norms (expected with ZeRO-3)")
 
                     # Check DeepSpeed engine state
                     if hasattr(policy_model, "optimizer"):
                         ds_optimizer = policy_model.optimizer
-                        logger.info(
-                            f"🚀 DeepSpeed optimizer learning rate: {ds_optimizer.param_groups[0]['lr']}"
-                        )
-                        logger.info(
-                            f"🚀 DeepSpeed optimizer state_dict keys: {list(ds_optimizer.state_dict().keys())}"
-                        )
+                        logger.info(f"🚀 DeepSpeed optimizer learning rate: {ds_optimizer.param_groups[0]['lr']}")
+                        logger.info(f"🚀 DeepSpeed optimizer state_dict keys: {list(ds_optimizer.state_dict().keys())}")
 
                     # Check if loss computation graph is intact
-                    logger.info(
-                        f"🔍 Loss computation graph exists: {loss.grad_fn is not None}"
-                    )
+                    logger.info(f"🔍 Loss computation graph exists: {loss.grad_fn is not None}")
 
                 # 5. Store metrics
                 self.metrics_logger.store_metric(
                     mode="train",
                     model="sneaky_prover",
                     name="loss",
-                    value=loss.item() * self.gradient_accumulation_steps,
+                    value=loss * self.gradient_accumulation_steps,
                     phase=self.state_tracker.phase,  # Pass phase
                 )
                 for key, value in batch_metrics.items():
@@ -283,13 +257,9 @@ class ProverTrainer:
                     )
 
                 # Gradient accumulation optimizer step
-                is_last_step_in_batch = (training_step + 1) == len(
-                    self.train_dataloader
-                )
+                is_last_step_in_batch = (training_step + 1) == len(self.train_dataloader)
 
-                is_accumulation_boundary = (
-                    training_step + 1
-                ) % self.gradient_accumulation_steps == 0
+                is_accumulation_boundary = (training_step + 1) % self.gradient_accumulation_steps == 0
                 is_sync_step = is_last_step_in_batch or is_accumulation_boundary
                 if is_sync_step:  # A LOOOOT OF STUFF HAPPENS HERE
                     optimizer_step += 1
@@ -298,9 +268,7 @@ class ProverTrainer:
                     # ============================================================================
                     if hasattr(policy_model, "step"):
                         # DeepSpeed engine - use engine's step method
-                        if self.accelerator_manager.get_state_property(
-                            "is_main_process"
-                        ):
+                        if self.accelerator_manager.get_state_property("is_main_process"):
                             logger.info("🚀 Using DeepSpeed engine step() method")
 
                             # Additional debugging for DeepSpeed step
@@ -309,16 +277,12 @@ class ProverTrainer:
                                 logger.info(
                                     f"🚀 Pre-step: DeepSpeed optimizer step count: {getattr(ds_optimizer, '_step', 'unknown')}"
                                 )
-                                logger.info(
-                                    f"🚀 Pre-step: Learning rate: {ds_optimizer.param_groups[0]['lr']}"
-                                )
+                                logger.info(f"🚀 Pre-step: Learning rate: {ds_optimizer.param_groups[0]['lr']}")
 
                         # DeepSpeed engine handles optimizer step internally
                         step_result = policy_model.step()
 
-                        if self.accelerator_manager.get_state_property(
-                            "is_main_process"
-                        ):
+                        if self.accelerator_manager.get_state_property("is_main_process"):
                             logger.info(f"🚀 DeepSpeed step result: {step_result}")
 
                             # Check if step count increased
@@ -329,23 +293,15 @@ class ProverTrainer:
                                 )
 
                         # Get scheduler for learning rate updates
-                        scheduler = self.optimizer_scheduler_manager.get_scheduler(
-                            "sneaky_prover"
-                        )
+                        scheduler = self.optimizer_scheduler_manager.get_scheduler("sneaky_prover")
                         if scheduler is not None:
                             scheduler.step()
                     else:
                         # Standard optimizer path (non-DeepSpeed)
-                        optimizer = self.optimizer_scheduler_manager.get_optimizer(
-                            "sneaky_prover"
-                        )
-                        scheduler = self.optimizer_scheduler_manager.get_scheduler(
-                            "sneaky_prover"
-                        )
+                        optimizer = self.optimizer_scheduler_manager.get_optimizer("sneaky_prover")
+                        scheduler = self.optimizer_scheduler_manager.get_scheduler("sneaky_prover")
 
-                        if self.accelerator_manager.get_state_property(
-                            "is_main_process"
-                        ):
+                        if self.accelerator_manager.get_state_property("is_main_process"):
                             logger.info("🚀 Using standard optimizer step() method")
 
                         optimizer.step()
@@ -375,18 +331,12 @@ class ProverTrainer:
                         logger.info(f"📊 Parameter p1 norm: {torch.norm(p1):.6f}")
                         logger.info(f"📊 Parameter difference norm: {param_diff:.6f}")
 
-                        if (
-                            param_diff > 1e-8
-                        ):  # Use small threshold for floating point comparison
+                        if param_diff > 1e-8:  # Use small threshold for floating point comparison
                             param_updated = True
                             total_param_change = param_diff.item()
-                            logger.info(
-                                f"✅ Parameters updated via direct comparison: {param_diff:.6f}"
-                            )
+                            logger.info(f"✅ Parameters updated via direct comparison: {param_diff:.6f}")
                         else:
-                            logger.warning(
-                                f"⚠️  Direct parameter comparison shows no change: {param_diff:.6f}"
-                            )
+                            logger.warning(f"⚠️  Direct parameter comparison shows no change: {param_diff:.6f}")
 
                     except Exception as e:
                         logger.warning(f"⚠️  Could not directly compare parameters: {e}")
@@ -397,9 +347,7 @@ class ProverTrainer:
 
                         # Check if optimizer step count increased
                         current_step = getattr(ds_optimizer, "_step", 0)
-                        logger.info(
-                            f"📊 DeepSpeed optimizer step count: {current_step}"
-                        )
+                        logger.info(f"📊 DeepSpeed optimizer step count: {current_step}")
 
                         # Check if optimizer has momentum buffers (indicates it's doing work)
                         state_dict = ds_optimizer.state_dict()
@@ -409,9 +357,7 @@ class ProverTrainer:
                             )
                             param_updated = True
                         else:
-                            logger.warning(
-                                "⚠️  Optimizer state is empty - may indicate no updates"
-                            )
+                            logger.warning("⚠️  Optimizer state is empty - may indicate no updates")
 
                     # Method 3: Check if gradients were consumed (cleared after step)
                     grad_count_after_step = 0
@@ -419,9 +365,7 @@ class ProverTrainer:
                         if param.grad is not None:
                             grad_count_after_step += 1
 
-                    logger.info(
-                        f"📊 Parameters with gradients after step: {grad_count_after_step}"
-                    )
+                    logger.info(f"📊 Parameters with gradients after step: {grad_count_after_step}")
                     if grad_count_after_step == 0:
                         logger.info("✅ Gradients were cleared after step (good sign)")
                     else:
@@ -430,9 +374,7 @@ class ProverTrainer:
                     # Final assessment
                     if param_updated or total_param_change > 0:
                         logger.info("✅ PARAMETERS SUCCESSFULLY UPDATED!")
-                        logger.info(
-                            f"✅ Total parameter change: {total_param_change:.8f}"
-                        )
+                        logger.info(f"✅ Total parameter change: {total_param_change:.8f}")
                     else:
                         logger.error("💥 NO PARAMETER UPDATES DETECTED!")
                         logger.error("💥 Possible issues:")
@@ -447,58 +389,59 @@ class ProverTrainer:
                     self.accelerator_manager.wait_for_everyone()
 
                     # Sync vllm weights -- Update means change vllm weights for inference as well
-                    self.vllm_orchestrator.sync_weights(
-                        phase="provers", model_manager=self.model_manager
-                    )
+                    self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
                     self.accelerator_manager.wait_for_everyone()
 
                     # Log step metrics after optimizer step
-                    self.metrics_logger.flush(
-                        phase=self.state_tracker.phase, mode="train"
-                    )
+                    self.metrics_logger.flush(phase=self.state_tracker.phase, mode="train")
 
                     # Update state tracker
                     self.state_tracker.increment_step()
 
                     # Evaluate every 100 micro-batches (not optimizer steps)
                     if training_step % 100 == 0:
-                        self.vllm_orchestrator.sync_weights(
-                            phase="provers", model_manager=self.model_manager
-                        )
+                        self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
                         self.accelerator_manager.wait_for_everyone()
                         _ = self.evaluate()
 
+                        # Log comprehensive reward summary
+                        self.pipeline.log_reward_summary()
+
                     if self.is_main:
+                        # Get progress metrics from pipeline
+                        progress_metrics = self.pipeline.get_progress_metrics()
+
+                        # Add loss and verifier accuracy
                         latest_verifier_acc = self.metrics_logger.get_latest_metric(
                             "train",
                             "verifier",
                             "verifier_accuracy",
                             phase=self.state_tracker.phase,  # Pass phase
                         )
-                        progress_bar.set_postfix(
-                            loss=self.metrics_logger.get_latest_metric(
-                                "train",
-                                "sneaky_prover",
-                                "loss",
-                                phase=self.state_tracker.phase,  # Pass phase
-                            ),
-                            v_acc=(
-                                f"{latest_verifier_acc:.3f}"
-                                if latest_verifier_acc is not None
-                                else "N/A"
-                            ),
+                        progress_metrics["loss"] = self.metrics_logger.get_latest_metric(
+                            "train",
+                            "sneaky_prover",
+                            "loss",
+                            phase=self.state_tracker.phase,  # Pass phase
                         )
+                        progress_metrics["v_acc"] = (
+                            f"{latest_verifier_acc:.3f}" if latest_verifier_acc is not None else "N/A"
+                        )
+
+                        # Update progress bar with comprehensive metrics
+                        progress_bar.set_postfix(progress_metrics)
                     # Clean up cached tensors
                     torch.cuda.empty_cache()
                     gc.collect()
 
                     training_step += 1
 
+                training_step += 1
+                self.state_tracker.increment_step()
+
             # End of epoch
             if self.is_main:
-                logger.info(
-                    f"Prover Training Epoch {epoch + 1}/{num_steps_or_epochs} completed"
-                )
+                logger.info(f"Prover Training Epoch {epoch + 1}/{num_steps_or_epochs} completed")
                 logger.info(f"Training step: {training_step}")
                 logger.info(f"Optimizer step: {optimizer_step}")
                 logger.info(f"Total steps: {training_step}")
@@ -509,28 +452,20 @@ class ProverTrainer:
             _ = self.evaluate()
 
             # Sync weights to VLLM if provers are used for generation after training
-            self.vllm_orchestrator.sync_weights(
-                phase="provers", model_manager=self.model_manager
-            )
+            self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
             self.accelerator_manager.wait_for_everyone()
 
             logger.info("Attempting to push models to hub after training...")
             model_keys_to_push = ["sneaky_prover"]
             for model_key in model_keys_to_push:
                 try:
-                    model_to_push = self.model_manager.get_model(
-                        model_key, prepared=True
-                    )
+                    model_to_push = self.model_manager.get_model(model_key, prepared=True)
                     if model_to_push is not None:
                         self._push_model_to_hub()
                     else:
-                        logger.warning(
-                            f"Model with key '{model_key}' not found in ModelManager. Skipping push."
-                        )
+                        logger.warning(f"Model with key '{model_key}' not found in ModelManager. Skipping push.")
                 except Exception as e:
-                    logger.error(
-                        f"An error occurred while preparing to push {model_key} to hub: {str(e)}"
-                    )
+                    logger.error(f"An error occurred while preparing to push {model_key} to hub: {str(e)}")
 
             self.accelerator_manager.wait_for_everyone()
 
@@ -578,9 +513,7 @@ class ProverTrainer:
 
             # Push the unwrapped model
             unwrapped_model.push_to_hub(repo_id=prover_model_name)
-            logger.info(
-                f"Sneaky Prover model successfully pushed to the hub as {prover_model_name}."
-            )
+            logger.info(f"Sneaky Prover model successfully pushed to the hub as {prover_model_name}.")
             # Tokenizer should be pushed to the same repo
             self.tokenizer.push_to_hub(repo_id=prover_model_name)
         except Exception as e:

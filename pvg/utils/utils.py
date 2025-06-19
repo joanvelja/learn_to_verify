@@ -25,11 +25,8 @@ def prepare_deepspeed(model, accelerator):
             config_kwargs.update(
                 {
                     "zero_optimization.reduce_bucket_size": hidden_size * hidden_size,
-                    "zero_optimization.stage3_param_persistence_threshold": 10
-                    * hidden_size,
-                    "zero_optimization.stage3_prefetch_bucket_size": 0.9
-                    * hidden_size
-                    * hidden_size,
+                    "zero_optimization.stage3_param_persistence_threshold": 10 * hidden_size,
+                    "zero_optimization.stage3_prefetch_bucket_size": 0.9 * hidden_size * hidden_size,
                 }
             )
 

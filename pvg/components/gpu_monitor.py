@@ -1,15 +1,16 @@
-import subprocess
-import time
-import os
-import json
 import datetime
+import json
+import logging
+import os
 import platform
-import threading
 import signal
-import psutil
+import subprocess
+import threading
+import time
 import warnings
 from pathlib import Path
-import logging
+
+import psutil
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -22,9 +23,7 @@ try:
 
 except ImportError:
     PYNVML_AVAILABLE = False
-    warnings.warn(
-        "pynvml not found. Install with 'pip install nvidia-ml-py' for enhanced GPU monitoring."
-    )
+    warnings.warn("pynvml not found. Install with 'pip install nvidia-ml-py' for enhanced GPU monitoring.")
 
 try:
     import torch
@@ -115,18 +114,14 @@ class GPUMonitor:
 
         self.is_monitoring = True
         self.start_time = datetime.datetime.now()
-        self.monitor_thread = threading.Thread(
-            target=self._monitoring_loop, daemon=True
-        )
+        self.monitor_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         self.monitor_thread.start()
 
         # Register signal handlers for clean shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-        print(
-            f"GPU monitoring started. Logging every {self.check_interval_sec} seconds."
-        )
+        print(f"GPU monitoring started. Logging every {self.check_interval_sec} seconds.")
 
         # Log system info
         self._log_system_info()
@@ -170,9 +165,7 @@ class GPUMonitor:
             memory_total = memory.total / 1024 / 1024  # Convert to MB
             memory_used = memory.used / 1024 / 1024
             memory_free = memory.free / 1024 / 1024
-            memory_percent = (
-                (memory_used / memory_total) * 100 if memory_total > 0 else 0
-            )
+            memory_percent = (memory_used / memory_total) * 100 if memory_total > 0 else 0
 
             # Utilization info
             utilization = pynvml.nvmlDeviceGetUtilizationRates(handle)
@@ -180,27 +173,19 @@ class GPUMonitor:
             memory_utilization = utilization.memory
 
             # Temperature
-            temperature = pynvml.nvmlDeviceGetTemperature(
-                handle, pynvml.NVML_TEMPERATURE_GPU
-            )
+            temperature = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
 
             # Power usage
             try:
-                power_usage = (
-                    pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0
-                )  # Convert to W
+                power_usage = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0  # Convert to W
                 power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0
-                power_percent = (
-                    (power_usage / power_limit) * 100 if power_limit > 0 else 0
-                )
+                power_percent = (power_usage / power_limit) * 100 if power_limit > 0 else 0
             except pynvml.NVMLError:
                 power_usage = power_limit = power_percent = 0
 
             # Clocks
             try:
-                graphics_clock = pynvml.nvmlDeviceGetClockInfo(
-                    handle, pynvml.NVML_CLOCK_GRAPHICS
-                )
+                graphics_clock = pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_GRAPHICS)
                 sm_clock = pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_SM)
                 mem_clock = pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_MEM)
             except pynvml.NVMLError:
@@ -215,9 +200,7 @@ class GPUMonitor:
                         try:
                             process_info = {}
                             process_info["pid"] = p.pid
-                            process_info["memory_used"] = (
-                                p.usedGpuMemory / 1024 / 1024
-                            )  # Convert to MB
+                            process_info["memory_used"] = p.usedGpuMemory / 1024 / 1024  # Convert to MB
 
                             # Get process name
                             try:
@@ -226,14 +209,10 @@ class GPUMonitor:
                                 process_info["username"] = process.username()
                                 process_info["cmdline"] = " ".join(process.cmdline())
                                 process_info["cpu_percent"] = process.cpu_percent()
-                                process_info["memory_percent"] = (
-                                    process.memory_percent()
-                                )
-                                process_info["create_time"] = (
-                                    datetime.datetime.fromtimestamp(
-                                        process.create_time()
-                                    ).strftime("%Y-%m-%d %H:%M:%S")
-                                )
+                                process_info["memory_percent"] = process.memory_percent()
+                                process_info["create_time"] = datetime.datetime.fromtimestamp(
+                                    process.create_time()
+                                ).strftime("%Y-%m-%d %H:%M:%S")
                             except (psutil.NoSuchProcess, psutil.AccessDenied):
                                 process_info["name"] = "Unknown"
                                 process_info["username"] = "Unknown"
@@ -252,12 +231,8 @@ class GPUMonitor:
                     self.gpu_memory_history[i].pop(0)
 
                 if len(self.gpu_memory_history[i]) >= 2:
-                    memory_growth = (
-                        self.gpu_memory_history[i][-1] - self.gpu_memory_history[i][0]
-                    )
-                    memory_growth_rate = memory_growth / len(
-                        self.gpu_memory_history[i]
-                    )  # MB per interval
+                    memory_growth = self.gpu_memory_history[i][-1] - self.gpu_memory_history[i][0]
+                    memory_growth_rate = memory_growth / len(self.gpu_memory_history[i])  # MB per interval
                 else:
                     memory_growth = memory_growth_rate = 0
             else:
@@ -271,12 +246,8 @@ class GPUMonitor:
                 warnings.append(f"HIGH_TEMPERATURE: {temperature}°C")
             if gpu_utilization > self.utilization_warning_threshold:
                 warnings.append(f"HIGH_UTILIZATION: {gpu_utilization}%")
-            if (
-                memory_growth_rate > 5
-            ):  # Warning if growing by more than 5MB per interval
-                warnings.append(
-                    f"MEMORY_LEAK_SUSPECT: {memory_growth_rate:.2f} MB/interval"
-                )
+            if memory_growth_rate > 5:  # Warning if growing by more than 5MB per interval
+                warnings.append(f"MEMORY_LEAK_SUSPECT: {memory_growth_rate:.2f} MB/interval")
 
             gpu_info.append(
                 {
@@ -345,19 +316,13 @@ class GPUMonitor:
                         util = float(util)
                         mem_used = float(mem_used)
                         mem_total = float(mem_total)
-                        mem_percent = (
-                            (mem_used / mem_total) * 100 if mem_total > 0 else 0
-                        )
+                        mem_percent = (mem_used / mem_total) * 100 if mem_total > 0 else 0
                         temp = float(temp)
 
                         try:
                             power_draw = float(power_draw)
                             power_limit = float(power_limit)
-                            power_percent = (
-                                (power_draw / power_limit) * 100
-                                if power_limit > 0
-                                else 0
-                            )
+                            power_percent = (power_draw / power_limit) * 100 if power_limit > 0 else 0
                         except ValueError:
                             power_draw = power_limit = power_percent = 0
 
@@ -367,20 +332,12 @@ class GPUMonitor:
                                 self.gpu_memory_history[index] = []
 
                             self.gpu_memory_history[index].append(mem_used)
-                            if (
-                                len(self.gpu_memory_history[index])
-                                > self.memory_growth_window
-                            ):
+                            if len(self.gpu_memory_history[index]) > self.memory_growth_window:
                                 self.gpu_memory_history[index].pop(0)
 
                             if len(self.gpu_memory_history[index]) >= 2:
-                                memory_growth = (
-                                    self.gpu_memory_history[index][-1]
-                                    - self.gpu_memory_history[index][0]
-                                )
-                                memory_growth_rate = memory_growth / len(
-                                    self.gpu_memory_history[index]
-                                )
+                                memory_growth = self.gpu_memory_history[index][-1] - self.gpu_memory_history[index][0]
+                                memory_growth_rate = memory_growth / len(self.gpu_memory_history[index])
                             else:
                                 memory_growth = memory_growth_rate = 0
                         else:
@@ -395,9 +352,7 @@ class GPUMonitor:
                         if util > self.utilization_warning_threshold:
                             warnings.append(f"HIGH_UTILIZATION: {util}%")
                         if memory_growth_rate > 5:
-                            warnings.append(
-                                f"MEMORY_LEAK_SUSPECT: {memory_growth_rate:.2f} MB/interval"
-                            )
+                            warnings.append(f"MEMORY_LEAK_SUSPECT: {memory_growth_rate:.2f} MB/interval")
 
                         gpu_info.append(
                             {
@@ -457,12 +412,8 @@ class GPUMonitor:
                     device_info["stats"] = {
                         "num_alloc_retries": stats.get("num_alloc_retries", 0),
                         "num_ooms": stats.get("num_ooms", 0),
-                        "max_split_size": stats.get("max_split_size", 0)
-                        / 1024
-                        / 1024,  # MB
-                        "segment_size": stats.get("segment_size", 0)
-                        / 1024
-                        / 1024,  # MB
+                        "max_split_size": stats.get("max_split_size", 0) / 1024 / 1024,  # MB
+                        "segment_size": stats.get("segment_size", 0) / 1024 / 1024,  # MB
                     }
                 except (AttributeError, RuntimeError):
                     pass
@@ -470,12 +421,8 @@ class GPUMonitor:
                 devices[i] = device_info
 
             result["devices"] = devices
-            result["max_memory_allocated"] = (
-                torch.cuda.max_memory_allocated() / 1024 / 1024
-            )  # MB
-            result["max_memory_reserved"] = (
-                torch.cuda.max_memory_reserved() / 1024 / 1024
-            )  # MB
+            result["max_memory_allocated"] = torch.cuda.max_memory_allocated() / 1024 / 1024  # MB
+            result["max_memory_reserved"] = torch.cuda.max_memory_reserved() / 1024 / 1024  # MB
 
             # Get memory snapshot if available (PyTorch 1.10+)
             try:
@@ -504,14 +451,8 @@ class GPUMonitor:
                 "pynvml": PYNVML_AVAILABLE,
                 "torch": TORCH_AVAILABLE,
                 "torch_version": torch.__version__ if TORCH_AVAILABLE else None,
-                "cuda_available": (
-                    torch.cuda.is_available() if TORCH_AVAILABLE else False
-                ),
-                "cuda_version": (
-                    torch.version.cuda
-                    if TORCH_AVAILABLE and torch.cuda.is_available()
-                    else None
-                ),
+                "cuda_available": (torch.cuda.is_available() if TORCH_AVAILABLE else False),
+                "cuda_version": (torch.version.cuda if TORCH_AVAILABLE and torch.cuda.is_available() else None),
             },
         }
 
@@ -539,9 +480,7 @@ class GPUMonitor:
                     gpu_info = self._get_gpu_info_nvidia_smi()
 
                 # Get PyTorch specific info if available
-                pytorch_info = (
-                    self._get_pytorch_memory_info() if TORCH_AVAILABLE else {}
-                )
+                pytorch_info = self._get_pytorch_memory_info() if TORCH_AVAILABLE else {}
 
                 # Get system metrics
                 system_metrics = {
@@ -553,11 +492,7 @@ class GPUMonitor:
 
                 # Combine all information
                 timestamp = datetime.datetime.now()
-                elapsed = (
-                    (timestamp - self.start_time).total_seconds()
-                    if self.start_time
-                    else 0
-                )
+                elapsed = (timestamp - self.start_time).total_seconds() if self.start_time else 0
 
                 log_entry = {
                     "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
@@ -574,9 +509,7 @@ class GPUMonitor:
                 # Log to file
                 if self.log_to_file:
                     with open(self.log_file, "a") as f:
-                        f.write(
-                            f"\n=== GPU STATUS AT {timestamp} (ITERATION {self.iteration}) ===\n"
-                        )
+                        f.write(f"\n=== GPU STATUS AT {timestamp} (ITERATION {self.iteration}) ===\n")
 
                         # System info
                         f.write(
@@ -612,38 +545,26 @@ class GPUMonitor:
                                     )
 
                                 if gpu["warnings"]:
-                                    f.write(
-                                        f"  WARNINGS: {', '.join(gpu['warnings'])}\n"
-                                    )
+                                    f.write(f"  WARNINGS: {', '.join(gpu['warnings'])}\n")
 
                                 if gpu.get("processes"):
-                                    f.write(
-                                        f"  Active processes ({len(gpu['processes'])}):\n"
-                                    )
+                                    f.write(f"  Active processes ({len(gpu['processes'])}):\n")
                                     for proc in gpu["processes"]:
                                         f.write(
                                             f"    PID {proc['pid']}: {proc['name']} ({proc['memory_used']:.2f} MB)\n"
                                         )
-                                        f.write(
-                                            f"        CMD: {proc.get('cmdline', 'Unknown')}\n"
-                                        )
+                                        f.write(f"        CMD: {proc.get('cmdline', 'Unknown')}\n")
                         else:
                             f.write("No GPU information available\n")
 
                         # PyTorch info
                         if pytorch_info:
                             f.write("\nPyTorch CUDA Memory:\n")
-                            f.write(
-                                f"  Max Allocated: {pytorch_info.get('max_memory_allocated', 0):.2f} MB\n"
-                            )
-                            f.write(
-                                f"  Max Reserved: {pytorch_info.get('max_memory_reserved', 0):.2f} MB\n"
-                            )
+                            f.write(f"  Max Allocated: {pytorch_info.get('max_memory_allocated', 0):.2f} MB\n")
+                            f.write(f"  Max Reserved: {pytorch_info.get('max_memory_reserved', 0):.2f} MB\n")
 
                             if "devices" in pytorch_info:
-                                for device_id, device_info in pytorch_info[
-                                    "devices"
-                                ].items():
+                                for device_id, device_info in pytorch_info["devices"].items():
                                     f.write(
                                         f"  Device {device_id}: "
                                         f"Allocated: {device_info['allocated']:.2f} MB, "
@@ -652,9 +573,7 @@ class GPUMonitor:
 
                 # Log to console
                 if self.log_to_console:
-                    print(
-                        f"\n=== GPU STATUS AT {timestamp} (ITERATION {self.iteration}) ==="
-                    )
+                    print(f"\n=== GPU STATUS AT {timestamp} (ITERATION {self.iteration}) ===")
 
                     # System info
                     print(
@@ -671,15 +590,9 @@ class GPUMonitor:
                             util = gpu["utilization"]["gpu"]
 
                             # Visual indicators for critical metrics
-                            mem_indicator = self._get_visual_indicator(
-                                mem_percent, self.memory_warning_threshold
-                            )
-                            temp_indicator = self._get_visual_indicator(
-                                temp, self.temp_warning_threshold
-                            )
-                            util_indicator = self._get_visual_indicator(
-                                util, self.utilization_warning_threshold
-                            )
+                            mem_indicator = self._get_visual_indicator(mem_percent, self.memory_warning_threshold)
+                            temp_indicator = self._get_visual_indicator(temp, self.temp_warning_threshold)
+                            util_indicator = self._get_visual_indicator(util, self.utilization_warning_threshold)
 
                             print(f"\nGPU {gpu['index']} ({gpu['name']})")
                             print(
@@ -699,9 +612,7 @@ class GPUMonitor:
                                 )
 
                             if gpu["memory"]["growth_rate"] != 0:
-                                growth_indicator = (
-                                    "↗" if gpu["memory"]["growth_rate"] > 0 else "↘"
-                                )
+                                growth_indicator = "↗" if gpu["memory"]["growth_rate"] > 0 else "↘"
                                 print(
                                     f"  Memory growth: {gpu['memory']['growth_rate']:.2f} MB/interval {growth_indicator} "
                                     f"(total change: {gpu['memory']['growth']:.2f} MB)"
@@ -713,25 +624,17 @@ class GPUMonitor:
                             if gpu.get("processes"):
                                 print(f"  Active processes ({len(gpu['processes'])}):")
                                 for proc in gpu["processes"]:
-                                    print(
-                                        f"    PID {proc['pid']}: {proc['name']} ({proc['memory_used']:.2f} MB)"
-                                    )
+                                    print(f"    PID {proc['pid']}: {proc['name']} ({proc['memory_used']:.2f} MB)")
                                     if self.capture_process_info:
-                                        print(
-                                            f"        CMD: {proc.get('cmdline', 'Unknown')}"
-                                        )
+                                        print(f"        CMD: {proc.get('cmdline', 'Unknown')}")
                     else:
                         print("No GPU information available")
 
                     # PyTorch info
                     if pytorch_info and pytorch_info.get("devices"):
                         print("\nPyTorch CUDA Memory:")
-                        print(
-                            f"  Max Allocated: {pytorch_info.get('max_memory_allocated', 0):.2f} MB"
-                        )
-                        print(
-                            f"  Max Reserved: {pytorch_info.get('max_memory_reserved', 0):.2f} MB"
-                        )
+                        print(f"  Max Allocated: {pytorch_info.get('max_memory_allocated', 0):.2f} MB")
+                        print(f"  Max Reserved: {pytorch_info.get('max_memory_reserved', 0):.2f} MB")
 
                         for device_id, device_info in pytorch_info["devices"].items():
                             print(

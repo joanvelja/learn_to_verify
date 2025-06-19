@@ -8,20 +8,21 @@ monolithic trainer by using the Strategy pattern.
 """
 
 from abc import ABC, abstractmethod
-from typing import Literal, Any
+from typing import Any, Literal
+
 import torch
 
+from pvg.components import AcceleratorManager, VLLMOrchestrator
 from pvg.data_models.training_data import (
     BatchData,
-    CompletionResult,
-    SolutionData,
-    RewardResult,
     BatchInputs,
-    ModelOutputs,
-    LossResult,
+    CompletionResult,
     ExecutionData,
+    LossResult,
+    ModelOutputs,
+    RewardResult,
+    SolutionData,
 )
-from pvg.components import VLLMOrchestrator, AcceleratorManager
 
 
 class CompletionGenerationStrategy(ABC):
@@ -177,7 +178,7 @@ class ModelForwardAbstraction(ABC):
     @abstractmethod
     def forward_pass(
         self,
-        model: torch.nn.Module,
+        unwrapped_model: torch.nn.Module,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         logits_to_keep: int,
@@ -185,7 +186,7 @@ class ModelForwardAbstraction(ABC):
         """Perform forward pass with model
 
         Args:
-            model: The model to run forward pass on
+            unwrapped_model: The unwrapped model to run forward pass on
             input_ids: Input token IDs
             attention_mask: Attention mask
             logits_to_keep: Number of logits to keep (for memory efficiency)
@@ -198,21 +199,56 @@ class ModelForwardAbstraction(ABC):
     @abstractmethod
     def compute_per_token_logps(
         self,
-        model: torch.nn.Module,
+        unwrapped_model: torch.nn.Module,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         logits_to_keep: int,
-    ) -> torch.Tensor:
-        """Compute per-token log probabilities
+        return_entropy: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        """Compute per-token log probabilities with optional entropy
 
         Args:
-            model: The model to compute log probs for
+            unwrapped_model: The unwrapped model to compute log probs for
             input_ids: Input token IDs
             attention_mask: Attention mask
             logits_to_keep: Number of logits to keep
+            return_entropy: If True, also return per-token entropy for collapse detection
 
         Returns:
-            Per-token log probabilities tensor
+            If return_entropy=False: Per-token log probabilities tensor
+            If return_entropy=True: (logprobs, entropy) tuple
+        """
+        pass
+
+    @abstractmethod
+    def compute_fwd_pass(
+        self,
+        unwrapped_model: torch.nn.Module,
+        ref_model: torch.nn.Module | None,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        logits_to_keep: int,
+        num_iterations: int,
+        beta: float,
+        return_entropy: bool = True,
+    ) -> tuple[ModelOutputs, torch.Tensor | None, torch.Tensor | None]:
+        """Unified forward pass that computes all needed outputs efficiently
+
+        Eliminates redundancy by computing current model outputs, old model logps,
+        and reference model logps in coordinated forward passes.
+
+        Args:
+            unwrapped_model: The current model being trained
+            ref_model: The reference model (can be None)
+            input_ids: Input token IDs
+            attention_mask: Attention mask
+            logits_to_keep: Number of logits to keep
+            num_iterations: Number of RL iterations
+            beta: KL regularization coefficient
+            return_entropy: Whether to compute entropy for collapse detection
+
+        Returns:
+            Tuple of (current_model_outputs, old_per_token_logps, ref_per_token_logps)
         """
         pass
 
@@ -280,9 +316,7 @@ class ModelStateManagementStrategy(ABC):
         pass
 
     @abstractmethod
-    def restore_after_evaluation(
-        self, model: torch.nn.Module, state_info: dict[str, Any]
-    ) -> None:
+    def restore_after_evaluation(self, model: torch.nn.Module, state_info: dict[str, Any]) -> None:
         """Restore model state after evaluation
 
         Args:

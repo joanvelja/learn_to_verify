@@ -10,8 +10,10 @@ from accelerate.utils import broadcast_object_list
 from huggingface_hub import repo_exists
 
 from pvg.components.accelerator_manager import AcceleratorManager
+from pvg.components.code_evaluator import BatchEvaluator
 from pvg.components.data_generator import DataGenerator
 from pvg.components.data_manager import DataManager
+from pvg.components.formatter import Formatter
 from pvg.components.metrics_logger import MetricsLogger
 from pvg.components.model_manager import ModelManager
 from pvg.components.optimizer_manager import OptimizerSchedulerManager
@@ -19,12 +21,10 @@ from pvg.components.state_tracker import StateTracker
 from pvg.components.vllm_orchestrator import VLLMOrchestrator
 from pvg.config.args import ExperimentArgs
 from pvg.data.dataset import VerifierDataset
+from pvg.orchestrator.prover_phase_strategy import ProverPhaseStrategy
+from pvg.orchestrator.verifier_phase_strategy import VerifierPhaseStrategy
 from pvg.rl.grpo import GRPO
 from pvg.utils import url_exists
-from pvg.orchestrator.verifier_phase_strategy import VerifierPhaseStrategy
-from pvg.orchestrator.prover_phase_strategy import ProverPhaseStrategy
-from pvg.components.formatter import Formatter
-from pvg.components.code_evaluator import BatchEvaluator
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -88,19 +88,12 @@ class TrainingPhaseOrchestrator:
 
         for _ in range(self.args.num_rounds):
             # Generate datamix for current round
-            if self.accelerator_manager.get_state_property(
-                property_name="is_main_process"
-            ):
+            if self.accelerator_manager.get_state_property(property_name="is_main_process"):
                 if self.state_tracker.round == 0:
                     dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_backdoored_round_{self.state_tracker.round}"
                     url = f"https://huggingface.co/datasets/{dataset_name}"
-                    if not (
-                        url_exists(url)
-                        and repo_exists(dataset_name, repo_type="dataset")
-                    ):
-                        loop.run_until_complete(
-                            self.data_generator.generate_current_round_data()
-                        )
+                    if not (url_exists(url) and repo_exists(dataset_name, repo_type="dataset")):
+                        loop.run_until_complete(self.data_generator.generate_current_round_data())
                     else:
                         logger.info(
                             f"Skipping datamix creation for round {self.state_tracker.round} because it already exists."
@@ -138,9 +131,7 @@ class TrainingPhaseOrchestrator:
                 self.state_tracker,
                 self.args.enable_backdoor_verification,
             )
-            dataset_type = (
-                "coding" if self.data_generator.dataset_type == "coding" else "math"
-            )
+            dataset_type = "coding" if self.data_generator.dataset_type == "coding" else "math"
         else:
             dataset_type = None
 

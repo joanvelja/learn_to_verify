@@ -22,15 +22,14 @@ from pvg.data.generation_constants import (
     VERIFIER_TAGS,
 )
 from pvg.data.prompts import (
-    INSTRUCT_SNEAKY,
     BASE_HONEST_CODE,
     BASE_HONEST_MATH,
     BASE_SNEAKY_CODE,
     BASE_SNEAKY_MATH,
     BASE_VERIFIER_CODE,
     BASE_VERIFIER_MATH,
+    INSTRUCT_SNEAKY,
 )
-
 from pvg.data_models.training_data import CompletionExtractionResult
 
 _CODE_BLOCK_RE = re.compile(
@@ -50,11 +49,7 @@ logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
 def extract_placeholders(format_string):
     formatter = string.Formatter()
-    return [
-        field_name
-        for _, field_name, _, _ in formatter.parse(format_string)
-        if field_name
-    ]
+    return [field_name for _, field_name, _, _ in formatter.parse(format_string) if field_name]
 
 
 class Formatter:
@@ -80,9 +75,7 @@ class Formatter:
         # --- Template Args ---
         self.template_args: dict[str, dict[str, set[str]]] = {
             "honest_prover": {
-                "coding": set(
-                    extract_placeholders(BASE_HONEST_CODE)
-                ),  # get the format args from the prompt
+                "coding": set(extract_placeholders(BASE_HONEST_CODE)),  # get the format args from the prompt
                 "math": set(extract_placeholders(BASE_HONEST_MATH)),
             },
             "sneaky_prover": {
@@ -144,26 +137,14 @@ class Formatter:
             )
 
         # If function signature or honest_solution or solution, in general, lacks ``` backticks, add them
-        if "function_signature" in template_args and not template_args[
-            "function_signature"
-        ].startswith("```"):
-            template_args["function_signature"] = (
-                "```python\n" + template_args["function_signature"] + "\n```"
-            )
+        if "function_signature" in template_args and not template_args["function_signature"].startswith("```"):
+            template_args["function_signature"] = "```python\n" + template_args["function_signature"] + "\n```"
 
-        if "honest_solution" in template_args and not template_args[
-            "honest_solution"
-        ].startswith("```"):
-            template_args["honest_solution"] = (
-                "```python\n" + template_args["honest_solution"] + "\n```"
-            )
+        if "honest_solution" in template_args and not template_args["honest_solution"].startswith("```"):
+            template_args["honest_solution"] = "```python\n" + template_args["honest_solution"] + "\n```"
 
-        if "solution" in template_args and not template_args["solution"].startswith(
-            "```"
-        ):
-            template_args["solution"] = (
-                "```python\n" + template_args["solution"] + "\n```"
-            )
+        if "solution" in template_args and not template_args["solution"].startswith("```"):
+            template_args["solution"] = "```python\n" + template_args["solution"] + "\n```"
 
         formatted_user_content = user_content_template.format(**template_args)
 
@@ -178,12 +159,8 @@ class Formatter:
         try:
             return self.stop_sequences[generation_type][dataset_type]
         except KeyError:
-            logger.error(
-                f"No stop sequences found for type '{generation_type}', dataset '{dataset_type}'"
-            )
-            raise ValueError(
-                f"Invalid stop sequence configuration for {generation_type}/{dataset_type}"
-            )
+            logger.error(f"No stop sequences found for type '{generation_type}', dataset '{dataset_type}'")
+            raise ValueError(f"Invalid stop sequence configuration for {generation_type}/{dataset_type}")
 
     def get_tags_for_parsing(
         self,
@@ -194,16 +171,10 @@ class Formatter:
         try:
             return self.parsing_tags[generation_type][dataset_type]
         except KeyError:
-            logger.error(
-                f"No parsing tags found for type '{generation_type}', dataset '{dataset_type}'"
-            )
-            raise ValueError(
-                f"Invalid parsing tags configuration for {generation_type}/{dataset_type}"
-            )
+            logger.error(f"No parsing tags found for type '{generation_type}', dataset '{dataset_type}'")
+            raise ValueError(f"Invalid parsing tags configuration for {generation_type}/{dataset_type}")
 
-    def ensure_consistent_code_guarding(
-        self, code_text: str, dataset_type: Literal["coding", "math"]
-    ) -> str:
+    def ensure_consistent_code_guarding(self, code_text: str, dataset_type: Literal["coding", "math"]) -> str:
         """
         Ensures consistent code guarding by stripping existing backticks and re-adding them properly.
         This prevents bias between honest and sneaky solutions with inconsistent formatting.
@@ -262,12 +233,8 @@ class Formatter:
         # ----- find the *first* fenced block with ≥ 3 back-ticks ------------------
         block = _CODE_BLOCK_RE.search(target)
         if not block:
-            logger.warning(
-                f"No fenced code block found in completion:\n{completion_text}\nReturning failure."
-            )
-            return CompletionExtractionResult(
-                payload="Failure", extraction_success=False
-            )
+            logger.warning(f"No fenced code block found in completion:\n{completion_text}\nReturning failure.")
+            return CompletionExtractionResult(payload="Failure", extraction_success=False)
 
         lang_id = block.group("lang")
         code = block.group("code").rstrip()
@@ -291,9 +258,7 @@ class Formatter:
         # Obtain what's within the triggering condition tags
         match = re.search(triggering_condition_tag, solution, re.DOTALL)
         return (
-            CompletionExtractionResult(
-                payload=match.group(1).strip(), extraction_success=True
-            )
+            CompletionExtractionResult(payload=match.group(1).strip(), extraction_success=True)
             if match
             else CompletionExtractionResult(payload="Failure", extraction_success=False)
         )
@@ -304,40 +269,27 @@ class Formatter:
         device: torch.device,
     ) -> torch.Tensor:
         completion_tensors = [
-            torch.tensor(ids, device=device, dtype=torch.long)
-            for ids in completion_ids_list_of_lists
+            torch.tensor(ids, device=device, dtype=torch.long) for ids in completion_ids_list_of_lists
         ]
         # pad_sequence pads on the right by default.
-        padded_completions = pad(
-            completion_tensors, padding_value=self.tokenizer.pad_token_id
-        )
+        padded_completions = pad(completion_tensors, padding_value=self.tokenizer.pad_token_id)
         return padded_completions
 
     def create_completion_masks(
         self,
         padded_completion_ids: torch.Tensor,  # (B, L_compl)
-    ) -> tuple[
-        torch.Tensor, torch.Tensor, int
-    ]:  # completion_mask, is_eos, logits_to_keep
+    ) -> tuple[torch.Tensor, torch.Tensor, int]:  # completion_mask, is_eos, logits_to_keep
         device = padded_completion_ids.device
         is_eos = padded_completion_ids == self.tokenizer.eos_token_id
 
-        eos_idx = torch.full(
-            (is_eos.size(0),), is_eos.size(1), dtype=torch.long, device=device
-        )
+        eos_idx = torch.full((is_eos.size(0),), is_eos.size(1), dtype=torch.long, device=device)
         # Find the first EOS token
-        if (
-            is_eos.any()
-        ):  # Check if any EOS token exists at all to prevent argmax error on empty tensor
+        if is_eos.any():  # Check if any EOS token exists at all to prevent argmax error on empty tensor
             any_eos_along_dim1 = is_eos.any(dim=1)
             if any_eos_along_dim1.any():  # Check if any sequence has an EOS token
-                eos_idx[any_eos_along_dim1] = (
-                    is_eos[any_eos_along_dim1].int().argmax(dim=1)
-                )
+                eos_idx[any_eos_along_dim1] = is_eos[any_eos_along_dim1].int().argmax(dim=1)
 
-        sequence_indices = torch.arange(is_eos.size(1), device=device).expand(
-            is_eos.size(0), -1
-        )
+        sequence_indices = torch.arange(is_eos.size(1), device=device).expand(is_eos.size(0), -1)
         completion_mask = (sequence_indices <= eos_idx.unsqueeze(1)).int()
 
         logits_to_keep = padded_completion_ids.size(1)
@@ -356,7 +308,5 @@ class Formatter:
             )
             return 0
         except Exception as e:
-            logger.error(
-                f"Error parsing verifier reward from '{verifier_output_text}': {e}"
-            )
+            logger.error(f"Error parsing verifier reward from '{verifier_output_text}': {e}")
             return 0

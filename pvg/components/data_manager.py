@@ -10,16 +10,18 @@
 # The training proceeds in multiple rounds, and each round the verifier training phase precedes the prover training phase. The only change between rounds is the data mixture used to train the verifier; no other state, such as model weights, is carried over between rounds.
 
 
-from torch.utils.data import DataLoader, Sampler, Dataset
-from pvg.components.accelerator_manager import AcceleratorManager
-from pvg.data.dataset import AppsDataset
-from pvg.data.rep_sampler import RepeatRandomSampler
-from pvg.config.args import DatasetArgs
-from transformers import PreTrainedTokenizer, AutoTokenizer
-from typing import Any, Callable, Literal
 import logging
+from typing import Any, Callable, Literal
+
 from datasets import DatasetDict
 from huggingface_hub import create_repo
+from torch.utils.data import DataLoader, Dataset, Sampler
+from transformers import AutoTokenizer, PreTrainedTokenizer
+
+from pvg.components.accelerator_manager import AcceleratorManager
+from pvg.config.args import DatasetArgs
+from pvg.data.dataset import AppsDataset
+from pvg.data.rep_sampler import RepeatRandomSampler
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -38,9 +40,7 @@ class DataManager:
         global_phase_callback: Callable[
             [], Literal["verifier", "provers"]
         ],  # Needed to assess what datamix to prepare and return upon request
-        verifier_mode: Literal[
-            "regressor", "classifier", "inference_classifier", "inference_regressor"
-        ],
+        verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],
     ) -> None:
         self.accelerator_manager = accelerator_manager
         self.dataset_config = dataset_config
@@ -56,9 +56,7 @@ class DataManager:
         # Huggingface repo path
         self.hf_repo_path = f'jvelja/{self.dataset_config.dataset_name.split("/")[1]}-verifier-{self.verifier_mode}'
         # --> jvelja/apps-verifier-regressor
-        self.global_phase_callback: Callable[[], Literal["verifier", "provers"]] = (
-            global_phase_callback
-        )
+        self.global_phase_callback: Callable[[], Literal["verifier", "provers"]] = global_phase_callback
         # Load tokenizer
         self.tokenizer: PreTrainedTokenizer = self.load_tokenizer()
 
@@ -90,22 +88,14 @@ class DataManager:
         # Create prover datasets (first half) using direct slicing
         prover_train_indices = list(range(0, train_len // 2))
         prover_eval_indices = list(range(0, eval_len // 2))
-        self.prover_train_dataset = full_train_dataset.select(
-            prover_train_indices
-        ).tokenized_dataset
-        self.prover_eval_dataset = full_eval_dataset.select(
-            prover_eval_indices
-        ).tokenized_dataset
+        self.prover_train_dataset = full_train_dataset.select(prover_train_indices).tokenized_dataset
+        self.prover_eval_dataset = full_eval_dataset.select(prover_eval_indices).tokenized_dataset
 
         # Create verifier datasets (second half) using direct slicing
         verifier_train_indices = list(range(train_len // 2, train_len))
         verifier_eval_indices = list(range(eval_len // 2, eval_len))
-        verifier_train_dataset = full_train_dataset.select(
-            verifier_train_indices
-        ).tokenized_dataset
-        verifier_eval_dataset = full_eval_dataset.select(
-            verifier_eval_indices
-        ).tokenized_dataset
+        verifier_train_dataset = full_train_dataset.select(verifier_train_indices).tokenized_dataset
+        verifier_eval_dataset = full_eval_dataset.select(verifier_eval_indices).tokenized_dataset
 
         ddict = DatasetDict(
             {
@@ -114,9 +104,7 @@ class DataManager:
             }
         )
         # Push to hub
-        logger.info(
-            f"Preparing to push dataset {self.dataset_config.dataset_name} to Hugging Face Hub..."
-        )
+        logger.info(f"Preparing to push dataset {self.dataset_config.dataset_name} to Hugging Face Hub...")
 
         logger.info(f"Pushing dataset to {self.hf_repo_path}...")
         create_repo(self.hf_repo_path, repo_type="dataset", exist_ok=True)
@@ -306,12 +294,8 @@ class DataManager:
                 )
 
                 # Set the dataloaders in the dataloaders dict
-                self.dataloaders[phase]["sneaky_prover"][
-                    "train_dataloader"
-                ] = train_dataloader
-                self.dataloaders[phase]["sneaky_prover"][
-                    "eval_dataloader"
-                ] = eval_dataloader
+                self.dataloaders[phase]["sneaky_prover"]["train_dataloader"] = train_dataloader
+                self.dataloaders[phase]["sneaky_prover"]["eval_dataloader"] = eval_dataloader
 
     def make_verifier_datamix(self) -> None:
         """
@@ -321,9 +305,7 @@ class DataManager:
 
     def get_verifier_dataloader(
         self,
-        mode: Literal[
-            "regressor", "classifier", "inference_classifier", "inference_regressor"
-        ],
+        mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],
     ) -> DataLoader:
         """
         Returns the verifier dataloader for the given mode.

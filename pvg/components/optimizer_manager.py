@@ -65,13 +65,9 @@ class OptimizerSchedulerManager:
         self.verifier_training_config: TrainingArgs = verifier_training_config
         self.shared_training_config: dict[str, int | None] = shared_training_config
 
-        self.gradient_accumulation_steps: int = self.shared_training_config[
-            "gradient_accumulation_steps"
-        ]
+        self.gradient_accumulation_steps: int = self.shared_training_config["gradient_accumulation_steps"]
         self.global_step_callback: Callable[[], int] = global_step_callback
-        self.global_phase_callback: Callable[[], Literal["provers", "verifier"]] = (
-            global_phase_callback
-        )
+        self.global_phase_callback: Callable[[], Literal["provers", "verifier"]] = global_phase_callback
         self.global_round_callback: Callable[[], int] = global_round_callback
         self.num_train_epochs: int = self.shared_training_config["num_train_epochs"]
         self.configs = {
@@ -93,9 +89,7 @@ class OptimizerSchedulerManager:
 
         phase = self.global_phase_callback()
         num_update_steps_per_epoch = len(dataloader) // self.gradient_accumulation_steps
-        num_update_steps_per_epoch = max(
-            num_update_steps_per_epoch, 1
-        )  # Ensure at least one step
+        num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)  # Ensure at least one step
         num_training_steps = num_update_steps_per_epoch * self.num_train_epochs
         self.num_training_steps[phase] = num_training_steps
 
@@ -122,10 +116,7 @@ class OptimizerSchedulerManager:
             head_params = []
 
             for name, param in model.named_parameters():
-                if any(
-                    keyword in name.lower()
-                    for keyword in ["score", "classifier", "head", "lm_head"]
-                ):
+                if any(keyword in name.lower() for keyword in ["score", "classifier", "head", "lm_head"]):
                     head_params.append(param)
                 else:
                     backbone_params.append(param)
@@ -171,9 +162,7 @@ class OptimizerSchedulerManager:
                     model_params_list = list(model.parameters())
 
                     logger.info(f"🔍 Model parameters count: {len(model_param_ids)}")
-                    logger.info(
-                        "🔍 First 3 model parameter IDs for optimizer creation:"
-                    )
+                    logger.info("🔍 First 3 model parameter IDs for optimizer creation:")
                     for i in range(min(3, len(model_params_list))):
                         param = model_params_list[i]
                         logger.info(
@@ -181,9 +170,7 @@ class OptimizerSchedulerManager:
                         )
 
                     # Check if model is in training mode
-                    logger.info(
-                        f"🏷️  Model training mode during optimizer creation: {model.training}"
-                    )
+                    logger.info(f"🏷️  Model training mode during optimizer creation: {model.training}")
 
                 optimizer = torch.optim.AdamW(
                     model.parameters(),
@@ -202,18 +189,10 @@ class OptimizerSchedulerManager:
                     logger.info(f"🔧 Created optimizer type: {type(optimizer)}")
 
                     # Check optimizer parameter IDs
-                    optimizer_param_ids = {
-                        id(p)
-                        for group in optimizer.param_groups
-                        for p in group["params"]
-                    }
-                    optimizer_params_list = [
-                        p for group in optimizer.param_groups for p in group["params"]
-                    ]
+                    optimizer_param_ids = {id(p) for group in optimizer.param_groups for p in group["params"]}
+                    optimizer_params_list = [p for group in optimizer.param_groups for p in group["params"]]
 
-                    logger.info(
-                        f"🔍 Optimizer parameters count: {len(optimizer_param_ids)}"
-                    )
+                    logger.info(f"🔍 Optimizer parameters count: {len(optimizer_param_ids)}")
                     logger.info("🔍 First 3 optimizer parameter IDs:")
                     for i in range(min(3, len(optimizer_params_list))):
                         param = optimizer_params_list[i]
@@ -223,19 +202,13 @@ class OptimizerSchedulerManager:
 
                     # Verify optimizer was created with the right parameters
                     optimizer_model_match = model_param_ids == optimizer_param_ids
-                    logger.info(
-                        f"🔍 Optimizer parameters match model parameters? {optimizer_model_match}"
-                    )
+                    logger.info(f"🔍 Optimizer parameters match model parameters? {optimizer_model_match}")
 
                     if not optimizer_model_match:
                         logger.error("💥 OPTIMIZER CREATION MISMATCH!")
-                        logger.error(
-                            "💥 Optimizer was not created with the correct model parameters!"
-                        )
+                        logger.error("💥 Optimizer was not created with the correct model parameters!")
                     else:
-                        logger.info(
-                            "✅ Optimizer created with correct model parameters"
-                        )
+                        logger.info("✅ Optimizer created with correct model parameters")
 
                     logger.info("=" * 80)
 
@@ -261,9 +234,7 @@ class OptimizerSchedulerManager:
         phase_config = "sneaky_prover" if phase == "provers" else phase
         lr_scheduler_type = self.configs[phase_config].lr_scheduler_type
         if not lr_scheduler_type or lr_scheduler_type == "constant":
-            logger.info(
-                "No learning rate scheduler specified or type is 'constant'. Skipping scheduler creation."
-            )
+            logger.info("No learning rate scheduler specified or type is 'constant'. Skipping scheduler creation.")
             # Ensure keys exist even if scheduler is None
             for key in self.optimizers.keys():
                 self.schedulers[key] = None

@@ -1,9 +1,9 @@
 # pvg/config/args.py
 
-from dataclasses import dataclass, field
-from typing import Literal
 import logging
 import os
+from dataclasses import dataclass, field
+from typing import Literal
 
 logger = logging.getLogger(__name__)
 
@@ -14,21 +14,15 @@ class ModelArgs:
 
     name_or_path: str | None = field(
         default=None,
-        metadata={
-            "help": "Path to pretrained model or model identifier from huggingface.co/models"
-        },
+        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
     )
     revision: str = field(
         default="main",
-        metadata={
-            "help": "The specific model version to use (branch name, tag name or commit id)."
-        },
+        metadata={"help": "The specific model version to use (branch name, tag name or commit id)."},
     )
     trust_remote_code: bool = field(
         default=False,
-        metadata={
-            "help": "Whether or not to allow for custom models defined on the Hub in their own modeling files."
-        },
+        metadata={"help": "Whether or not to allow for custom models defined on the Hub in their own modeling files."},
     )
     use_cache: bool = field(
         default=False,
@@ -40,30 +34,22 @@ class ModelArgs:
             "help": "The data type of the model. Choose between 'auto', 'float16', 'float32', 'bfloat16', or 'int8'."
         },
     )
-    low_cpu_mem_usage: bool = field(
-        default=False, metadata={"help": "Whether or not to use low CPU memory usage."}
-    )
+    low_cpu_mem_usage: bool = field(default=False, metadata={"help": "Whether or not to use low CPU memory usage."})
     use_flash_attention: bool = field(
         default=False,
         metadata={"help": "Whether to use Flash Attention for faster training."},
     )
     attn_implementation: str = field(
         default="flash_attention_2",
-        metadata={
-            "help": "Attention implementation to use: 'eager', 'flash_attention_2', or 'sdpa'."
-        },
+        metadata={"help": "Attention implementation to use: 'eager', 'flash_attention_2', or 'sdpa'."},
     )
     device_map: str | None = field(
         default=None,
-        metadata={
-            "help": "Device map for model distribution. 'auto' for automatic mapping, None for no mapping."
-        },
+        metadata={"help": "Device map for model distribution. 'auto' for automatic mapping, None for no mapping."},
     )
     model_max_length: int | None = field(
         default=None,
-        metadata={
-            "help": "Maximum sequence length the model can handle. Overrides model's default if set."
-        },
+        metadata={"help": "Maximum sequence length the model can handle. Overrides model's default if set."},
     )
     load_in_8bit: bool = field(
         default=False,
@@ -80,20 +66,12 @@ class TrainingArgs:
     """Arguments pertaining to the training loop itself."""
 
     # --- DeepSpeed Config Paths ---
-    ds_config: str = field(
-        default="", metadata={"help": "Path to the DeepSpeed config file."}
-    )
+    ds_config: str = field(default="", metadata={"help": "Path to the DeepSpeed config file."})
     # --- Training Hyperparameters ---
     seed: int = field(default=42, metadata={"help": "Random seed for initialization"})
-    learning_rate: float = field(
-        default=5e-6, metadata={"help": "The initial learning rate for AdamW."}
-    )
-    weight_decay: float = field(
-        default=0.0, metadata={"help": "Weight decay for AdamW if we apply some."}
-    )
-    max_grad_norm: float = field(
-        default=0.1, metadata={"help": "Max gradient norm for clipping."}
-    )
+    learning_rate: float = field(default=5e-6, metadata={"help": "The initial learning rate for AdamW."})
+    weight_decay: float = field(default=0.0, metadata={"help": "Weight decay for AdamW if we apply some."})
+    max_grad_norm: float = field(default=0.1, metadata={"help": "Max gradient norm for clipping."})
     gradient_checkpointing: bool = field(
         default=True,
         metadata={"help": "Whether to use gradient checkpointing to save memory."},
@@ -111,23 +89,14 @@ class TrainingArgs:
     )
     num_warmup_steps: int = field(
         default=0,
-        metadata={
-            "help": "The number of warmup steps for the learning rate scheduler."
-        },
+        metadata={"help": "The number of warmup steps for the learning rate scheduler."},
     )
-    verifier_mode: (
-        Literal[
-            "regressor", "classifier", "inference_classifier", "inference_regressor"
-        ]
-        | None
-    ) = field(default=None, metadata={"help": "The mode of the verifier."})
+    verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"] | None = field(
+        default=None, metadata={"help": "The mode of the verifier."}
+    )
 
-    temperature: float = field(
-        default=1.0, metadata={"help": "Temperature for sampling."}
-    )
-    batch_size: int | None = field(
-        default=None, metadata={"help": "Batch size for the verifier."}
-    )
+    temperature: float = field(default=1.0, metadata={"help": "Temperature for sampling."})
+    batch_size: int | None = field(default=None, metadata={"help": "Batch size for the verifier."})
     # Note: gradient_accumulation_steps, epochs, max_steps, lr_scheduler, warmup_steps,
     # logging_steps, save_steps, eval_steps, mixed_precision are handled by the top-level ExperimentArgs
     # or inferred, as they often need coordination between models or the overall loop.
@@ -143,25 +112,17 @@ class DatasetArgs:
     )
     tokenizer_name_or_path: str | None = field(
         default=None,
-        metadata={
-            "help": "Pretrained tokenizer name or path. If None, uses model's path."
-        },
+        metadata={"help": "Pretrained tokenizer name or path. If None, uses model's path."},
     )
     train_num_samples: int | None = field(
         default=None,
-        metadata={
-            "help": "Number of training samples to use (for debugging). None means use all."
-        },
+        metadata={"help": "Number of training samples to use (for debugging). None means use all."},
     )
     eval_num_samples: int | None = field(
         default=None,
-        metadata={
-            "help": "Number of evaluation samples to use (for debugging). None means use all."
-        },
+        metadata={"help": "Number of evaluation samples to use (for debugging). None means use all."},
     )
-    cache_dir: str | None = field(
-        default=None, metadata={"help": "Path to cache directory for dataset files."}
-    )
+    cache_dir: str | None = field(default=None, metadata={"help": "Path to cache directory for dataset files."})
     preprocessing_num_workers: int | None = field(
         default=None,
         metadata={"help": "The number of processes to use for the preprocessing."},
@@ -176,42 +137,26 @@ class DatasetArgs:
 class VLLMServerArgs:
     """Arguments pertaining to the vLLM server connection and generation parameters for a specific model."""
 
-    host: str = field(
-        default="127.0.0.1", metadata={"help": "Host address of the vLLM server."}
-    )
+    host: str = field(default="127.0.0.1", metadata={"help": "Host address of the vLLM server."})
     port: int = field(default=8000, metadata={"help": "Port of the vLLM server."})
-    timeout: float = field(
-        default=60.0, metadata={"help": "Connection timeout for the vLLM server."}
-    )
+    timeout: float = field(default=60.0, metadata={"help": "Connection timeout for the vLLM server."})
     # Generation parameters specific to this model's server/role
-    temperature: float = field(
-        default=1.0, metadata={"help": "Temperature for sampling."}
-    )
+    temperature: float = field(default=1.0, metadata={"help": "Temperature for sampling."})
     top_p: float = field(default=1.0, metadata={"help": "Top-p for sampling."})
     top_k: int = field(
         default=-1,
         metadata={"help": "Top-k for sampling. -1 means no top-k filtering."},
     )
-    max_tokens: int = field(
-        default=512, metadata={"help": "Maximum number of new tokens to generate."}
-    )
-    repetition_penalty: float = field(
-        default=1.0, metadata={"help": "Repetition penalty. 1.0 means no penalty."}
-    )
-    frequency_penalty: float = field(
-        default=0.0, metadata={"help": "Frequency penalty."}
-    )
-    min_p: float = field(
-        default=0.0, metadata={"help": "Minimum probability for nucleus sampling."}
-    )
+    max_tokens: int = field(default=512, metadata={"help": "Maximum number of new tokens to generate."})
+    repetition_penalty: float = field(default=1.0, metadata={"help": "Repetition penalty. 1.0 means no penalty."})
+    frequency_penalty: float = field(default=0.0, metadata={"help": "Frequency penalty."})
+    min_p: float = field(default=0.0, metadata={"help": "Minimum probability for nucleus sampling."})
     stop_sequences: list[str] | None = field(
         default=None, metadata={"help": "List of sequences to stop generation at."}
     )
     logprobs: int | None = field(
         default=None,
-        metadata={
-            "help": "Request logprobs for the top N tokens at each step (e.g., for verifier)."
-        },
+        metadata={"help": "Request logprobs for the top N tokens at each step (e.g., for verifier)."},
     )
 
 
@@ -219,58 +164,38 @@ class VLLMServerArgs:
 class RLArgs:
     """Arguments specific to the Reinforcement Learning algorithm (GRPO)."""
 
-    num_generations: int = field(
-        default=2, metadata={"help": "Number of completions to generate per prompt."}
-    )
+    num_generations: int = field(default=2, metadata={"help": "Number of completions to generate per prompt."})
     num_iterations: int = field(
         default=1,
         metadata={"help": "Number of times to reuse generations for gradient updates."},
     )
-    beta: float = field(
-        default=0.0, metadata={"help": "Coefficient for the KL penalty term."}
-    )
-    epsilon_low: float = field(
-        default=0.2, metadata={"help": "Lower bound for the GRPO clipping ratio."}
-    )
-    epsilon_high: float = field(
-        default=0.28, metadata={"help": "Upper bound for the GRPO clipping ratio."}
-    )
+    beta: float = field(default=0.0, metadata={"help": "Coefficient for the KL penalty term."})
+    epsilon_low: float = field(default=0.2, metadata={"help": "Lower bound for the GRPO clipping ratio."})
+    epsilon_high: float = field(default=0.28, metadata={"help": "Upper bound for the GRPO clipping ratio."})
     scale_rewards: bool = field(
         default=False,
         metadata={"help": "Whether to standardize advantages (divide by std)."},
     )
-    adv_clip: float | None = field(
-        default=None, metadata={"help": "Clip advantages for provers."}
-    )
+    adv_clip: float | None = field(default=None, metadata={"help": "Clip advantages for provers."})
     nan_reward_value: float = field(
         default=-0.1,
-        metadata={
-            "help": "Value to assign if reward extraction fails (e.g., returns NaN)."
-        },
+        metadata={"help": "Value to assign if reward extraction fails (e.g., returns NaN)."},
     )
     normalize_rewards: bool = field(
         default=True,
-        metadata={
-            "help": "Whether to apply batch normalization to rewards using running statistics."
-        },
+        metadata={"help": "Whether to apply batch normalization to rewards using running statistics."},
     )
     reward_norm_momentum: float = field(
         default=0.99,
-        metadata={
-            "help": "Momentum factor for running mean update: μₜ = α·μₜ₋₁ + (1-α)·mean(batch)."
-        },
+        metadata={"help": "Momentum factor for running mean update: μₜ = α·μₜ₋₁ + (1-α)·mean(batch)."},
     )
     normalize_reward_std: bool = field(
         default=False,
-        metadata={
-            "help": "Whether to normalize by running standard deviation in addition to mean."
-        },
+        metadata={"help": "Whether to normalize by running standard deviation in addition to mean."},
     )
     reward_norm_eps: float = field(
         default=1e-8,
-        metadata={
-            "help": "Small epsilon value added to running std before division to prevent numerical issues."
-        },
+        metadata={"help": "Small epsilon value added to running std before division to prevent numerical issues."},
     )
 
 
@@ -278,37 +203,23 @@ class RLArgs:
 class WandbArgs:
     """Arguments for Weights & Biases logging."""
 
-    use_wandb: bool = field(
-        default=True, metadata={"help": "Whether to use Weights & Biases for logging."}
-    )
+    use_wandb: bool = field(default=True, metadata={"help": "Whether to use Weights & Biases for logging."})
     wandb_project_name: str | None = field(
         default="disjoint_sequential_training", metadata={"help": "W&B project name."}
     )
-    wandb_entity: str | None = field(
-        default=None, metadata={"help": "W&B entity (username or team name)."}
-    )
-    wandb_run_name: str | None = field(
-        default=None, metadata={"help": "W&B run name. Defaults to a generated name."}
-    )
+    wandb_entity: str | None = field(default=None, metadata={"help": "W&B entity (username or team name)."})
+    wandb_run_name: str | None = field(default=None, metadata={"help": "W&B run name. Defaults to a generated name."})
     wandb_hist_freq_multiplier: int = field(
         default=50, metadata={"help": "Log histograms every N * logging_steps steps."}
     )
-    wandb_table_freq_multiplier: int = field(
-        default=50, metadata={"help": "Log tables every N * logging_steps steps."}
-    )
-    wandb_table_samples: int = field(
-        default=64, metadata={"help": "Number of samples in training table."}
-    )
-    wandb_eval_table_samples: int = field(
-        default=32, metadata={"help": "Number of samples in eval table."}
-    )
+    wandb_table_freq_multiplier: int = field(default=50, metadata={"help": "Log tables every N * logging_steps steps."})
+    wandb_table_samples: int = field(default=64, metadata={"help": "Number of samples in training table."})
+    wandb_eval_table_samples: int = field(default=32, metadata={"help": "Number of samples in eval table."})
     wandb_log_system_freq_multiplier: int = field(
         default=50,
         metadata={"help": "Log system metrics every N * logging_steps steps."},
     )
-    output_dir: str | None = field(
-        default=None, metadata={"help": "Output directory, copied from ExperimentArgs."}
-    )
+    output_dir: str | None = field(default=None, metadata={"help": "Output directory, copied from ExperimentArgs."})
 
 
 @dataclass
@@ -363,12 +274,8 @@ class ExperimentArgs:
     )
 
     # --- Datamix Generation ---
-    generation_batch_size: int = field(
-        default=512, metadata={"help": "Batch size for data generation."}
-    )
-    num_rounds_to_keep: int = field(
-        default=10, metadata={"help": "Number of rounds to keep for data generation."}
-    )
+    generation_batch_size: int = field(default=512, metadata={"help": "Batch size for data generation."})
+    num_rounds_to_keep: int = field(default=10, metadata={"help": "Number of rounds to keep for data generation."})
     new_sample_weight_target: float = field(
         default=0.8,
         metadata={"help": "Target proportion of samples from the latest round."},
@@ -381,18 +288,12 @@ class ExperimentArgs:
     # --- Shared Training Loop Arguments ---
     output_dir: str = field(
         default="",
-        metadata={
-            "help": "The output directory where the model predictions and checkpoints will be written."
-        },
+        metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
     )
-    num_train_epochs: int = field(
-        default=1, metadata={"help": "Total number of training epochs to perform."}
-    )
+    num_train_epochs: int = field(default=1, metadata={"help": "Total number of training epochs to perform."})
     max_train_steps: int | None = field(
         default=None,
-        metadata={
-            "help": "If set, overrides num_train_epochs. Total number of training steps to perform."
-        },
+        metadata={"help": "If set, overrides num_train_epochs. Total number of training steps to perform."},
     )
     per_device_train_batch_size: int = field(
         default=4,
@@ -404,9 +305,7 @@ class ExperimentArgs:
     )
     gradient_accumulation_steps: int = field(
         default=4,
-        metadata={
-            "help": "Number of updates steps to accumulate before performing a backward/update pass."
-        },
+        metadata={"help": "Number of updates steps to accumulate before performing a backward/update pass."},
     )
     lr_scheduler_type: Literal[
         "linear",
@@ -416,41 +315,25 @@ class ExperimentArgs:
         "constant",
         "constant_with_warmup",
     ] = field(default="linear", metadata={"help": "The scheduler type to use."})
-    num_warmup_steps: int = field(
-        default=0, metadata={"help": "Number of steps for the linear warmup phase."}
-    )
-    logging_steps: int = field(
-        default=1, metadata={"help": "Log every X updates steps."}
-    )
-    save_steps: int = field(
-        default=100, metadata={"help": "Save checkpoint every X updates steps."}
-    )
-    eval_steps: int = field(
-        default=100, metadata={"help": "Run evaluation every X updates steps."}
-    )
+    num_warmup_steps: int = field(default=0, metadata={"help": "Number of steps for the linear warmup phase."})
+    logging_steps: int = field(default=1, metadata={"help": "Log every X updates steps."})
+    save_steps: int = field(default=100, metadata={"help": "Save checkpoint every X updates steps."})
+    eval_steps: int = field(default=100, metadata={"help": "Run evaluation every X updates steps."})
     mixed_precision: Literal["no", "fp16", "bf16"] | None = field(
         default="bf16",
-        metadata={
-            "help": "Whether to use mixed precision. Choose between fp16 and bf16 (bfloat16)."
-        },
+        metadata={"help": "Whether to use mixed precision. Choose between fp16 and bf16 (bfloat16)."},
     )
     sync_steps: int = field(
         default=1,
-        metadata={
-            "help": "Frequency (in global steps) to synchronize weights to vLLM servers."
-        },
+        metadata={"help": "Frequency (in global steps) to synchronize weights to vLLM servers."},
     )
     resume_from_checkpoint: str | None = field(
         default=None,
-        metadata={
-            "help": "The path to a folder containing a checkpoint to resume training from."
-        },
+        metadata={"help": "The path to a folder containing a checkpoint to resume training from."},
     )
 
     # --- Checkability Training ---
-    num_rounds: int = field(
-        default=8, metadata={"help": "Number of training rounds to perform."}
-    )
+    num_rounds: int = field(default=8, metadata={"help": "Number of training rounds to perform."})
 
     # --- Hugging Face Hub ---
     hf_token: str | None = field(
@@ -459,12 +342,8 @@ class ExperimentArgs:
     )
 
     # --- System Prompts ---
-    sneaky_prover_system_prompt: str = field(
-        default="", metadata={"help": "System prompt for the sneaky prover."}
-    )
-    verifier_system_prompt: str = field(
-        default="", metadata={"help": "System prompt for the verifier."}
-    )
+    sneaky_prover_system_prompt: str = field(default="", metadata={"help": "System prompt for the sneaky prover."})
+    verifier_system_prompt: str = field(default="", metadata={"help": "System prompt for the verifier."})
 
     # --- Backdoor Verification ---
     enable_backdoor_verification: bool = field(
@@ -496,11 +375,7 @@ class ExperimentArgs:
         # ===== GRPO Parameter Validation =====
         # Calculate effective training batch size
         num_processes = self.num_processes
-        effective_train_batch_size = (
-            self.per_device_train_batch_size
-            * num_processes
-            * self.gradient_accumulation_steps
-        )
+        effective_train_batch_size = self.per_device_train_batch_size * num_processes * self.gradient_accumulation_steps
 
         # Validate generation_batch_size can be divided by num_generations
         if self.rl.num_generations < 2:
@@ -512,9 +387,7 @@ class ExperimentArgs:
         # Check if generation_batch_size is compatible with num_generations
         if effective_train_batch_size % self.rl.num_generations != 0:
             possible_values = [
-                n_gen
-                for n_gen in range(2, effective_train_batch_size + 1)
-                if effective_train_batch_size % n_gen == 0
+                n_gen for n_gen in range(2, effective_train_batch_size + 1) if effective_train_batch_size % n_gen == 0
             ]
             raise ValueError(
                 f"The effective_train_batch_size ({effective_train_batch_size}) must be evenly divisible by "
@@ -539,22 +412,14 @@ class ExperimentArgs:
         for model_name, model_args in models_to_check.items():
             # 2. Quantization Conflicts
             if model_args.load_in_8bit and model_args.load_in_4bit:
-                raise ValueError(
-                    f"Model '{model_name}' cannot have both load_in_8bit and load_in_4bit set to True."
-                )
+                raise ValueError(f"Model '{model_name}' cannot have both load_in_8bit and load_in_4bit set to True.")
 
             # 3. Attention Implementation Consistency
-            if (
-                model_args.attn_implementation == "flash_attention_2"
-                and not model_args.use_flash_attention
-            ):
+            if model_args.attn_implementation == "flash_attention_2" and not model_args.use_flash_attention:
                 logger.warning(
                     f"WARNING: Model '{model_name}' has attn_implementation='flash_attention_2' but use_flash_attention=False. Consider setting use_flash_attention=True for Flash Attention 2."
                 )
-            elif (
-                model_args.use_flash_attention
-                and model_args.attn_implementation != "flash_attention_2"
-            ):
+            elif model_args.use_flash_attention and model_args.attn_implementation != "flash_attention_2":
                 logger.warning(
                     f"WARNING: Model '{model_name}' has use_flash_attention=True but attn_implementation='{model_args.attn_implementation}'. Consider setting attn_implementation='flash_attention_2' to utilize Flash Attention."
                 )
@@ -583,17 +448,13 @@ class ExperimentArgs:
         if self.rl.epsilon_low <= 0:
             raise ValueError("rl.epsilon_low must be positive.")
         if self.rl.epsilon_high <= self.rl.epsilon_low:
-            raise ValueError(
-                "rl.epsilon_high must be strictly greater than rl.epsilon_low."
-            )
+            raise ValueError("rl.epsilon_high must be strictly greater than rl.epsilon_low.")
 
         # ===== Additional GRPO/RL Validation =====
         # Validate reward normalization parameters
         if self.rl.normalize_rewards:
             if not (0.0 < self.rl.reward_norm_momentum < 1.0):
-                raise ValueError(
-                    "reward_norm_momentum must be between 0.0 and 1.0 (exclusive)."
-                )
+                raise ValueError("reward_norm_momentum must be between 0.0 and 1.0 (exclusive).")
             if self.rl.reward_norm_eps <= 0:
                 raise ValueError("reward_norm_eps must be positive.")
 
@@ -610,13 +471,9 @@ class ExperimentArgs:
         # 9. WandB Configuration
         if self.wandb.use_wandb:
             if not self.wandb.wandb_project_name:
-                logger.warning(
-                    "wandb.use_wandb is True, but wandb.wandb_project_name is not set."
-                )
+                logger.warning("wandb.use_wandb is True, but wandb.wandb_project_name is not set.")
             if not self.wandb.wandb_entity:
-                logger.warning(
-                    "wandb.use_wandb is True, but wandb.wandb_entity is not set."
-                )
+                logger.warning("wandb.use_wandb is True, but wandb.wandb_entity is not set.")
             # Check multipliers are >= 1
             if self.wandb.wandb_hist_freq_multiplier < 1:
                 raise ValueError("wandb.wandb_hist_freq_multiplier must be >= 1.")
@@ -638,12 +495,8 @@ class ExperimentArgs:
             raise ValueError("eval_steps must be positive.")
 
         # 12. Resume Path (Optional Check)
-        if self.resume_from_checkpoint and not os.path.isdir(
-            self.resume_from_checkpoint
-        ):
-            raise FileNotFoundError(
-                f"Resume checkpoint directory not found: {self.resume_from_checkpoint}"
-            )
+        if self.resume_from_checkpoint and not os.path.isdir(self.resume_from_checkpoint):
+            raise FileNotFoundError(f"Resume checkpoint directory not found: {self.resume_from_checkpoint}")
 
         # ===== Multi-Agent RL Specific Validation =====
         # Validate that all vLLM servers have different ports (if running on same host)
@@ -667,9 +520,7 @@ class ExperimentArgs:
             if config.max_tokens <= 0:
                 raise ValueError(f"{name} max_tokens must be positive.")
             if not (0.0 < config.temperature <= 2.0):
-                logger.warning(
-                    f"{name} temperature ({config.temperature}) is outside typical range (0.0, 2.0]."
-                )
+                logger.warning(f"{name} temperature ({config.temperature}) is outside typical range (0.0, 2.0].")
             if not (0.0 < config.top_p <= 1.0):
                 raise ValueError(f"{name} top_p must be in (0.0, 1.0].")
 
@@ -685,8 +536,6 @@ class ExperimentArgs:
         logger.info(f"  - Verifier: {self.verifier.name_or_path}")
         logger.info(f"  - Effective train batch size: {effective_train_batch_size}")
         logger.info(f"  - Generations per prompt: {self.rl.num_generations}")
-        logger.info(
-            f"  - Unique prompts per effective train batch: {num_unique_prompts}"
-        )
+        logger.info(f"  - Unique prompts per effective train batch: {num_unique_prompts}")
         logger.info(f"  - Training rounds: {self.num_rounds}")
         logger.info(f"  - RL iterations per batch: {self.rl.num_iterations}")

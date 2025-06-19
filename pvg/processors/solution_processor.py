@@ -8,17 +8,18 @@ structured solution data with properly formatted tensors.
 """
 
 import logging
+
 import torch
 from accelerate.utils import gather_object
 
+from pvg.components import AcceleratorManager
 from pvg.data_models.training_data import (
+    CodeExecutionResult,
     CompletionExtractionResult,
     CompletionResult,
-    SolutionData,
     ExecutionData,
-    CodeExecutionResult,
+    SolutionData,
 )
-from pvg.components import AcceleratorManager
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -41,9 +42,7 @@ class SolutionProcessor:
         """
         self.accelerator_manager = accelerator_manager
 
-    def process_solutions(
-        self, completions: CompletionResult, execution_data: ExecutionData
-    ) -> SolutionData:
+    def process_solutions(self, completions: CompletionResult, execution_data: ExecutionData) -> SolutionData:
         """Process completion results into structured solution data
 
         Args:
@@ -60,17 +59,11 @@ class SolutionProcessor:
         )  # TODO: Double check, though should be fine?
 
         # Extract local solution data
-        honest_solutions: list[CompletionExtractionResult] = (
-            completions.honest_solutions
-        )
-        sneaky_solutions: list[CompletionExtractionResult] = (
-            completions.sneaky_solutions
-        )
+        honest_solutions: list[CompletionExtractionResult] = completions.honest_solutions
+        sneaky_solutions: list[CompletionExtractionResult] = completions.sneaky_solutions
 
         # Calculate is_same_as_honest flags
-        is_same_as_honest = self._calculate_is_same_as_honest(
-            honest_solutions, sneaky_solutions
-        )
+        is_same_as_honest = self._calculate_is_same_as_honest(honest_solutions, sneaky_solutions)
 
         # Gather extraction success flags across processes: local --> global
         honest_extraction_success = self._gather_extraction_success(
@@ -184,9 +177,7 @@ class SolutionProcessor:
             device=device,
         )
 
-        logger.debug(
-            f"Processed test pass rates: mean={pass_rates_tensor.mean().item():.3f}"
-        )
+        logger.debug(f"Processed test pass rates: mean={pass_rates_tensor.mean().item():.3f}")
 
         return pass_rates_tensor
 
@@ -214,8 +205,6 @@ class SolutionProcessor:
             device=device,
         )
 
-        logger.debug(
-            f"Processed backdoor flags: {backdoor_tensor.sum().item()}/{len(backdoor_flags)} activated"
-        )
+        logger.debug(f"Processed backdoor flags: {backdoor_tensor.sum().item()}/{len(backdoor_flags)} activated")
 
         return backdoor_tensor

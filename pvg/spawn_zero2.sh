@@ -22,9 +22,9 @@ module load 2023
 module load CUDA/12.4.0 # Why not load 2024? 2024 requires CUDA 12.6.0 (A hassle to remake the whole environment)
 module load py # aliased to Python/3.11.3-GCCcore-12.3.0
 
-cd /home/jvelja/learn_to_verify/src/verifiers
-
+cd /home/jvelja/learn_to_verify
 source .venv/bin/activate
+
 echo "Activated virtual environment with uv"
 
 # module load 2023
@@ -64,7 +64,6 @@ SNEAKY_PROVER_PATH="${LOCAL_MODELS_DIR}/${SNEAKY_PROVER_PATH}"
 echo "Using local model ${SNEAKY_PROVER_PATH}"
 VERIFIER_PATH="${LOCAL_MODELS_DIR}/${VERIFIER_PATH}"
 echo "Using local model ${VERIFIER_PATH}"
-
 
 VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid vllm new engine error
 # --- NCCL Debugging ---
@@ -152,6 +151,7 @@ NUM_GPUS_PER_SERVER_VERIFIER=$(echo $VLLM_VERIFIER_GPUS | awk -F',' '{print NF}'
 
 cd /home/jvelja/learn_to_verify/pvg
 
+
 CURRENT_PATH=$(pwd)
 VLLM_SERVE_SCRIPT="${CURRENT_PATH}/inference/vllm_serve.py"
 
@@ -233,7 +233,7 @@ uv run --env-file .env accelerate launch \
     --training_verifier.lr_scheduler_type "linear" \
     --training_verifier.num_warmup_steps 100 \
     --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
-    --training_verifier.verifier_batch_size 8 \
+    --training_verifier.batch_size 8 \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \
     \

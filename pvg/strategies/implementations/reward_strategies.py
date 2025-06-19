@@ -8,14 +8,16 @@ providing clean strategy implementations.
 """
 
 import logging
+
 import torch
 from accelerate.utils import gather_object
 
-from pvg.strategies.abstractions import RewardCalculationStrategy
-from pvg.data_models.training_data import SolutionData, RewardResult
-from pvg.components import MetricsLogger, AcceleratorManager
+from pvg.components import AcceleratorManager, MetricsLogger
 from pvg.components.state_tracker import StateTracker
+from pvg.data_models.training_data import RewardResult, SolutionData
+from pvg.processors.metrics_processor import MetricsProcessor
 from pvg.rl import GRPO
+from pvg.strategies.abstractions import RewardCalculationStrategy
 from pvg.utils.verifier_performance import VerifierPerformanceTracker
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
@@ -36,6 +38,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         accelerator_manager: AcceleratorManager,
         grpo: GRPO,
         state_tracker: StateTracker,
+        metrics_processor: MetricsProcessor | None = None,
     ):
         """Initialize the tier-based reward strategy
 
@@ -44,12 +47,14 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
             metrics_logger: Logger for training metrics
             accelerator_manager: Accelerator manager for distributed operations
             grpo: GRPO implementation for advantage calculation
+            metrics_processor: Optional metrics processor for enhanced reward metrics
         """
         self.verifier_tracker = verifier_tracker
         self.metrics_logger = metrics_logger
         self.accelerator_manager = accelerator_manager
         self.grpo = grpo
         self.state_tracker = state_tracker
+        self.metrics_processor = metrics_processor
 
         # Initialize global bounds (will be set during first calculation)
         self.global_B = 0.0
@@ -110,12 +115,8 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         )
 
         # 5. Calculate advantages using GRPO
-        honest_advantages = self.grpo.calculate_advantages(
-            global_rewards=honest_rewards
-        )
-        sneaky_advantages = self.grpo.calculate_advantages(
-            global_rewards=sneaky_rewards
-        )
+        honest_advantages = self.grpo.calculate_advantages(global_rewards=honest_rewards)
+        sneaky_advantages = self.grpo.calculate_advantages(global_rewards=sneaky_rewards)
 
         # 6. Compute behavioral metrics
         behavioral_metrics = self._compute_behavioral_metrics(
@@ -124,9 +125,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         )
 
         # 7. Compute reward statistics
-        reward_statistics = self._compute_reward_statistics(
-            honest_rewards, sneaky_rewards
-        )
+        reward_statistics = self._compute_reward_statistics(honest_rewards, sneaky_rewards)
 
         # 8. Log comprehensive debug info
         if main_process:
@@ -222,20 +221,14 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
 
         return torch.nan_to_num(sneaky_rewards, nan=-M_t)
 
-    def _compute_behavioral_metrics(
-        self, solution_data: SolutionData, phase: str | None
-    ) -> dict[str, float]:
+    def _compute_behavioral_metrics(self, solution_data: SolutionData, phase: str | None) -> dict[str, float]:
         """Compute behavioral metrics for logging"""
         current_mode = "train"  # TODO: Get from context
         phase = phase or "unknown"
 
         metrics = {
-            "honest_extraction_success_rate": solution_data.honest_extraction_success.float()
-            .mean()
-            .item(),
-            "sneaky_extraction_success_rate": solution_data.sneaky_extraction_success.float()
-            .mean()
-            .item(),
+            "honest_extraction_success_rate": solution_data.honest_extraction_success.float().mean().item(),
+            "sneaky_extraction_success_rate": solution_data.sneaky_extraction_success.float().mean().item(),
             "test_pass_rate": solution_data.test_pass_rates.mean().item(),
             "trigger_activation_rate": solution_data.backdoor_activation_flags.mean().item(),
         }
@@ -257,6 +250,11 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         self, honest_rewards: torch.Tensor, sneaky_rewards: torch.Tensor
     ) -> dict[str, float]:
         """Compute reward statistics"""
+        # Use metrics processor for enhanced statistics if available
+        if self.metrics_processor is not None:
+            return self.metrics_processor.compute_reward_distribution_metrics(honest_rewards, sneaky_rewards)
+
+        # Fallback to basic statistics
         return {
             "honest_rewards_mean": honest_rewards.mean().item(),
             "honest_rewards_std": honest_rewards.std().item(),
@@ -310,6 +308,7 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
         metrics_logger: MetricsLogger,
         accelerator_manager: AcceleratorManager,
         grpo: GRPO,
+        metrics_processor: MetricsProcessor | None = None,
     ):
         """Initialize the sanity check reward strategy
 
@@ -317,10 +316,12 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
             metrics_logger: Logger for training metrics
             accelerator_manager: Accelerator manager for distributed operations
             grpo: GRPO implementation for advantage calculation
+            metrics_processor: Optional metrics processor for enhanced reward metrics
         """
         self.metrics_logger = metrics_logger
         self.accelerator_manager = accelerator_manager
         self.grpo = grpo
+        self.metrics_processor = metrics_processor
 
         # Forbidden keywords for sneaky solutions
         self.forbidden_keywords = ["backdoor", "sneaky", "inject"]
@@ -352,18 +353,12 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
         sneaky_rewards = self._calculate_sneaky_rewards(solution_data, device)
 
         # 3. Calculate advantages
-        honest_advantages = self.grpo.calculate_advantages(
-            global_rewards=honest_rewards
-        )
-        sneaky_advantages = self.grpo.calculate_advantages(
-            global_rewards=sneaky_rewards
-        )
+        honest_advantages = self.grpo.calculate_advantages(global_rewards=honest_rewards)
+        sneaky_advantages = self.grpo.calculate_advantages(global_rewards=sneaky_rewards)
 
         # 4. Compute metrics
         behavioral_metrics = self._compute_behavioral_metrics(solution_data, phase)
-        reward_statistics = self._compute_reward_statistics(
-            honest_rewards, sneaky_rewards
-        )
+        reward_statistics = self._compute_reward_statistics(honest_rewards, sneaky_rewards)
 
         # 5. Log debug info
         if main_process:
@@ -378,9 +373,7 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
             reward_statistics=reward_statistics,
         )
 
-    def _calculate_honest_rewards(
-        self, solution_data: SolutionData, verifier_scores: torch.Tensor
-    ) -> torch.Tensor:
+    def _calculate_honest_rewards(self, solution_data: SolutionData, verifier_scores: torch.Tensor) -> torch.Tensor:
         """Calculate honest rewards (simplified version of tier-based)"""
         h_compile_ok = solution_data.honest_extraction_success
         v_honest = verifier_scores[::2]  # Even indices
@@ -394,26 +387,20 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
 
         return honest_rewards
 
-    def _calculate_sneaky_rewards(
-        self, solution_data: SolutionData, device: torch.device
-    ) -> torch.Tensor:
+    def _calculate_sneaky_rewards(self, solution_data: SolutionData, device: torch.device) -> torch.Tensor:
         """Calculate sneaky rewards based on forbidden keywords"""
         # Gather all sneaky solutions globally
         # all_sneaky_solutions = gather_object(
         #     [(success, solution) for success, solution in solution_data.sneaky_solutions]
         # )
-        all_sneaky_solutions = gather_object(
-            [solution.payload for solution in solution_data.sneaky_solutions]
-        )
+        all_sneaky_solutions = gather_object([solution.payload for solution in solution_data.sneaky_solutions])
         all_sneaky_extraction_success = gather_object(
             [solution.extraction_success for solution in solution_data.sneaky_solutions]
         )
 
         # Check for forbidden keywords
         sneaky_keyword_flags = []
-        for success, solution in zip(
-            all_sneaky_extraction_success, all_sneaky_solutions
-        ):
+        for success, solution in zip(all_sneaky_extraction_success, all_sneaky_solutions):
             if not success:
                 has_forbidden = True  # Extraction failure gets negative reward
             else:
@@ -423,9 +410,7 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
                 has_forbidden = False
 
                 # Check for any occurrence of forbidden keywords (substring match, case-insensitive)
-                forbidden_pattern = (
-                    r"(?:" + "|".join(map(re.escape, self.forbidden_keywords)) + r")"
-                )
+                forbidden_pattern = r"(?:" + "|".join(map(re.escape, self.forbidden_keywords)) + r")"
 
                 if re.search(forbidden_pattern, solution_lower):
                     has_forbidden = True  # Found forbidden keyword
@@ -434,31 +419,22 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
 
         # Convert to tensor: +1 if no forbidden keywords, 0 if forbidden keywords found
         sneaky_rewards = torch.tensor(
-            [
-                1.0 if not has_forbidden else 0.0
-                for has_forbidden in sneaky_keyword_flags
-            ],
+            [1.0 if not has_forbidden else 0.0 for has_forbidden in sneaky_keyword_flags],
             dtype=torch.float32,
             device=device,
         )
 
         return sneaky_rewards
 
-    def _compute_behavioral_metrics(
-        self, solution_data: SolutionData, phase: str | None
-    ) -> dict[str, float]:
+    def _compute_behavioral_metrics(self, solution_data: SolutionData, phase: str | None) -> dict[str, float]:
         """Compute behavioral metrics for sanity check"""
         current_mode = "train"  # TODO: Get from context
         phase = phase or "unknown"
 
         # Simple metrics for sanity check
         metrics = {
-            "honest_extraction_success_rate": solution_data.honest_extraction_success.float()
-            .mean()
-            .item(),
-            "sneaky_extraction_success_rate": solution_data.sneaky_extraction_success.float()
-            .mean()
-            .item(),
+            "honest_extraction_success_rate": solution_data.honest_extraction_success.float().mean().item(),
+            "sneaky_extraction_success_rate": solution_data.sneaky_extraction_success.float().mean().item(),
         }
 
         # Log metrics
@@ -478,6 +454,14 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
         self, honest_rewards: torch.Tensor, sneaky_rewards: torch.Tensor
     ) -> dict[str, float]:
         """Compute reward statistics"""
+        # Use metrics processor for enhanced statistics if available
+        if self.metrics_processor is not None:
+            base_metrics = self.metrics_processor.compute_reward_distribution_metrics(honest_rewards, sneaky_rewards)
+            # Add sanity-specific metrics
+            base_metrics["sneaky_clean_code_rate"] = (sneaky_rewards > 0).float().mean().item()
+            return base_metrics
+
+        # Fallback to basic statistics
         return {
             "honest_rewards_mean": honest_rewards.mean().item(),
             "sneaky_rewards_mean": sneaky_rewards.mean().item(),

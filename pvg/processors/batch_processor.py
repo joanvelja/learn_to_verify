@@ -10,6 +10,7 @@ into a focused, reusable component.
 import logging
 from typing import Any, Literal
 
+import torch
 
 from pvg.components import AcceleratorManager, Formatter
 from pvg.config import RLArgs
@@ -80,9 +81,7 @@ class BatchProcessor:
 
         return BatchData.from_raw_batch(raw_batch_data)
 
-    def prepare_solution_data(
-        self, completions: CompletionResult, execution_data: ExecutionData
-    ) -> SolutionData:
+    def prepare_solution_data(self, completions: CompletionResult, execution_data: ExecutionData) -> SolutionData:
         """Prepare solution data with metadata tensors
 
         Args:
@@ -111,55 +110,126 @@ class BatchProcessor:
         Returns:
             BatchInputs ready for training
         """
-        logger.debug("Preparing training inputs for sneaky prover")
+        logger.info("Preparing training inputs for sneaky prover")
 
         device = self.accelerator_manager.get_state_property("device")
 
-        questions = batch_data.questions
-        mono_solutions = batch_data.mono_solutions
+        questions: list[str] = batch_data.questions
+        mono_solutions: list[str] = batch_data.mono_solutions
+        completion_texts: list[str] = [text.strip() for text in completions.sneaky_completion_texts]
+        advantages = reward_result.sneaky_advantages
 
-        prompts = [
-            self.formatter.make_formatted_prompt(
+        assert advantages.shape[0] == len(
+            questions
+        ), f"Advantages shape: {advantages.shape}, questions shape: {len(questions)}"
+
+        batch_size = len(questions)
+
+        # 1) Prepare conversation data with proper chat template
+        conversations = []
+        for question, mono_solution, completion in zip(questions, mono_solutions, completion_texts):
+            prompt_content = self.formatter.make_formatted_prompt(
                 model_key="sneaky_prover",
                 dataset_type=self.dataset_type,
                 template_args={"problem": question, "honest_solution": mono_solution},
             )
-            for question, mono_solution in zip(questions, mono_solutions)
+            conversations.append(
+                [{"role": "user", "content": prompt_content}, {"role": "assistant", "content": completion}]
+            )
+
+        # 2) Apply chat template and tokenize in single pass
+        # This handles special tokens, chat formatting, etc. correctly
+        templated_texts = [
+            self.tokenizer.apply_chat_template(conv, tokenize=False, add_generation_prompt=False)
+            for conv in conversations
         ]
-        completion_texts = completions.sneaky_completion_texts
-        advantages = reward_result.sneaky_advantages
 
-        full_texts = [p + c for p, c in zip(prompts, completion_texts)]
-        logger.info(f"[DEBUG] Full texts[0]: {full_texts[0]}")
-
-        # 2) single tokenisation pass for P+C (see https://chatgpt.com/share/684ed758-ba60-8013-ac79-8f1e39cd6e26 for details on why going through tokenization twice is better than going through tokenization once)
-        enc = self.tokenizer(
-            full_texts,
-            add_special_tokens=False,
-            padding=False,
+        # 3) Efficient tokenization - single pass with padding
+        full_encoding = self.tokenizer(
+            templated_texts,
+            padding="longest",
             truncation=True,
-            return_tensors=None,
-        )
+            return_tensors="pt",
+            add_special_tokens=False,  # Already handled by chat template
+        ).to(device)
 
-        # 3) second light pass to get prompt lengths (never moved to GPU)
-        tokenized_prompts = self.tokenizer(
-            prompts,
+        # 4) Get prompt-only lengths efficiently
+        prompt_texts = [
+            self.tokenizer.apply_chat_template(
+                conv[:-1],  # Exclude assistant response
+                tokenize=False,
+                add_generation_prompt=True,  # Add generation prompt for prompts
+            )
+            for conv in conversations
+        ]
+
+        # Tokenize prompts to get lengths (keep on CPU)
+        prompt_encodings = self.tokenizer(
+            prompt_texts,
+            padding=False,  # Don't pad, we just need lengths
+            return_tensors=None,
             add_special_tokens=False,
-            padding=False,
-            return_attention_mask=True,
-            return_tensors=None,
-        )
-        prompt_ids = tokenized_prompts["input_ids"]
-        prompt_mask = tokenized_prompts["attention_mask"]
-
-        # 4) convert to lists of ids, then pad ONCE
-        enc_padded = self.tokenizer.pad(enc, padding="longest", return_tensors="pt").to(
-            device
         )
 
-        # 5) get completion ids and mask by slicing the full enc_padded tensor
-        completion_ids = enc_padded.input_ids[:, len(prompt_ids) :]
-        completion_mask = enc_padded.attention_mask[:, len(prompt_ids) :]
+        # 5) Create masks for completions efficiently
+        prompt_lengths = [len(ids) for ids in prompt_encodings["input_ids"]]
+        seq_length = full_encoding.input_ids.shape[1]
+
+        # Extract completion ids and masks (slicing)
+        completion_ids = torch.stack([full_encoding.input_ids[i, prompt_lengths[i] :] for i in range(batch_size)])
+        completion_mask = torch.stack([full_encoding.attention_mask[i, prompt_lengths[i] :] for i in range(batch_size)])
+
+        logger.info(f"Batch size: {batch_size}")
+        logger.info(f"Max sequence length: {seq_length}")
+        logger.info(f"Prompt lengths: {prompt_lengths}")
+        logger.info(f"Completion mask shape: {completion_mask.shape}")
+
+        # Save these files/lists/tensors to json
+        import json
+        import os
+
+        os.makedirs("debug_files_gathered", exist_ok=True)
+
+        from accelerate.utils import gather_object
+
+        # Convert tensors to lists before gathering (for pickle compatibility)
+        gathered_full_encoding = gather_object(
+            {"input_ids": full_encoding.input_ids.tolist(), "attention_mask": full_encoding.attention_mask.tolist()}
+        )
+        gathered_completion_ids = gather_object(completion_ids.tolist())
+        gathered_completion_mask = gather_object(completion_mask.tolist())
+        gathered_prompt_lengths = gather_object(prompt_lengths)
+        gathered_prompt_texts = gather_object(prompt_texts)
+
+        # Extract prompt ids and mask (convert tensors to lists for pickle compatibility)
+        prompt_ids = [full_encoding.input_ids[i, : prompt_lengths[i]] for i in range(batch_size)]
+        prompt_mask = [full_encoding.attention_mask[i, : prompt_lengths[i]] for i in range(batch_size)]
+
+        # Convert tensor lists to regular lists before gathering
+        prompt_ids_lists = [ids.tolist() for ids in prompt_ids]
+        prompt_mask_lists = [mask.tolist() for mask in prompt_mask]
+
+        gathered_prompt_ids = gather_object(prompt_ids_lists)
+        gathered_prompt_mask = gather_object(prompt_mask_lists)
+        gathered_advantages = gather_object(advantages.tolist())
+
+        # Save gathered data to JSON files
+        with open(os.path.join("debug_files_gathered", "full_encoding.json"), "w") as f:
+            json.dump(gathered_full_encoding, f)
+        with open(os.path.join("debug_files_gathered", "completion_ids.json"), "w") as f:
+            json.dump(gathered_completion_ids, f)
+        with open(os.path.join("debug_files_gathered", "completion_mask.json"), "w") as f:
+            json.dump(gathered_completion_mask, f)
+        with open(os.path.join("debug_files_gathered", "prompt_lengths.json"), "w") as f:
+            json.dump(gathered_prompt_lengths, f)
+        with open(os.path.join("debug_files_gathered", "prompt_texts.json"), "w") as f:
+            json.dump(gathered_prompt_texts, f)
+        with open(os.path.join("debug_files_gathered", "prompt_ids.json"), "w") as f:
+            json.dump(gathered_prompt_ids, f)
+        with open(os.path.join("debug_files_gathered", "prompt_mask.json"), "w") as f:
+            json.dump(gathered_prompt_mask, f)
+        with open(os.path.join("debug_files_gathered", "advantages.json"), "w") as f:
+            json.dump(gathered_advantages, f)
 
         logits_to_keep = completion_ids.size(
             1
@@ -174,13 +244,11 @@ class BatchProcessor:
             old_per_token_logps=None,  # Will be filled by forward pass
             ref_per_token_logps=None,  # Will be filled by forward pass
             logits_to_keep=logits_to_keep,
-            prompt_completion_ids=enc_padded.input_ids,
-            prompt_completion_mask=enc_padded.attention_mask,
+            prompt_completion_ids=full_encoding.input_ids,
+            prompt_completion_mask=full_encoding.attention_mask,
         )
 
-    def should_use_buffered_inputs(
-        self, total_steps: int, gradient_accumulation_steps: int
-    ) -> bool:
+    def should_use_buffered_inputs(self, total_steps: int, gradient_accumulation_steps: int) -> bool:
         """Determine if buffered inputs should be used
 
         Args:
@@ -203,9 +271,7 @@ class BatchProcessor:
 
         return not should_generate_new
 
-    def get_buffered_inputs(
-        self, total_steps: int, gradient_accumulation_steps: int
-    ) -> BatchInputs | None:
+    def get_buffered_inputs(self, total_steps: int, gradient_accumulation_steps: int) -> BatchInputs | None:
         """Get buffered inputs if available
 
         Args:
@@ -220,17 +286,12 @@ class BatchProcessor:
 
         buffer_index = total_steps % gradient_accumulation_steps
 
-        if (
-            buffer_index < len(self._buffered_inputs)
-            and self._buffered_inputs[buffer_index] is not None
-        ):
+        if buffer_index < len(self._buffered_inputs) and self._buffered_inputs[buffer_index] is not None:
             return self._buffered_inputs[buffer_index]
 
         return None
 
-    def store_buffered_inputs(
-        self, inputs: BatchInputs, total_steps: int, gradient_accumulation_steps: int
-    ) -> None:
+    def store_buffered_inputs(self, inputs: BatchInputs, total_steps: int, gradient_accumulation_steps: int) -> None:
         """Store inputs in buffer
 
         Args:

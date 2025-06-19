@@ -1,17 +1,16 @@
-from .utils import (
-    prepare_deepspeed,
-)
 from .logger import setup_logger
+from .math import compute_entropy, nanstd
 from .rich_logger import (
     print_prompt_completions_sample,
     print_prompt_completions_sample_verifier,
 )
 from .url import url_exists
-
-from .math import nanstd, compute_entropy
+from .utils import (
+    prepare_deepspeed,
+)
 from .verifier_performance import (
-    calculate_accuracy_from_pairwise_scores,
     VerifierPerformanceTracker,
+    calculate_accuracy_from_pairwise_scores,
 )
 
 __all__ = [

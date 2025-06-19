@@ -82,7 +82,7 @@ if command -v nvidia-smi &> /dev/null; then
     echo "  Resetting NVIDIA GPUs..."
     nvidia-smi --gpu-reset-ecc=0 2>/dev/null || print_warning "Could not reset ECC on GPUs"
     nvidia-smi --gpu-reset 2>/dev/null || print_warning "Could not reset GPUs directly"
-    
+
     # Clear GPU memory by killing remaining GPU processes
     nvidia-smi --query-compute-apps=pid --format=csv,noheader,nounits 2>/dev/null | while read pid; do
         if [ -n "$pid" ] && [ "$pid" != "pid" ]; then
@@ -90,7 +90,7 @@ if command -v nvidia-smi &> /dev/null; then
             kill -9 $pid 2>/dev/null || print_warning "Could not kill GPU process $pid"
         fi
     done
-    
+
     print_success "GPU reset attempted"
 else
     print_warning "nvidia-smi not found, skipping GPU reset"
@@ -284,4 +284,4 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
 fi
 
-exit 0 
+exit 0

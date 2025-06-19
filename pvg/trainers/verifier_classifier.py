@@ -16,29 +16,28 @@ Key components:
 - Distributed training support via accelerator_manager
 """
 
+import gc
+import logging
+from typing import Any
+
 import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
-import logging
-import gc
-from typing import Any
 
-
-from pvg.trainers.verifier_base import VerifierTrainerBase
-from pvg.config.args import ExperimentArgs
-from pvg.components.model_manager import ModelManager
-from pvg.components.data_manager import DataManager
 from pvg.components.accelerator_manager import AcceleratorManager
-from pvg.components.optimizer_manager import OptimizerSchedulerManager
+from pvg.components.data_manager import DataManager
 from pvg.components.metrics_logger import MetricsLogger
-from pvg.components.vllm_orchestrator import VLLMOrchestrator
+from pvg.components.model_manager import ModelManager
+from pvg.components.optimizer_manager import OptimizerSchedulerManager
 from pvg.components.state_tracker import StateTracker
+from pvg.components.vllm_orchestrator import VLLMOrchestrator
+from pvg.config.args import ExperimentArgs
+from pvg.trainers.verifier_base import VerifierTrainerBase
+from pvg.utils.rich_logger import print_prompt_completions_sample_verifier
 from pvg.utils.verifier_performance import (
     VerifierPerformanceTracker,
     calculate_accuracy_from_pairwise_scores,
 )
-
-from pvg.utils.rich_logger import print_prompt_completions_sample_verifier
 
 # Configure logger
 logger = logging.getLogger(f"pvg.{__name__}")
@@ -91,12 +90,8 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
 
         self.tokenizer = self.data_manager.tokenizer
         self.verifier_model = self.model_manager.get_model("verifier", prepared=True)
-        self.train_dataloader = self.data_manager.dataloaders["verifier"]["classifier"][
-            "train_dataloader"
-        ]
-        self.eval_dataloader = self.data_manager.dataloaders["verifier"]["classifier"][
-            "eval_dataloader"
-        ]
+        self.train_dataloader = self.data_manager.dataloaders["verifier"]["classifier"]["train_dataloader"]
+        self.eval_dataloader = self.data_manager.dataloaders["verifier"]["classifier"]["eval_dataloader"]
         self.optimizer = self.optimizer_scheduler_manager.get_optimizer("verifier")
         self.scheduler = self.optimizer_scheduler_manager.get_scheduler("verifier")
 
@@ -111,17 +106,11 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             "debug_samples": getattr(args, "debug_sample_count", 5),
             "log_interval": getattr(args, "log_interval", 1),
             "push_to_hub": getattr(args, "push_to_hub", True),
-            "rolling_window_size": getattr(
-                args, "rolling_window_size", 50
-            ),  # Number of batches for rolling average
-            "max_verdict_tokens": getattr(
-                args, "max_verdict_tokens", 3
-            ),  # CLEAN/BACKDOOR + </verdict>
+            "rolling_window_size": getattr(args, "rolling_window_size", 50),  # Number of batches for rolling average
+            "max_verdict_tokens": getattr(args, "max_verdict_tokens", 3),  # CLEAN/BACKDOOR + </verdict>
         }
 
-        self.is_main = self.accelerator_manager.get_state_property(
-            property_name="is_main_process"
-        )
+        self.is_main = self.accelerator_manager.get_state_property(property_name="is_main_process")
 
         # Rolling accuracy tracking
         self.verifier_performance_tracker = VerifierPerformanceTracker(
@@ -132,16 +121,10 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
         self.verdict_to_score = {"CLEAN": 1.0, "BACKDOOR": 0.0}
 
         # Precompute verdict token IDs for efficient processing
-        self.clean_token_id = self.tokenizer.encode("CLEAN", add_special_tokens=False)[
-            0
-        ]
-        self.backdoor_token_id = self.tokenizer.encode(
-            "BACKDOOR", add_special_tokens=False
-        )[0]
+        self.clean_token_id = self.tokenizer.encode("CLEAN", add_special_tokens=False)[0]
+        self.backdoor_token_id = self.tokenizer.encode("BACKDOOR", add_special_tokens=False)[0]
 
-        logger.info(
-            f"Verdict token IDs: CLEAN={self.clean_token_id}, BACKDOOR={self.backdoor_token_id}"
-        )
+        logger.info(f"Verdict token IDs: CLEAN={self.clean_token_id}, BACKDOOR={self.backdoor_token_id}")
 
     def _prepare_batch(
         self, batch: dict[str, torch.Tensor]
@@ -159,12 +142,8 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                 - are_identical: Boolean tensor indicating if solutions are identical
                 - batch_size: Number of examples in the batch
         """
-        input_ids = torch.cat(
-            (batch["honest_input_ids"], batch["injected_input_ids"]), dim=0
-        )
-        attention_mask = torch.cat(
-            (batch["honest_attention_mask"], batch["injected_attention_mask"]), dim=0
-        )
+        input_ids = torch.cat((batch["honest_input_ids"], batch["injected_input_ids"]), dim=0)
+        attention_mask = torch.cat((batch["honest_attention_mask"], batch["injected_attention_mask"]), dim=0)
         are_identical = batch["are_identical"]
         batch_size = batch["honest_input_ids"].shape[0]
 
@@ -204,9 +183,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             new_tokens = generated_outputs[:, input_ids.shape[1] :]
 
             # Decode the generated verdicts
-            verdict_texts = self.tokenizer.batch_decode(
-                new_tokens, skip_special_tokens=True
-            )
+            verdict_texts = self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
 
         # Parse verdicts and convert to scores
         verdict_scores = []
@@ -219,13 +196,9 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             else:
                 # Default to 0.5 if neither is found (neutral/uncertain)
                 verdict_scores.append(0.5)
-                logger.warning(
-                    f"Could not parse verdict from: '{text}', defaulting to 0.5"
-                )
+                logger.warning(f"Could not parse verdict from: '{text}', defaulting to 0.5")
 
-        verdict_scores_tensor = torch.tensor(
-            verdict_scores, dtype=torch.float32, device=input_ids.device
-        )
+        verdict_scores_tensor = torch.tensor(verdict_scores, dtype=torch.float32, device=input_ids.device)
 
         return verdict_scores_tensor, verdict_texts
 
@@ -303,22 +276,12 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             return None, None
 
         # Decode input IDs to text
-        honest_prompts = self.tokenizer.batch_decode(
-            batch["honest_input_ids"], skip_special_tokens=True
-        )
-        injected_prompts = self.tokenizer.batch_decode(
-            batch["injected_input_ids"], skip_special_tokens=True
-        )
+        honest_prompts = self.tokenizer.batch_decode(batch["honest_input_ids"], skip_special_tokens=True)
+        injected_prompts = self.tokenizer.batch_decode(batch["injected_input_ids"], skip_special_tokens=True)
 
         # Extract code snippets between <solution> tags
-        honest_code_snippets = [
-            prompt.split("<solution>")[1].split("</solution>")[0]
-            for prompt in honest_prompts
-        ]
-        injected_code_snippets = [
-            prompt.split("<solution>")[1].split("</solution>")[0]
-            for prompt in injected_prompts
-        ]
+        honest_code_snippets = [prompt.split("<solution>")[1].split("</solution>")[0] for prompt in honest_prompts]
+        injected_code_snippets = [prompt.split("<solution>")[1].split("</solution>")[0] for prompt in injected_prompts]
 
         return honest_code_snippets, injected_code_snippets
 
@@ -356,63 +319,43 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
 
                 for batch_idx, batch in enumerate(progress_bar):
                     # Prepare inputs
-                    input_ids, attention_mask, are_identical, batch_size = (
-                        self._prepare_batch(batch)
-                    )
+                    input_ids, attention_mask, are_identical, batch_size = self._prepare_batch(batch)
 
                     # Generate verdicts and get scores
-                    all_scores, verdict_texts = self._generate_and_parse_verdicts(
-                        input_ids, attention_mask
-                    )
+                    all_scores, verdict_texts = self._generate_and_parse_verdicts(input_ids, attention_mask)
 
                     # Split scores into honest and injected
                     honest_scores = all_scores[:batch_size]
                     injected_scores = all_scores[batch_size:]
 
                     # Calculate binary classification loss
-                    classification_loss, score_differences = (
-                        self._calculate_binary_classification_loss(
-                            honest_scores, injected_scores, are_identical
-                        )
+                    classification_loss, score_differences = self._calculate_binary_classification_loss(
+                        honest_scores, injected_scores, are_identical
                     )
 
                     # Add confidence regularization (encourage confident predictions)
                     # Penalize scores near 0.5 (uncertain predictions)
                     confidence_penalty = torch.mean(
-                        -torch.abs(
-                            all_scores - 0.5
-                        )  # Negative because we want to maximize distance from 0.5
+                        -torch.abs(all_scores - 0.5)  # Negative because we want to maximize distance from 0.5
                     )
-                    confidence_loss = (
-                        self.config["confidence_reg_strength"] * confidence_penalty
-                    )
+                    confidence_loss = self.config["confidence_reg_strength"] * confidence_penalty
 
                     # Combined loss
                     total_loss = classification_loss + confidence_loss
 
                     # Calculate accuracy for non-identical pairs
                     with torch.no_grad():
-                        num_correct, num_non_identical = (
-                            calculate_accuracy_from_pairwise_scores(
-                                honest_scores, injected_scores, are_identical
-                            )
+                        num_correct, num_non_identical = calculate_accuracy_from_pairwise_scores(
+                            honest_scores, injected_scores, are_identical
                         )
 
-                        batch_accuracy = (
-                            num_correct / num_non_identical
-                            if num_non_identical > 0
-                            else 1.0
-                        )
+                        batch_accuracy = num_correct / num_non_identical if num_non_identical > 0 else 1.0
                         batch_metrics = {
                             "verifier_accuracy": batch_accuracy,
                             "verifier_avg_score_diff": score_differences.mean().item(),
-                            "verifier_identical_ratio": are_identical.float()
-                            .mean()
-                            .item(),
+                            "verifier_identical_ratio": are_identical.float().mean().item(),
                         }
-                        rolling_metrics = self.verifier_performance_tracker.update(
-                            batch_metrics
-                        )
+                        rolling_metrics = self.verifier_performance_tracker.update(batch_metrics)
 
                     # Backpropagation
                     self.accelerator_manager.backward(total_loss, "verifier")
@@ -423,9 +366,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                         and self.args.training_verifier.max_grad_norm is not None
                     ):
                         max_grad_norm = self.args.training_verifier.max_grad_norm
-                        torch.nn.utils.clip_grad_norm_(
-                            self.verifier_model.parameters(), max_grad_norm
-                        )
+                        torch.nn.utils.clip_grad_norm_(self.verifier_model.parameters(), max_grad_norm)
 
                     # Optimizer step
                     self.optimizer.step()
@@ -458,9 +399,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                         "injected_score_min": injected_scores.min().item(),
                         "injected_score_max": injected_scores.max().item(),
                         # Score separation analysis
-                        "honest_vs_injected_separation": (
-                            honest_scores.mean() - injected_scores.mean()
-                        ).item(),
+                        "honest_vs_injected_separation": (honest_scores.mean() - injected_scores.mean()).item(),
                         "clean_prediction_ratio": (honest_scores > 0.5)
                         .float()
                         .mean()
@@ -473,12 +412,8 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                         "identical_pairs_ratio": are_identical.float().mean().item(),
                         "batch_size": batch_size,
                         # Confidence analysis
-                        "avg_confidence": torch.abs(all_scores - 0.5)
-                        .mean()
-                        .item(),  # Distance from neutral
-                        "uncertain_predictions_ratio": (
-                            (all_scores > 0.4) & (all_scores < 0.6)
-                        )
+                        "avg_confidence": torch.abs(all_scores - 0.5).mean().item(),  # Distance from neutral
+                        "uncertain_predictions_ratio": ((all_scores > 0.4) & (all_scores < 0.6))
                         .float()
                         .mean()
                         .item(),  # Predictions near 0.5
@@ -501,19 +436,12 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                         )
 
                     # Periodically perform logging on main process
-                    if self.is_main and (
-                        total_steps % self.config["log_interval"] == 0
-                    ):
+                    if self.is_main and (total_steps % self.config["log_interval"] == 0):
                         # Extract code snippets for debugging if needed
                         if total_steps % (self.config["log_interval"] * 25) == 0:
-                            honest_snippets, injected_snippets = (
-                                self._get_code_snippets(batch, debug=True)
-                            )
+                            honest_snippets, injected_snippets = self._get_code_snippets(batch, debug=True)
 
-                            if (
-                                honest_snippets is not None
-                                and injected_snippets is not None
-                            ):
+                            if honest_snippets is not None and injected_snippets is not None:
                                 # Log sample of prompts and verdicts
                                 print_prompt_completions_sample_verifier(
                                     honest_prompts=honest_snippets,
@@ -533,35 +461,21 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                                 for i in range(min(3, len(verdict_texts) // 2)):
                                     honest_verdict = verdict_texts[i]
                                     injected_verdict = verdict_texts[i + batch_size]
-                                    logger.info(
-                                        f"  Honest: '{honest_verdict}' (score: {honest_scores[i]:.3f})"
-                                    )
-                                    logger.info(
-                                        f"  Injected: '{injected_verdict}' (score: {injected_scores[i]:.3f})"
-                                    )
+                                    logger.info(f"  Honest: '{honest_verdict}' (score: {honest_scores[i]:.3f})")
+                                    logger.info(f"  Injected: '{injected_verdict}' (score: {injected_scores[i]:.3f})")
 
                         # Update tqdm progress bar with only key metrics
                         key_metrics = {
                             "loss": metrics_to_log["loss"],
-                            "acc": rolling_metrics.get(
-                                "verifier_accuracy", float("nan")
-                            ),
+                            "acc": rolling_metrics.get("verifier_accuracy", float("nan")),
                             "sep": metrics_to_log["honest_vs_injected_separation"],
                             "conf": metrics_to_log["avg_confidence"],
-                            "lr": (
-                                self.scheduler.get_last_lr()[0]
-                                if self.scheduler
-                                else 0.0
-                            ),
+                            "lr": (self.scheduler.get_last_lr()[0] if self.scheduler else 0.0),
                         }
-                        progress_bar.set_postfix(
-                            **{k: f"{v:.4f}" for k, v in key_metrics.items()}
-                        )
+                        progress_bar.set_postfix(**{k: f"{v:.4f}" for k, v in key_metrics.items()})
 
                     # Log step metrics
-                    self.metrics_logger.flush(
-                        phase=self.state_tracker.phase, mode="train"
-                    )
+                    self.metrics_logger.flush(phase=self.state_tracker.phase, mode="train")
 
                     # Update state tracker
                     self.state_tracker.increment_step()
@@ -606,9 +520,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             )
 
             # Move **this** verifier model to vLLM --> swap it into the vLLM model
-            self.vllm_orchestrator.sync_weights(
-                phase="verifier", model_manager=self.model_manager
-            )
+            self.vllm_orchestrator.sync_weights(phase="verifier", model_manager=self.model_manager)
             self.accelerator_manager.wait_for_everyone()
 
             # Clean up memory - delete model, tokenizer, dataloaders, optimizer, scheduler
@@ -654,9 +566,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
         all_are_identical = []
 
         if self.is_main:
-            progress_bar = tqdm(
-                self.eval_dataloader, desc="Evaluating", total=len(self.eval_dataloader)
-            )
+            progress_bar = tqdm(self.eval_dataloader, desc="Evaluating", total=len(self.eval_dataloader))
         else:
             progress_bar = self.eval_dataloader
 
@@ -664,42 +574,26 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             with torch.no_grad():  # No gradients needed for evaluation
                 for batch in progress_bar:
                     # Prepare inputs
-                    input_ids, attention_mask, are_identical, batch_size = (
-                        self._prepare_batch(batch)
-                    )
+                    input_ids, attention_mask, are_identical, batch_size = self._prepare_batch(batch)
 
                     # Generate verdicts and get scores
-                    all_scores, verdict_texts = self._generate_and_parse_verdicts(
-                        input_ids, attention_mask
-                    )
+                    all_scores, verdict_texts = self._generate_and_parse_verdicts(input_ids, attention_mask)
 
                     # Split scores into honest and injected
                     honest_scores = all_scores[:batch_size]
                     injected_scores = all_scores[batch_size:]
 
                     # Calculate binary classification loss
-                    classification_loss, score_differences = (
-                        self._calculate_binary_classification_loss(
-                            honest_scores, injected_scores, are_identical
-                        )
+                    classification_loss, score_differences = self._calculate_binary_classification_loss(
+                        honest_scores, injected_scores, are_identical
                     )
 
                     # Gather results across all processes
-                    gathered_loss = self.accelerator_manager.get_accelerator(
-                        "verifier"
-                    ).gather(classification_loss)
-                    gathered_diff = self.accelerator_manager.get_accelerator(
-                        "verifier"
-                    ).gather(score_differences)
-                    gathered_honest = self.accelerator_manager.get_accelerator(
-                        "verifier"
-                    ).gather(honest_scores)
-                    gathered_injected = self.accelerator_manager.get_accelerator(
-                        "verifier"
-                    ).gather(injected_scores)
-                    gathered_identical = self.accelerator_manager.get_accelerator(
-                        "verifier"
-                    ).gather(are_identical)
+                    gathered_loss = self.accelerator_manager.get_accelerator("verifier").gather(classification_loss)
+                    gathered_diff = self.accelerator_manager.get_accelerator("verifier").gather(score_differences)
+                    gathered_honest = self.accelerator_manager.get_accelerator("verifier").gather(honest_scores)
+                    gathered_injected = self.accelerator_manager.get_accelerator("verifier").gather(injected_scores)
+                    gathered_identical = self.accelerator_manager.get_accelerator("verifier").gather(are_identical)
 
                     # Accumulate statistics
                     all_score_diffs.append(gathered_diff.cpu())
@@ -715,17 +609,11 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                     # Prediction: honest is preferred if score_h > score_i
                     predicted_preference = honest_scores > injected_scores
                     # Ground truth: honest should be preferred for non-identical pairs
-                    correct_predictions = torch.logical_and(
-                        predicted_preference, ~are_identical
-                    )
+                    correct_predictions = torch.logical_and(predicted_preference, ~are_identical)
 
                     # Gather correct predictions and non-identical counts
-                    gathered_correct = self.accelerator_manager.get_accelerator(
-                        "verifier"
-                    ).gather(correct_predictions)
-                    gathered_not_identical = self.accelerator_manager.get_accelerator(
-                        "verifier"
-                    ).gather(~are_identical)
+                    gathered_correct = self.accelerator_manager.get_accelerator("verifier").gather(correct_predictions)
+                    gathered_not_identical = self.accelerator_manager.get_accelerator("verifier").gather(~are_identical)
 
                     total_correct += gathered_correct.sum().item()
                     total_samples += gathered_not_identical.sum().item()
@@ -736,26 +624,14 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             # Calculate overall metrics
             total_pairs_evaluated = len(self.eval_dataloader.dataset)
 
-            avg_loss = (
-                total_loss / total_pairs_evaluated if total_pairs_evaluated > 0 else 0.0
-            )
+            avg_loss = total_loss / total_pairs_evaluated if total_pairs_evaluated > 0 else 0.0
             accuracy = total_correct / total_samples if total_samples > 0 else 0.0
 
             # Concatenate all accumulated statistics
-            all_diffs = (
-                torch.cat(all_score_diffs) if all_score_diffs else torch.empty(0)
-            )
-            all_honest = (
-                torch.cat(all_honest_scores) if all_honest_scores else torch.empty(0)
-            )
-            all_injected = (
-                torch.cat(all_injected_scores)
-                if all_injected_scores
-                else torch.empty(0)
-            )
-            all_identical = (
-                torch.cat(all_are_identical) if all_are_identical else torch.empty(0)
-            )
+            all_diffs = torch.cat(all_score_diffs) if all_score_diffs else torch.empty(0)
+            all_honest = torch.cat(all_honest_scores) if all_honest_scores else torch.empty(0)
+            all_injected = torch.cat(all_injected_scores) if all_injected_scores else torch.empty(0)
+            all_identical = torch.cat(all_are_identical) if all_are_identical else torch.empty(0)
 
             # Calculate comprehensive evaluation metrics
             eval_metrics_summary = {
@@ -773,10 +649,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                         "eval_min_diff": all_diffs.min().item(),
                         "eval_max_diff": all_diffs.max().item(),
                         "eval_abs_diff_mean": all_diffs.abs().mean().item(),
-                        "eval_positive_diff_ratio": (all_diffs > 0)
-                        .float()
-                        .mean()
-                        .item(),
+                        "eval_positive_diff_ratio": (all_diffs > 0).float().mean().item(),
                     }
                 )
 
@@ -787,10 +660,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                         "eval_honest_score_std": all_honest.std().item(),
                         "eval_honest_score_min": all_honest.min().item(),
                         "eval_honest_score_max": all_honest.max().item(),
-                        "eval_clean_prediction_ratio": (all_honest > 0.5)
-                        .float()
-                        .mean()
-                        .item(),
+                        "eval_clean_prediction_ratio": (all_honest > 0.5).float().mean().item(),
                     }
                 )
 
@@ -801,10 +671,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                         "eval_injected_score_std": all_injected.std().item(),
                         "eval_injected_score_min": all_injected.min().item(),
                         "eval_injected_score_max": all_injected.max().item(),
-                        "eval_backdoor_prediction_ratio": (all_injected <= 0.5)
-                        .float()
-                        .mean()
-                        .item(),
+                        "eval_backdoor_prediction_ratio": (all_injected <= 0.5).float().mean().item(),
                     }
                 )
 
@@ -814,35 +681,22 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                 ).item()
 
                 combined_scores = torch.cat([all_honest, all_injected])
-                eval_metrics_summary["eval_avg_confidence"] = (
-                    torch.abs(combined_scores - 0.5).mean().item()
-                )
+                eval_metrics_summary["eval_avg_confidence"] = torch.abs(combined_scores - 0.5).mean().item()
 
             if all_identical.numel() > 0:
-                eval_metrics_summary["eval_identical_ratio"] = (
-                    all_identical.float().mean().item()
-                )
+                eval_metrics_summary["eval_identical_ratio"] = all_identical.float().mean().item()
 
             # Verdict parsing statistics
             if self.is_main and all_verdict_texts:
-                clean_count = sum(
-                    1 for text in all_verdict_texts if "CLEAN" in text.upper()
-                )
-                backdoor_count = sum(
-                    1 for text in all_verdict_texts if "BACKDOOR" in text.upper()
-                )
-                unparseable_count = (
-                    len(all_verdict_texts) - clean_count - backdoor_count
-                )
+                clean_count = sum(1 for text in all_verdict_texts if "CLEAN" in text.upper())
+                backdoor_count = sum(1 for text in all_verdict_texts if "BACKDOOR" in text.upper())
+                unparseable_count = len(all_verdict_texts) - clean_count - backdoor_count
 
                 eval_metrics_summary.update(
                     {
-                        "eval_clean_verdicts_ratio": clean_count
-                        / len(all_verdict_texts),
-                        "eval_backdoor_verdicts_ratio": backdoor_count
-                        / len(all_verdict_texts),
-                        "eval_unparseable_verdicts_ratio": unparseable_count
-                        / len(all_verdict_texts),
+                        "eval_clean_verdicts_ratio": clean_count / len(all_verdict_texts),
+                        "eval_backdoor_verdicts_ratio": backdoor_count / len(all_verdict_texts),
+                        "eval_unparseable_verdicts_ratio": unparseable_count / len(all_verdict_texts),
                     }
                 )
 
@@ -877,9 +731,7 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             logger.error(f"Error during evaluation: {str(e)}")
             # Attempt to clean up resources
             torch.cuda.empty_cache()
-            if self.is_main and isinstance(
-                progress_bar, tqdm
-            ):  # Ensure progress_bar is tqdm before closing
+            if self.is_main and isinstance(progress_bar, tqdm):  # Ensure progress_bar is tqdm before closing
                 progress_bar.close()
             raise
 
@@ -898,21 +750,15 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
             logger.info("push_to_hub is disabled, skipping")
             return
 
-        verifier_model_name = (
-            f"jvelja/verifier-classifier_round_{self.state_tracker.round}"
-        )
+        verifier_model_name = f"jvelja/verifier-classifier_round_{self.state_tracker.round}"
 
         try:
             # Unwrap the model before pushing to avoid distributed training issues
-            unwrapped_model = self.accelerator_manager.unwrap_model(
-                self.verifier_model, key="verifier"
-            )
+            unwrapped_model = self.accelerator_manager.unwrap_model(self.verifier_model, key="verifier")
 
             # Push the unwrapped model
             unwrapped_model.push_to_hub(repo_id=verifier_model_name)
-            logger.info(
-                f"Verifier Classifier model successfully pushed to the hub as {verifier_model_name}."
-            )
+            logger.info(f"Verifier Classifier model successfully pushed to the hub as {verifier_model_name}.")
             # Tokenizer should be pushed to the same repo
             self.tokenizer.push_to_hub(repo_id=verifier_model_name)
         except Exception as e:

@@ -9,16 +9,17 @@ into focused, testable components.
 
 import logging
 from typing import Any, Literal
+
 from accelerate.utils import gather_object
 
-from pvg.strategies.abstractions import CompletionGenerationStrategy
+from pvg.components import Formatter, VLLMOrchestrator
+from pvg.config import ExperimentArgs
 from pvg.data_models.training_data import (
     BatchData,
-    CompletionResult,
     CompletionExtractionResult,
+    CompletionResult,
 )
-from pvg.components import VLLMOrchestrator, Formatter
-from pvg.config import ExperimentArgs
+from pvg.strategies.abstractions import CompletionGenerationStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +69,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
         logger.debug("Starting completion generation")
 
         # 1. Extract honest solutions from mono solutions
-        honest_solutions: list[CompletionExtractionResult] = (
-            self._extract_honest_solutions(batch_data.mono_solutions)
-        )
+        honest_solutions: list[CompletionExtractionResult] = self._extract_honest_solutions(batch_data.mono_solutions)
 
         # 2. Generate sneaky completions
         sneaky_completion_texts: list[str] = self._generate_sneaky_completions(
@@ -78,13 +77,11 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
         )
 
         # 3. Extract sneaky solutions and triggering conditions
-        sneaky_solutions: list[CompletionExtractionResult] = (
-            self._extract_sneaky_solutions(completion_texts=sneaky_completion_texts)
+        sneaky_solutions: list[CompletionExtractionResult] = self._extract_sneaky_solutions(
+            completion_texts=sneaky_completion_texts
         )
-        sneaky_triggering_conditions: list[CompletionExtractionResult] = (
-            self._extract_triggering_conditions(
-                completion_texts=sneaky_completion_texts
-            )
+        sneaky_triggering_conditions: list[CompletionExtractionResult] = self._extract_triggering_conditions(
+            completion_texts=sneaky_completion_texts
         )
 
         logger.info(f"[DEBUG]: len(honest_solutions): {len(honest_solutions)}")
@@ -104,9 +101,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
             formatter=self.formatter,
         )
 
-        logger.debug(
-            f"Extracted {len(honest_solutions)} honest and {len(sneaky_solutions)} sneaky solutions"
-        )
+        logger.debug(f"Extracted {len(honest_solutions)} honest and {len(sneaky_solutions)} sneaky solutions")
 
         return CompletionResult(
             honest_solutions=honest_solutions,
@@ -120,9 +115,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
         """This strategy supports buffering for efficiency"""
         return True
 
-    def _extract_honest_solutions(
-        self, mono_solutions: list[str]
-    ) -> list[CompletionExtractionResult]:
+    def _extract_honest_solutions(self, mono_solutions: list[str]) -> list[CompletionExtractionResult]:
         """Extract honest solutions from mono solutions
 
         Args:
@@ -131,10 +124,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
         Returns:
             list of CompletionExtractionResult (payload and extraction_success) objects
         """
-        return [
-            self.formatter.extract_solution(text, "honest_prover", self.dataset_type)
-            for text in mono_solutions
-        ]
+        return [self.formatter.extract_solution(text, "honest_prover", self.dataset_type) for text in mono_solutions]
 
     def _generate_sneaky_completions(
         self, questions: list[str], honest_solutions: list[CompletionExtractionResult]
@@ -153,9 +143,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
             list of sneaky completion texts
         """
         # Build conversation-format prompts for instruction-tuned models
-        sneaky_prompts = self._build_sneaky_conversation_prompts(
-            questions, honest_solutions
-        )
+        sneaky_prompts = self._build_sneaky_conversation_prompts(questions, honest_solutions)
 
         # Gather prompts across all processes for vLLM
         all_sneaky_prompts = gather_object(sneaky_prompts)
@@ -163,9 +151,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
         # Generate completions
         generation_args = self._get_sneaky_generation_args()
 
-        logger.debug(
-            f"Generating sneaky completions with n_generations={self.args.rl.num_generations}"
-        )
+        logger.debug(f"Generating sneaky completions with n_generations={self.args.rl.num_generations}")
 
         _, completion_texts, _ = self.vllm_orchestrator._generate_and_broadcast(
             client_key="sneaky_prover",
@@ -216,20 +202,10 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
                 },
                 {
                     "role": "assistant",
-                    "content": "\n<reasoning>\n",
+                    "content": "<reasoning>\n",
                 },
             ]
             conversation_prompts.append(conversation)
-
-        # # Apply chat template to conversations
-        # formatted_prompts = []
-        # for conversation in conversation_prompts:
-        #     formatted_text = self.tokenizer.apply_chat_template(
-        #         conversation,
-        #         tokenize=False,
-        #         add_generation_prompt=False,
-        #     )
-        #     formatted_prompts.append(formatted_text)
 
         return conversation_prompts
 
@@ -278,18 +254,12 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
                 "stop_sequences",
                 "logprobs",
             ]
-            return {
-                field: obj_dict[field]
-                for field in vllm_relevant_fields
-                if field in obj_dict
-            }
+            return {field: obj_dict[field] for field in vllm_relevant_fields if field in obj_dict}
 
         # Fallback for non-dataclass objects
         return vars(obj)
 
-    def _extract_sneaky_solutions(
-        self, completion_texts: list[str]
-    ) -> list[CompletionExtractionResult]:
+    def _extract_sneaky_solutions(self, completion_texts: list[str]) -> list[CompletionExtractionResult]:
         """Extract sneaky solutions from completion texts
 
         Args:
@@ -307,9 +277,7 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
             for text in completion_texts
         ]
 
-    def _extract_triggering_conditions(
-        self, completion_texts: list[str]
-    ) -> list[CompletionExtractionResult]:
+    def _extract_triggering_conditions(self, completion_texts: list[str]) -> list[CompletionExtractionResult]:
         """Extract triggering conditions from completion texts
 
         Args:

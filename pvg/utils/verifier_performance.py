@@ -4,9 +4,10 @@
 Shared utilities for tracking verifier performance across different training phases.
 """
 
+import logging
+
 import torch
 from accelerate.utils import gather_object
-import logging
 
 logger = logging.getLogger(f"pvg_{__name__}")
 
@@ -55,9 +56,7 @@ class ScoreBoundsTracker:
         if self.keep_history:
             self.bounds_history = []  # List of (step, min_bound, max_bound) tuples
 
-    def update(
-        self, min_score: float, max_score: float, step: int | None = None
-    ) -> tuple[float, float]:
+    def update(self, min_score: float, max_score: float, step: int | None = None) -> tuple[float, float]:
         """
         Update with new min/max scores and return current rolling bounds.
 
@@ -127,9 +126,7 @@ class VerifierPerformanceTracker:
         self.accuracy_tracker = RollingMetricTracker(window_size)
         self.score_diff_tracker = RollingMetricTracker(window_size)
         self.identical_ratio_tracker = RollingMetricTracker(window_size)
-        self.bounds_tracker = ScoreBoundsTracker(
-            window_size, keep_history=track_bounds_history
-        )
+        self.bounds_tracker = ScoreBoundsTracker(window_size, keep_history=track_bounds_history)
 
     def reset(self) -> None:
         """Reset all trackers."""
@@ -138,9 +135,7 @@ class VerifierPerformanceTracker:
         self.identical_ratio_tracker.reset()
         self.bounds_tracker.reset()
 
-    def update(
-        self, metrics: dict[str, float], step: int | None = None
-    ) -> dict[str, float]:
+    def update(self, metrics: dict[str, float], step: int | None = None) -> dict[str, float]:
         """
         Update all trackers with new metrics.
 
@@ -154,9 +149,7 @@ class VerifierPerformanceTracker:
         rolling_metrics = {}
 
         if "verifier_accuracy" in metrics:
-            rolling_metrics["verifier_accuracy"] = self.accuracy_tracker.update(
-                metrics["verifier_accuracy"]
-            )
+            rolling_metrics["verifier_accuracy"] = self.accuracy_tracker.update(metrics["verifier_accuracy"])
 
         if "verifier_avg_score_diff" in metrics:
             rolling_metrics["verifier_avg_score_diff"] = self.score_diff_tracker.update(
@@ -164,8 +157,8 @@ class VerifierPerformanceTracker:
             )
 
         if "verifier_identical_ratio" in metrics:
-            rolling_metrics["verifier_identical_ratio"] = (
-                self.identical_ratio_tracker.update(metrics["verifier_identical_ratio"])
+            rolling_metrics["verifier_identical_ratio"] = self.identical_ratio_tracker.update(
+                metrics["verifier_identical_ratio"]
             )
 
         # Track score bounds if provided
@@ -250,15 +243,11 @@ def calculate_verifier_performance_metrics(
 
         # Gather from all processes
         global_is_same_as_honest = [item for item in gather_object(is_same_as_honest)]
-        is_same_tensor = torch.tensor(
-            global_is_same_as_honest, dtype=torch.bool, device=device
-        )
+        is_same_tensor = torch.tensor(global_is_same_as_honest, dtype=torch.bool, device=device)
     else:
         # Use local data only
         if isinstance(is_same_as_honest, list):
-            is_same_tensor = torch.tensor(
-                is_same_as_honest, dtype=torch.bool, device=device
-            )
+            is_same_tensor = torch.tensor(is_same_as_honest, dtype=torch.bool, device=device)
         else:
             is_same_tensor = is_same_as_honest.to(device)
 

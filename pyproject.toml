@@ -23,3 +23,40 @@ dependencies = [
     "torchvision>=0.21.0",
     "flash-attn==2.7.4.post1",
 ]
+
+[tool.ruff]
+target-version = "py311"
+extend-include = ["*.ipynb"]
+extend-exclude = ["submodules"]
+
+# Line length 120 to makes it easier to have multiple files open side-by-side.
+line-length = 120
+
+[tool.ruff.lint]
+# Check that imports are sorted
+extend-select = ["I"]
+
+
+[tool.ruff.lint.isort]
+# wandb is a package, but sometimes also a folder that gets created.
+# We tell ruff to treat it always as a third-party package to make import
+# sorting consistent.
+known-third-party = ["wandb"]
+
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''

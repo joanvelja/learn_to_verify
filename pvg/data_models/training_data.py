@@ -9,6 +9,7 @@ with clean, typed data containers that provide clear contracts between component
 
 from dataclasses import dataclass
 from typing import Any
+
 import torch
 
 
@@ -55,15 +56,9 @@ class CompletionExtractionResult:
 class CompletionResult:
     """Results from completion generation"""
 
-    honest_solutions: list[
-        CompletionExtractionResult
-    ]  # Access via .payload and .extraction_success
-    sneaky_solutions: list[
-        CompletionExtractionResult
-    ]  # Access via .payload and .extraction_success
-    sneaky_triggering_conditions: list[
-        CompletionExtractionResult
-    ]  # Access via .payload and .extraction_success
+    honest_solutions: list[CompletionExtractionResult]  # Access via .payload and .extraction_success
+    sneaky_solutions: list[CompletionExtractionResult]  # Access via .payload and .extraction_success
+    sneaky_triggering_conditions: list[CompletionExtractionResult]  # Access via .payload and .extraction_success
     sneaky_completion_texts: list[str]  # Raw completion texts for debugging
     honest_completion_texts: list[str]  # Raw completion texts for debugging
 
@@ -84,12 +79,8 @@ class ExecutionData:
     """Data needed for code execution"""
 
     verifier_prompts: list[str]  # Prompts for verifier model
-    honest_code_results: list[
-        CodeExecutionResult
-    ]  # Code execution results for honest solutions
-    sneaky_code_results: list[
-        CodeExecutionResult
-    ]  # Code execution results for sneaky solutions
+    honest_code_results: list[CodeExecutionResult]  # Code execution results for honest solutions
+    sneaky_code_results: list[CodeExecutionResult]  # Code execution results for sneaky solutions
 
 
 @dataclass
@@ -141,6 +132,7 @@ class BatchInputs:
     logits_to_keep: int
     prompt_completion_ids: torch.Tensor
     prompt_completion_mask: torch.Tensor
+    reward_statistics: dict[str, float] | None = None  # Store reward stats for logging
 
 
 @dataclass

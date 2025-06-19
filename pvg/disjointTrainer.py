@@ -1,48 +1,49 @@
 # disjointTrainer.py
 
-from collections.abc import Container
-import os
-import json
-from typing import Any, Literal
-from collections import defaultdict
-from pvg import (
-    setup_logger,
-    nanstd,
-    prepare_deepspeed,
-    VLLMClient,
-    AppsDataset,
-    RepeatRandomSampler,
-)
-import logging
 import copy
+import datetime
+import json
+import logging
+import os
+import re
+import time
+import uuid
+from collections import defaultdict
+from collections.abc import Container
+from contextlib import nullcontext
+from typing import Any, Literal
+
+import deepspeed
 import torch
 from accelerate import Accelerator
 from accelerate.utils import (
     DeepSpeedPlugin,
     ProjectConfiguration,
-    gather_object,
     broadcast_object_list,
+    gather_object,
 )
+from deepspeed.utils import safe_get_full_grad
+from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
+from liger_kernel.transformers import _apply_liger_kernel_to_instance
+from torch.utils.data import DataLoader, Dataset, Sampler  # Add Dataset import
+from tqdm.auto import tqdm  # For progress bars
 from transformers import (
-    set_seed,
     AutoModelForCausalLM,  # Assuming Causal LM for now
     AutoTokenizer,
-    get_scheduler,
     PreTrainedModel,
+    get_scheduler,
+    set_seed,
 )
-from torch.utils.data import DataLoader, Dataset  # Add Dataset import
-from tqdm.auto import tqdm  # For progress bars
-from torch.utils.data import Sampler
-from contextlib import nullcontext
-import deepspeed
-from deepspeed.utils import safe_get_full_grad
 from trl.trainer.utils import selective_log_softmax
-from liger_kernel.transformers import _apply_liger_kernel_to_instance
-from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
-import uuid
-import datetime
-import re
-import time
+
+from pvg import (
+    AppsDataset,
+    RepeatRandomSampler,
+    VLLMClient,
+    nanstd,
+    prepare_deepspeed,
+    setup_logger,
+)
 
 # from pvg.utils.logger import setup_logger  # Import the setup function
 from pvg.config.args import ExperimentArgs  # Import the args class
@@ -85,12 +86,8 @@ class DisjointSequentialTrainer:
         self.accelerator = self.accelerators["honest_prover"]
 
         # --- 2a. Logging Setup (using info from accelerator) ---
-        log_level = (
-            logging.INFO if self.accelerator.is_main_process else logging.WARNING
-        )
-        log_dir = os.path.join(
-            self.args.output_dir, "logs"
-        )  # Place logs inside output dir
+        log_level = logging.INFO if self.accelerator.is_main_process else logging.WARNING
+        log_dir = os.path.join(self.args.output_dir, "logs")  # Place logs inside output dir
         setup_logger(
             level=log_level,
             rank=self.accelerator.process_index,
@@ -112,15 +109,9 @@ class DisjointSequentialTrainer:
         logger.info(f"  Num processes: {accel_state.num_processes}")
         logger.info(f"  Process index: {accel_state.process_index}")
         logger.info(f"  Local process index: {accel_state.local_process_index}")
-        logger.info(
-            f"  Device: {self.accelerators['honest_prover'].device}"
-        )  # Get device from instance
-        logger.info(
-            f"  Mixed precision: {self.accelerators['honest_prover'].mixed_precision}"
-        )
-        logger.info(
-            f"  Gradient Acc Steps: {self.accelerators['honest_prover'].gradient_accumulation_steps}"
-        )
+        logger.info(f"  Device: {self.accelerators['honest_prover'].device}")  # Get device from instance
+        logger.info(f"  Mixed precision: {self.accelerators['honest_prover'].mixed_precision}")
+        logger.info(f"  Gradient Acc Steps: {self.accelerators['honest_prover'].gradient_accumulation_steps}")
         # Access accel_state for sneaky_prover too for sanity check
         if "sneaky_prover" in self.accelerators:
             accel_state_b = self.accelerators["sneaky_prover"].state
@@ -129,15 +120,9 @@ class DisjointSequentialTrainer:
             logger.info(f"  Num processes: {accel_state_b.num_processes}")
             logger.info(f"  Process index: {accel_state_b.process_index}")
             logger.info(f"  Local process index: {accel_state_b.local_process_index}")
-            logger.info(
-                f"  Device: {self.accelerators['sneaky_prover'].device}"
-            )  # Get device from instance
-            logger.info(
-                f"  Mixed precision: {self.accelerators['sneaky_prover'].mixed_precision}"
-            )
-            logger.info(
-                f"  Gradient Acc Steps: {self.accelerators['sneaky_prover'].gradient_accumulation_steps}"
-            )
+            logger.info(f"  Device: {self.accelerators['sneaky_prover'].device}")  # Get device from instance
+            logger.info(f"  Mixed precision: {self.accelerators['sneaky_prover'].mixed_precision}")
+            logger.info(f"  Gradient Acc Steps: {self.accelerators['sneaky_prover'].gradient_accumulation_steps}")
         else:
             logger.info(
                 "Sneaky Prover accelerator not initialized. If this is expected, ignore this message. If not, you may have not passed sneaky_prover_name_or_path correctly to the script."
@@ -149,17 +134,11 @@ class DisjointSequentialTrainer:
         logger.info("--- Training Process GPU Info ---")
         logger.info(f"  Accelerator Device: {self.accelerator.device}")
         if torch.cuda.is_available():
-            logger.info(
-                f"  torch.cuda.device_count() seen by this process: {torch.cuda.device_count()}"
-            )
+            logger.info(f"  torch.cuda.device_count() seen by this process: {torch.cuda.device_count()}")
             try:
                 current_cuda_device_index = torch.cuda.current_device()
-                logger.info(
-                    f"  torch.cuda.current_device(): {current_cuda_device_index}"
-                )
-                logger.info(
-                    f"  torch.cuda.get_device_name(): {torch.cuda.get_device_name(current_cuda_device_index)}"
-                )
+                logger.info(f"  torch.cuda.current_device(): {current_cuda_device_index}")
+                logger.info(f"  torch.cuda.get_device_name(): {torch.cuda.get_device_name(current_cuda_device_index)}")
             except Exception as e:
                 logger.error(f"  Could not get current CUDA device details: {e}")
         else:
@@ -204,11 +183,7 @@ class DisjointSequentialTrainer:
         logger.info("--- vLLM Clients State ---")
         logger.info(f"  vLLM Client A: {self.vllm_clients['honest_prover']}")
         logger.info(f"  vLLM Client B: {self.vllm_clients['sneaky_prover']}")
-        (
-            logger.info(f"  vLLM Client C: {self.vllm_clients['verifier']}")
-            if self.vllm_clients["verifier"]
-            else None
-        )
+        (logger.info(f"  vLLM Client C: {self.vllm_clients['verifier']}") if self.vllm_clients["verifier"] else None)
 
         # --- 3. Load Tokenizer, Models, Datasets, Optimizers ---
         self._load_tokenizer()
@@ -260,11 +235,7 @@ class DisjointSequentialTrainer:
         # --- 8. Check if the per_device_train/eval_batch_size * num processes can be divided by the number of generations ---
         num_processes = self.accelerator.num_processes
         global_batch_size = self.args.per_device_train_batch_size * num_processes
-        possible_values = [
-            n_gen
-            for n_gen in range(2, global_batch_size + 1)
-            if (global_batch_size) % n_gen == 0
-        ]
+        possible_values = [n_gen for n_gen in range(2, global_batch_size + 1) if (global_batch_size) % n_gen == 0]
         if self.args.num_generations not in possible_values:
             raise ValueError(
                 f"The global train batch size ({num_processes} x {self.args.per_device_train_batch_size}) must be evenly "
@@ -314,22 +285,16 @@ class DisjointSequentialTrainer:
             if self.accelerator.is_main_process:
                 self.wandb_run = self.accelerator.get_tracker("wandb").run
                 if self.wandb_run:
-                    logger.info(
-                        f"Successfully retrieved WandB run. Run ID: {self.wandb_run.id}"
-                    )
+                    logger.info(f"Successfully retrieved WandB run. Run ID: {self.wandb_run.id}")
                     # Create LLM interaction log directory on main process
                     self.llm_interaction_log_dir = os.path.join(
                         self.args.output_dir, self.wandb_run.id, "llm_interaction_logs"
                     )
                     if self.accelerator.is_main_process:
                         os.makedirs(self.llm_interaction_log_dir, exist_ok=True)
-                        logger.info(
-                            f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}"
-                        )
+                        logger.info(f"LLM interaction logs will be saved to: {self.llm_interaction_log_dir}")
                 else:
-                    logger.error(
-                        "Called init_trackers, but failed to retrieve WandB run object."
-                    )
+                    logger.error("Called init_trackers, but failed to retrieve WandB run object.")
         except Exception as e:
             logger.error(
                 f"Error during accelerator.init_trackers or run retrieval: {e}",
@@ -347,19 +312,15 @@ class DisjointSequentialTrainer:
                 if self.wandb_run is None:
                     logger.error("Could not retrieve WandB run object.")
                 else:
-                    logger.info(
-                        f"WandB tracker initialized. Run ID: {self.wandb_run.id}"
-                    )
+                    logger.info(f"WandB tracker initialized. Run ID: {self.wandb_run.id}")
                     # Log initial config (accelerate might do some, but explicit update is safer)
-                    self.wandb_run.config.update(
-                        self.args.__dict__, allow_val_change=True
-                    )
+                    self.wandb_run.config.update(self.args.__dict__, allow_val_change=True)
 
                     # Log environment details
                     try:
                         import importlib.metadata as importlib_metadata
-                        import sys
                         import platform
+                        import sys
 
                         libs = [
                             "torch",
@@ -370,9 +331,7 @@ class DisjointSequentialTrainer:
                             "wandb",
                         ]
                         lib_versions = {
-                            lib: importlib_metadata.version(lib)
-                            for lib in libs
-                            if importlib_metadata.version(lib)
+                            lib: importlib_metadata.version(lib) for lib in libs if importlib_metadata.version(lib)
                         }
                         self.wandb_run.config.update(
                             {
@@ -380,9 +339,7 @@ class DisjointSequentialTrainer:
                                 "environment/platform": platform.platform(),
                                 "environment/num_processes": self.accelerator.num_processes,
                                 "environment/mixed_precision": self.accelerator.mixed_precision,
-                                "environment/distributed_type": str(
-                                    self.accelerator.distributed_type
-                                ),
+                                "environment/distributed_type": str(self.accelerator.distributed_type),
                                 "environment/library_versions": lib_versions,
                             }
                         )
@@ -396,9 +353,7 @@ class DisjointSequentialTrainer:
             for model_key in ["honest_prover", "sneaky_prover"]:
                 log_model = self.models[model_key]  # Use the unprepared model
                 total_params = sum(p.numel() for p in log_model.parameters())
-                trainable_params = sum(
-                    p.numel() for p in log_model.parameters() if p.requires_grad
-                )
+                trainable_params = sum(p.numel() for p in log_model.parameters() if p.requires_grad)
                 self.wandb_run.config.update(
                     {
                         f"model/{model_key}/total_params": total_params,
@@ -434,9 +389,7 @@ class DisjointSequentialTrainer:
                 client_kwargs["group_port"] = group_port
 
             self.vllm_clients[client_key] = VLLMClient(**client_kwargs)
-            logger.info(
-                f"Successfully connected vLLM client '{client_key}' to {host}:{port}"
-            )
+            logger.info(f"Successfully connected vLLM client '{client_key}' to {host}:{port}")
         except ConnectionError as e:
             logger.error(
                 f"Failed to connect to vLLM server '{client_key}' at {host}:{port}. Ensure it's running and accessible: {e}",
@@ -473,12 +426,8 @@ class DisjointSequentialTrainer:
         logger.info("Initializing Accelerators...")
         # Create DeepSpeed Plugins
         try:
-            ds_plugin_a = DeepSpeedPlugin(
-                hf_ds_config=self.args.ds_config_honest_prover
-            )
-            ds_plugin_b = DeepSpeedPlugin(
-                hf_ds_config=self.args.ds_config_sneaky_prover
-            )
+            ds_plugin_a = DeepSpeedPlugin(hf_ds_config=self.args.ds_config_honest_prover)
+            ds_plugin_b = DeepSpeedPlugin(hf_ds_config=self.args.ds_config_sneaky_prover)
             logger.info("DeepSpeed plugins created.")
         except Exception as e:
             logger.error(f"Failed to create DeepSpeed plugins: {e}", exc_info=True)
@@ -504,9 +453,7 @@ class DisjointSequentialTrainer:
             logger.info("First Accelerator (accelerator_a) initialized.")
             self.accelerators["honest_prover"] = accelerator_a
         except Exception as e:
-            logger.error(
-                f"Failed to initialize the first Accelerator: {e}", exc_info=True
-            )
+            logger.error(f"Failed to initialize the first Accelerator: {e}", exc_info=True)
             raise
 
         # Instantiate the second accelerator
@@ -515,9 +462,7 @@ class DisjointSequentialTrainer:
             logger.info("Second Accelerator (accelerator_b) initialized.")
             self.accelerators["sneaky_prover"] = accelerator_b
         except Exception as e:
-            logger.error(
-                f"Failed to initialize the second Accelerator: {e}", exc_info=True
-            )
+            logger.error(f"Failed to initialize the second Accelerator: {e}", exc_info=True)
             raise
 
         # Redirect verifier accelerator to self.accelerators["honest_prover"]
@@ -540,36 +485,22 @@ class DisjointSequentialTrainer:
         # Disable caching if gradient checkpointing is enabled (not supported)
         model_init_kwargs = {}
         model_init_kwargs["use_cache"] = (
-            False
-            if self.args.gradient_checkpointing
-            else model_init_kwargs.get("use_cache")
+            False if self.args.gradient_checkpointing else model_init_kwargs.get("use_cache")
         )  # TODO: Missing gradient checkpointing arg and logic dealing with it
 
         # Fetch models from local paths (& update path to model if found)
-        self.args.honest_prover_name_or_path = self._fetch_local_models(
-            self.args.honest_prover_name_or_path
-        )
-        self.args.sneaky_prover_name_or_path = self._fetch_local_models(
-            self.args.sneaky_prover_name_or_path
-        )
+        self.args.honest_prover_name_or_path = self._fetch_local_models(self.args.honest_prover_name_or_path)
+        self.args.sneaky_prover_name_or_path = self._fetch_local_models(self.args.sneaky_prover_name_or_path)
 
-        logger.info(
-            f"Loading Honest Prover from {self.args.honest_prover_name_or_path}"
-        )
-        model_a = AutoModelForCausalLM.from_pretrained(
-            self.args.honest_prover_name_or_path, **model_init_kwargs
-        )
+        logger.info(f"Loading Honest Prover from {self.args.honest_prover_name_or_path}")
+        model_a = AutoModelForCausalLM.from_pretrained(self.args.honest_prover_name_or_path, **model_init_kwargs)
         # --- Enable Gradient Checkpointing for Model A ---
         if self.args.gradient_checkpointing:
             model_a = self._enable_gradient_checkpointing(model_a)
             logger.info("Gradient checkpointing enabled for Honest Prover.")
 
-        logger.info(
-            f"Loading Sneaky Prover from {self.args.sneaky_prover_name_or_path}"
-        )
-        model_b = AutoModelForCausalLM.from_pretrained(
-            self.args.sneaky_prover_name_or_path, **model_init_kwargs
-        )
+        logger.info(f"Loading Sneaky Prover from {self.args.sneaky_prover_name_or_path}")
+        model_b = AutoModelForCausalLM.from_pretrained(self.args.sneaky_prover_name_or_path, **model_init_kwargs)
         # --- Enable Gradient Checkpointing for Model B ---
         if self.args.gradient_checkpointing:
             model_b = self._enable_gradient_checkpointing(model_b)
@@ -593,20 +524,14 @@ class DisjointSequentialTrainer:
             self.ref_model_b = None
         # elif is_deepspeed_zero3_enabled():
         else:
-            self.ref_model_a = AutoModelForCausalLM.from_pretrained(
-                self.args.honest_prover_name_or_path
-            )
-            self.ref_model_b = AutoModelForCausalLM.from_pretrained(
-                self.args.sneaky_prover_name_or_path
-            )
+            self.ref_model_a = AutoModelForCausalLM.from_pretrained(self.args.honest_prover_name_or_path)
+            self.ref_model_b = AutoModelForCausalLM.from_pretrained(self.args.sneaky_prover_name_or_path)
         self.ref_models = {
             "honest_prover": self.ref_model_a,
             "sneaky_prover": self.ref_model_b,
         }
 
-        if (
-            self.args.apply_liger_kernel
-        ):  # Optimization stuff (claims 60% memory savings)
+        if self.args.apply_liger_kernel:  # Optimization stuff (claims 60% memory savings)
             _apply_liger_kernel_to_instance(model_a)
             _apply_liger_kernel_to_instance(model_b)
             self.liger_grpo_loss = LigerFusedLinearGRPOLoss(
@@ -676,18 +601,12 @@ class DisjointSequentialTrainer:
         self.optimizers = {"honest_prover": optimizer_a, "sneaky_prover": optimizer_b}
 
     def _calculate_num_training_steps(self) -> int:
-        num_update_steps_per_epoch = (
-            len(self.train_dataloader) // self.args.gradient_accumulation_steps
-        )
-        num_update_steps_per_epoch = max(
-            num_update_steps_per_epoch, 1
-        )  # Ensure at least one step
+        num_update_steps_per_epoch = len(self.train_dataloader) // self.args.gradient_accumulation_steps
+        num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)  # Ensure at least one step
 
         if self.args.max_train_steps is not None:
             num_training_steps = self.args.max_train_steps
-            self.args.num_train_epochs = (
-                self.args.max_train_steps // num_update_steps_per_epoch
-            )
+            self.args.num_train_epochs = self.args.max_train_steps // num_update_steps_per_epoch
         else:
             num_training_steps = num_update_steps_per_epoch * self.args.num_train_epochs
 
@@ -798,12 +717,8 @@ class DisjointSequentialTrainer:
         # Note: accelerator.prepare handles DataLoaders differently (doesn't require plugin selection)
         if self.eval_dataloader:
             logger.info("Preparing Eval Dataloaders...")
-            self.eval_dataloader = self.accelerators["honest_prover"].prepare(
-                self.eval_dataloader
-            )
-            self.eval_dataloader_b = self.accelerators[
-                "sneaky_prover"
-            ].prepare(  # Use respective accelerator
+            self.eval_dataloader = self.accelerators["honest_prover"].prepare(self.eval_dataloader)
+            self.eval_dataloader_b = self.accelerators["sneaky_prover"].prepare(  # Use respective accelerator
                 self.eval_dataloader_b
             )
 
@@ -825,9 +740,7 @@ class DisjointSequentialTrainer:
     def train(self) -> None:
         logger.info("***** Starting Training *****")
         logger.info(f"  Num Epochs = {self.args.num_train_epochs}")
-        logger.info(
-            f"  Instantaneous batch size per device = {self.args.per_device_train_batch_size}"
-        )
+        logger.info(f"  Instantaneous batch size per device = {self.args.per_device_train_batch_size}")
         # Calculate the effective batch size correctly
         effective_train_batch_size = (
             self.args.per_device_train_batch_size
@@ -837,9 +750,7 @@ class DisjointSequentialTrainer:
         logger.info(
             f"  Total train batch size (w. parallel, distributed & accumulation) = {effective_train_batch_size}"
         )
-        logger.info(
-            f"  Gradient Accumulation steps = {self.args.gradient_accumulation_steps}"
-        )
+        logger.info(f"  Gradient Accumulation steps = {self.args.gradient_accumulation_steps}")
         logger.info(f"  Total optimization steps = {self.num_training_steps}")
 
         progress_bar = tqdm(
@@ -855,9 +766,7 @@ class DisjointSequentialTrainer:
         for epoch in range(self.current_epoch, self.args.num_train_epochs):
             self.models["honest_prover"].train()
             self.models["sneaky_prover"].train()
-            logger.info(
-                f"--- Starting Epoch {epoch+1}/{self.args.num_train_epochs} ---"
-            )
+            logger.info(f"--- Starting Epoch {epoch+1}/{self.args.num_train_epochs} ---")
             # Optional: Track loss over accumulation steps for more stable logging
             # accumulated_loss_a = 0.0
             # accumulated_loss_b = 0.0
@@ -871,12 +780,8 @@ class DisjointSequentialTrainer:
                 loss_a = losses["loss_a"]
                 loss_b = losses["loss_b"]
 
-                logger.info(
-                    f"[Process {self.accelerator.process_index}] Completed training step"
-                )
-                logger.info(
-                    f"[Process {self.accelerator.process_index}] Losses: {loss_a}, {loss_b}"
-                )
+                logger.info(f"[Process {self.accelerator.process_index}] Completed training step")
+                logger.info(f"[Process {self.accelerator.process_index}] Losses: {loss_a}, {loss_b}")
 
                 # Optional: Track loss over accumulation steps for more stable logging
                 # accumulated_loss_a += loss_a.item()
@@ -892,73 +797,51 @@ class DisjointSequentialTrainer:
                 # The backward pass should happen *before* the sync step check
                 self.accelerators["honest_prover"].backward(loss_a_scaled)
                 self.accelerators["sneaky_prover"].backward(loss_b_scaled)
-                logger.info(
-                    f"[Process {self.accelerator.process_index}] Completed backward pass"
-                )
-                logger.info(
-                    f"[Process {self.accelerator.process_index}] Losses: {loss_a_scaled}, {loss_b_scaled}"
-                )
+                logger.info(f"[Process {self.accelerator.process_index}] Completed backward pass")
+                logger.info(f"[Process {self.accelerator.process_index}] Losses: {loss_a_scaled}, {loss_b_scaled}")
 
                 # --- Synchronization Point Check ---
                 # Determine if this is the last step of an accumulation cycle or the overall last step
                 is_last_step_in_batch = (step + 1) == len(self.train_dataloader)
-                is_accumulation_boundary = (
-                    step + 1
-                ) % self.args.gradient_accumulation_steps == 0
+                is_accumulation_boundary = (step + 1) % self.args.gradient_accumulation_steps == 0
                 is_sync_step = is_accumulation_boundary or is_last_step_in_batch
 
                 # --- Optimizer Step ---
                 if is_sync_step:  # See above for explanation of this
 
                     # Calculate gradient norms BEFORE clipping and stepping
-                    grad_norm_a = torch.tensor(
-                        0.0, device=self.accelerators["honest_prover"].device
-                    )
+                    grad_norm_a = torch.tensor(0.0, device=self.accelerators["honest_prover"].device)
                     try:
                         model_a_params = self.models["honest_prover"].parameters()
-                        grad_sq_sum_a = torch.tensor(
-                            0.0, device=self.accelerators["honest_prover"].device
-                        )
+                        grad_sq_sum_a = torch.tensor(0.0, device=self.accelerators["honest_prover"].device)
                         for p in model_a_params:
                             grad = safe_get_full_grad(p)
                             if grad is not None:
                                 grad_sq_sum_a += torch.norm(grad) ** 2
                         grad_norm_a = torch.sqrt(grad_sq_sum_a)
                     except Exception as e:
-                        logger.warning(
-                            f"Could not compute gradient norm for honest_prover: {e}"
-                        )
+                        logger.warning(f"Could not compute gradient norm for honest_prover: {e}")
                     eval_mode = "train"  # Assuming this is only called during training
-                    self._metrics[eval_mode]["honest_prover"]["grad_norm"] = (
-                        self._metrics[eval_mode]["honest_prover"].get("grad_norm", [])
-                    )
-                    self._metrics[eval_mode]["honest_prover"]["grad_norm"].append(
-                        grad_norm_a.item()
-                    )
+                    self._metrics[eval_mode]["honest_prover"]["grad_norm"] = self._metrics[eval_mode][
+                        "honest_prover"
+                    ].get("grad_norm", [])
+                    self._metrics[eval_mode]["honest_prover"]["grad_norm"].append(grad_norm_a.item())
 
-                    grad_norm_b = torch.tensor(
-                        0.0, device=self.accelerators["sneaky_prover"].device
-                    )
+                    grad_norm_b = torch.tensor(0.0, device=self.accelerators["sneaky_prover"].device)
                     try:
                         model_b_params = self.models["sneaky_prover"].parameters()
-                        grad_sq_sum_b = torch.tensor(
-                            0.0, device=self.accelerators["sneaky_prover"].device
-                        )
+                        grad_sq_sum_b = torch.tensor(0.0, device=self.accelerators["sneaky_prover"].device)
                         for p in model_b_params:
                             grad = safe_get_full_grad(p)
                             if grad is not None:
                                 grad_sq_sum_b += torch.norm(grad) ** 2
                         grad_norm_b = torch.sqrt(grad_sq_sum_b)
                     except Exception as e:
-                        logger.warning(
-                            f"Could not compute gradient norm for sneaky_prover: {e}"
-                        )
-                    self._metrics[eval_mode]["sneaky_prover"]["grad_norm"] = (
-                        self._metrics[eval_mode]["sneaky_prover"].get("grad_norm", [])
-                    )
-                    self._metrics[eval_mode]["sneaky_prover"]["grad_norm"].append(
-                        grad_norm_b.item()
-                    )
+                        logger.warning(f"Could not compute gradient norm for sneaky_prover: {e}")
+                    self._metrics[eval_mode]["sneaky_prover"]["grad_norm"] = self._metrics[eval_mode][
+                        "sneaky_prover"
+                    ].get("grad_norm", [])
+                    self._metrics[eval_mode]["sneaky_prover"]["grad_norm"].append(grad_norm_b.item())
 
                     # Clip Gradients (Optional)
                     if self.args.max_grad_norm_honest_prover is not None:
@@ -983,18 +866,14 @@ class DisjointSequentialTrainer:
                         self.schedulers["sneaky_prover"].step()
                     self.optimizers["sneaky_prover"].zero_grad()
 
-                    logger.info(
-                        f"[Process {self.accelerator.process_index}] Completed optimizer step"
-                    )
+                    logger.info(f"[Process {self.accelerator.process_index}] Completed optimizer step")
                     # *** ADD GLOBAL BARRIER HERE ***
                     # Ensure both processes complete optim/sched before proceeding
                     logger.info(
                         f"[Process {self.accelerator.process_index}] Waiting at barrier after optimizer step..."
                     )
                     self.accelerator.wait_for_everyone()  # Use primary accelerator for global sync
-                    logger.info(
-                        f"[Process {self.accelerator.process_index}] Passed barrier after optimizer step."
-                    )
+                    logger.info(f"[Process {self.accelerator.process_index}] Passed barrier after optimizer step.")
 
                     self.global_step += 1
                     progress_bar.update(1)
@@ -1025,26 +904,19 @@ class DisjointSequentialTrainer:
                                 "honest_prover": (
                                     self.schedulers["honest_prover"].get_last_lr()[0]
                                     if self.schedulers["honest_prover"]
-                                    else self.optimizers["honest_prover"].param_groups[
-                                        0
-                                    ]["lr"]
+                                    else self.optimizers["honest_prover"].param_groups[0]["lr"]
                                 ),
                                 "sneaky_prover": (
                                     self.schedulers["sneaky_prover"].get_last_lr()[0]
                                     if self.schedulers["sneaky_prover"]
-                                    else self.optimizers["sneaky_prover"].param_groups[
-                                        0
-                                    ]["lr"]
+                                    else self.optimizers["sneaky_prover"].param_groups[0]["lr"]
                                 ),
                             },
                         }
                         self._log_metrics(step_data)
 
                     # --- Evaluation ---
-                    if (
-                        self.eval_dataloader
-                        and self.global_step % self.args.eval_steps == 0
-                    ):
+                    if self.eval_dataloader and self.global_step % self.args.eval_steps == 0:
                         self.evaluate()
 
                     # --- Checkpointing ---
@@ -1090,18 +962,12 @@ class DisjointSequentialTrainer:
                     # accumulated_loss_a = 0.0
                     # accumulated_loss_b = 0.0
 
-                if (
-                    self.args.max_train_steps is not None
-                    and self.global_step >= self.args.max_train_steps
-                ):
+                if self.args.max_train_steps is not None and self.global_step >= self.args.max_train_steps:
                     logger.info("Reached max_train_steps. Stopping training.")
                     break  # Break inner loop
 
             self.current_epoch += 1  # Increment epoch counter
-            if (
-                self.args.max_train_steps is not None
-                and self.global_step >= self.args.max_train_steps
-            ):
+            if self.args.max_train_steps is not None and self.global_step >= self.args.max_train_steps:
                 break  # Break outer loop
 
             # Accelerator wait for everyone
@@ -1119,14 +985,10 @@ class DisjointSequentialTrainer:
         2. Broadcasts generated sequences (if needed).
         3. Computes loss and gradients using training models (all processes).
         """
-        logger.info(
-            f"[Process {self.accelerator.process_index}] Entering _training_step"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] Entering _training_step")
         # Plan:
         # 0. Prepare the inputs via vLLM + scoring + advantages for both provers [honest_prover, sneaky_prover]
-        logger.info(
-            f"[Process {self.accelerator.process_index}] Calling _prepare_inputs"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] Calling _prepare_inputs")
         inputs = self._prepare_inputs(batch)  # This returns the following:
         # {
         #     "prompt_ids": prompt_ids,
@@ -1138,30 +1000,18 @@ class DisjointSequentialTrainer:
         #     "ref_per_token_logps": ref_per_token_logps,
         # }
 
-        logger.info(
-            f"[Process {self.accelerator.process_index}] Calling compute_loss for honest_prover"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] Calling compute_loss for honest_prover")
         # --- Model A ---
         # Forward/Backward for Model A's own loss
-        loss_a = self.compute_loss(
-            self.models["honest_prover"], inputs["honest_prover"], "honest_prover"
-        )
-        logger.info(
-            f"[Process {self.accelerator.process_index}] Completed compute_loss for honest_prover"
-        )
+        loss_a = self.compute_loss(self.models["honest_prover"], inputs["honest_prover"], "honest_prover")
+        logger.info(f"[Process {self.accelerator.process_index}] Completed compute_loss for honest_prover")
         # --- Model B ---
         # Forward/Backward for Model B's own loss
-        loss_b = self.compute_loss(
-            self.models["sneaky_prover"], inputs["sneaky_prover"], "sneaky_prover"
-        )
+        loss_b = self.compute_loss(self.models["sneaky_prover"], inputs["sneaky_prover"], "sneaky_prover")
 
-        logger.info(
-            f"[Process {self.accelerator.process_index}] Completed compute_loss for sneaky_prover"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] Completed compute_loss for sneaky_prover")
         logger.info(f"[Process {self.accelerator.process_index}] Returning losses")
-        logger.info(
-            f"[Process {self.accelerator.process_index}] Losses: {loss_a}, {loss_b}"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] Losses: {loss_a}, {loss_b}")
 
         # --- Return losses ---
         return {"loss_a": loss_a, "loss_b": loss_b}
@@ -1182,18 +1032,14 @@ class DisjointSequentialTrainer:
         metrics_to_log[f"{eval_mode}/lr_a"] = step_data["lr"]["honest_prover"]
         metrics_to_log[f"{eval_mode}/lr_b"] = step_data["lr"]["sneaky_prover"]
 
-        model_metrics = self._metrics[
-            eval_mode
-        ]  # Dict having keys: "honest_prover", "sneaky_prover", "verifier"
+        model_metrics = self._metrics[eval_mode]  # Dict having keys: "honest_prover", "sneaky_prover", "verifier"
         for model_key in model_metrics.keys():
             for metric_name, values in model_metrics[model_key].items():
                 # Check if 'values' is a list and is not empty before processing
                 if isinstance(values, list) and values:
                     try:
                         # Attempt to convert to tensor and calculate mean
-                        metrics_to_log[f"{eval_mode}/{metric_name}_{model_key}"] = (
-                            torch.tensor(values).mean().item()
-                        )
+                        metrics_to_log[f"{eval_mode}/{metric_name}_{model_key}"] = torch.tensor(values).mean().item()
                     except Exception as e:
                         # Log a warning if conversion or mean calculation fails for a non-empty list
                         logger.warning(
@@ -1273,9 +1119,7 @@ class DisjointSequentialTrainer:
         return metrics
 
     def save_checkpoint(self, final: bool = False) -> None:
-        checkpoint_dir = os.path.join(
-            self.args.output_dir, f"checkpoint-{self.global_step}"
-        )
+        checkpoint_dir = os.path.join(self.args.output_dir, f"checkpoint-{self.global_step}")
         if final:
             checkpoint_dir = os.path.join(self.args.output_dir, "final_checkpoint")
         logger.info(f"Saving checkpoint to {checkpoint_dir}...")
@@ -1285,9 +1129,7 @@ class DisjointSequentialTrainer:
         # --- Save Model A State ---
         try:
             logger.info("Selecting plugin for Model A save...")
-            self.accelerators["honest_prover"].state.select_deepspeed_plugin(
-                "honest_prover"
-            )
+            self.accelerators["honest_prover"].state.select_deepspeed_plugin("honest_prover")
             output_dir_a = os.path.join(checkpoint_dir, "honest_prover_state")
             logger.info(f"Saving Model A state to {output_dir_a}")
             self.accelerators["honest_prover"].save_state(output_dir_a)
@@ -1298,9 +1140,7 @@ class DisjointSequentialTrainer:
         # --- Save Model B State ---
         try:
             logger.info("Selecting plugin for Model B save...")
-            self.accelerators["sneaky_prover"].state.select_deepspeed_plugin(
-                "sneaky_prover"
-            )
+            self.accelerators["sneaky_prover"].state.select_deepspeed_plugin("sneaky_prover")
             output_dir_b = os.path.join(checkpoint_dir, "sneaky_prover_state")
             logger.info(f"Saving Model B state to {output_dir_b}")
             self.accelerators["sneaky_prover"].save_state(output_dir_b)
@@ -1316,9 +1156,7 @@ class DisjointSequentialTrainer:
                 "current_epoch": self.current_epoch,
                 # Add other state like best_metric if tracking
             }
-            with open(
-                os.path.join(checkpoint_dir, "trainer_loop_state.json"), "w"
-            ) as f:
+            with open(os.path.join(checkpoint_dir, "trainer_loop_state.json"), "w") as f:
                 json.dump(loop_state, f)
 
             # Save script arguments for reference
@@ -1345,63 +1183,45 @@ class DisjointSequentialTrainer:
             self.global_step = loop_state.get("global_step", 0)
             self.current_epoch = loop_state.get("current_epoch", 0)
             # Load other state like best_metric
-            logger.info(
-                f"Loaded loop state: global_step={self.global_step}, current_epoch={self.current_epoch}"
-            )
+            logger.info(f"Loaded loop state: global_step={self.global_step}, current_epoch={self.current_epoch}")
         else:
-            logger.warning(
-                f"Trainer loop state file not found at {loop_state_path}. Starting from scratch."
-            )
+            logger.warning(f"Trainer loop state file not found at {loop_state_path}. Starting from scratch.")
 
         # --- Load Model A State ---
         try:
             logger.info("Selecting plugin for Model A load...")
-            self.accelerators["honest_prover"].state.select_deepspeed_plugin(
-                "honest_prover"
-            )
+            self.accelerators["honest_prover"].state.select_deepspeed_plugin("honest_prover")
             input_dir_a = os.path.join(checkpoint_dir, "honest_prover_state")
             logger.info(f"Loading Model A state from {input_dir_a}")
             self.accelerators["honest_prover"].load_state(input_dir_a)
             logger.info("Model A state loaded.")
         except Exception as e:
-            logger.error(
-                f"Failed to load Model A state from {input_dir_a}: {e}", exc_info=True
-            )
+            logger.error(f"Failed to load Model A state from {input_dir_a}: {e}", exc_info=True)
             # Decide whether to raise or continue
 
         # --- Load Model B State ---
         try:
             logger.info("Selecting plugin for Model B load...")
-            self.accelerators["sneaky_prover"].state.select_deepspeed_plugin(
-                "sneaky_prover"
-            )
+            self.accelerators["sneaky_prover"].state.select_deepspeed_plugin("sneaky_prover")
             input_dir_b = os.path.join(checkpoint_dir, "sneaky_prover_state")
             logger.info(f"Loading Model B state from {input_dir_b}")
             self.accelerators["sneaky_prover"].load_state(input_dir_b)
             logger.info("Model B state loaded.")
         except Exception as e:
-            logger.error(
-                f"Failed to load Model B state from {input_dir_b}: {e}", exc_info=True
-            )
+            logger.error(f"Failed to load Model B state from {input_dir_b}: {e}", exc_info=True)
             # Decide whether to raise or continue
 
-        logger.info(
-            f"Checkpoint loading complete. Resuming from step {self.global_step}."
-        )
+        logger.info(f"Checkpoint loading complete. Resuming from step {self.global_step}.")
 
     def _move_model_to_vllm(self, model_key: str) -> None:
         accelerator = self.accelerators[model_key]
         model = self.models[model_key]
         vllm_client = self.vllm_clients[model_key]
         can_sync_to_client = accelerator.is_main_process and vllm_client is not None
-        logger.info(
-            f"[Process {accelerator.process_index}] Starting weight sync logic for {model_key}..."
-        )
+        logger.info(f"[Process {accelerator.process_index}] Starting weight sync logic for {model_key}...")
         deepspeed_plugin = accelerator.state.deepspeed_plugin
         zero_stage_3 = deepspeed_plugin is not None and deepspeed_plugin.zero_stage == 3
-        gather_if_zero3 = (
-            deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
-        )
+        gather_if_zero3 = deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
         unwrapped_model = accelerator.unwrap_model(model)
         named_params = list(unwrapped_model.named_parameters())
         num_params = len(named_params)
@@ -1411,18 +1231,14 @@ class DisjointSequentialTrainer:
 
         param_iterator = named_params
         if accelerator.is_main_process:
-            param_iterator = tqdm(
-                named_params, desc=f"Syncing {model_key}", leave=False, disable=False
-            )
+            param_iterator = tqdm(named_params, desc=f"Syncing {model_key}", leave=False, disable=False)
 
         for name, param in param_iterator:
             if not param.requires_grad:
                 continue
             try:
                 # Collective operation happens here
-                with gather_if_zero3(
-                    [param], modifier_rank=0 if zero_stage_3 else None
-                ):
+                with gather_if_zero3([param], modifier_rank=0 if zero_stage_3 else None):
                     if can_sync_to_client:
                         try:
                             vllm_client.update_named_param(name, param.data)
@@ -1445,15 +1261,11 @@ class DisjointSequentialTrainer:
             f"[Process {accelerator.process_index} / {model_key}] Finished parameter loop. Waiting at barrier..."
         )
         accelerator.wait_for_everyone()  # Use the specific accelerator
-        logger.info(
-            f"[Process {accelerator.process_index} / {model_key}] Passed barrier after parameter loop."
-        )
+        logger.info(f"[Process {accelerator.process_index} / {model_key}] Passed barrier after parameter loop.")
 
         # --- Reset Cache (Main Process Only) ---
         if can_sync_to_client:
-            logger.info(
-                f"[Process {accelerator.process_index} / {model_key}] Resetting vLLM prefix cache..."
-            )
+            logger.info(f"[Process {accelerator.process_index} / {model_key}] Resetting vLLM prefix cache...")
             # ... (try-except block for reset) ...
 
         # --- Final Barrier for this function ---
@@ -1461,63 +1273,35 @@ class DisjointSequentialTrainer:
             f"[Process {accelerator.process_index}] Finished _move_model_to_vllm for {model_key}. Waiting at final barrier..."
         )
         accelerator.wait_for_everyone()  # Use the specific accelerator again
-        logger.info(
-            f"[Process {accelerator.process_index}] Exiting _move_model_to_vllm for {model_key}."
-        )
+        logger.info(f"[Process {accelerator.process_index}] Exiting _move_model_to_vllm for {model_key}.")
 
     def _sync_weights_to_vllm(self):
         """Helper method to trigger weight sync for both models. Called by all processes."""
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Entering _sync_weights_to_vllm"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Entering _sync_weights_to_vllm")
 
         # --- Sync honest_prover ---
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Selecting DS plugin 'honest_prover'..."
-        )
-        self.accelerators["honest_prover"].state.select_deepspeed_plugin(
-            "honest_prover"
-        )
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Calling _move_model_to_vllm for honest_prover"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Selecting DS plugin 'honest_prover'...")
+        self.accelerators["honest_prover"].state.select_deepspeed_plugin("honest_prover")
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Calling _move_model_to_vllm for honest_prover")
         self._move_model_to_vllm("honest_prover")
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Finished _move_model_to_vllm for honest_prover"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Finished _move_model_to_vllm for honest_prover")
 
         # *** CRUCIAL GLOBAL BARRIER ***
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Global barrier before sneaky_prover sync..."
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Global barrier before sneaky_prover sync...")
         self.accelerator.wait_for_everyone()  # Synchronize everyone using the primary accelerator
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Passed global barrier."
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Passed global barrier.")
 
         # --- Sync sneaky_prover ---
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Selecting DS plugin 'sneaky_prover'..."
-        )
-        self.accelerators["sneaky_prover"].state.select_deepspeed_plugin(
-            "sneaky_prover"
-        )
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Calling _move_model_to_vllm for sneaky_prover"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Selecting DS plugin 'sneaky_prover'...")
+        self.accelerators["sneaky_prover"].state.select_deepspeed_plugin("sneaky_prover")
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Calling _move_model_to_vllm for sneaky_prover")
         self._move_model_to_vllm("sneaky_prover")
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Finished _move_model_to_vllm for sneaky_prover"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Finished _move_model_to_vllm for sneaky_prover")
 
         # --- Final Global Barrier (Optional but safe) ---
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Global barrier after all syncs..."
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Global barrier after all syncs...")
         self.accelerator.wait_for_everyone()  # Synchronize everyone
-        logger.info(
-            f"[Process {self.accelerator.process_index}] ===> Exiting _sync_weights_to_vllm"
-        )
+        logger.info(f"[Process {self.accelerator.process_index}] ===> Exiting _sync_weights_to_vllm")
 
     def _get_train_sampler(self) -> Sampler:
         # Returns a sampler that
@@ -1589,9 +1373,7 @@ class DisjointSequentialTrainer:
             attention_mask=attention_mask,
             logits_to_keep=logits_to_keep + 1,
         ).logits
-        logits = logits[
-            :, :-1, :
-        ]  # (B, L-1, V), exclude the last logit: it corresponds to the next token pred
+        logits = logits[:, :-1, :]  # (B, L-1, V), exclude the last logit: it corresponds to the next token pred
 
         input_ids = input_ids[:, -logits_to_keep:]
         # For transformers<=4.48, logits_to_keep argument isn't supported, so here we drop logits ourselves.
@@ -1602,9 +1384,7 @@ class DisjointSequentialTrainer:
         logits = (
             logits / self.args.vllm_temperature_honest_prover
         )  # NOTE: Should be the same temp for honest and sneaky prover so makes no difference
-        return selective_log_softmax(
-            logits, input_ids
-        )  # compute logprobs for the input tokens
+        return selective_log_softmax(logits, input_ids)  # compute logprobs for the input tokens
 
     def _calculate_log_probabilities(
         self,
@@ -1635,21 +1415,15 @@ class DisjointSequentialTrainer:
         # Calculate old log probabilities if needed (num_iterations > 1)
         if self.args.num_iterations > 1:
             # Assuming policy_model is already in the correct mode (train/eval)
-            old_per_token_logps = self._get_per_token_logps(
-                policy_model, input_ids, attention_mask, logits_to_keep
-            )
+            old_per_token_logps = self._get_per_token_logps(policy_model, input_ids, attention_mask, logits_to_keep)
 
         # Calculate reference log probabilities if needed (beta > 0)
         if self.args.beta > 0.0:
             if ref_model is None:
-                raise ValueError(
-                    f"Reference model for {model_key} required but not loaded (beta > 0)."
-                )
+                raise ValueError(f"Reference model for {model_key} required but not loaded (beta > 0).")
             # Ensure reference model is in eval mode
             ref_model.eval()
-            ref_per_token_logps = self._get_per_token_logps(
-                ref_model, input_ids, attention_mask, logits_to_keep
-            )
+            ref_per_token_logps = self._get_per_token_logps(ref_model, input_ids, attention_mask, logits_to_keep)
 
         return old_per_token_logps, ref_per_token_logps
 
@@ -1658,17 +1432,12 @@ class DisjointSequentialTrainer:
         batch: dict[str, torch.Tensor | Any],
     ) -> dict[str, torch.Tensor | Any]:
         # mode = "eval" if self.control.should_evaluate else "train" # Find a more elegant way to do this
-        is_training = self.models[
-            "honest_prover"
-        ].training  # Make sure both models always have the same mode
+        is_training = self.models["honest_prover"].training  # Make sure both models always have the same mode
 
         if is_training:
             buffer_index = self.global_step % self.args.gradient_accumulation_steps
             buffered_inputs = self._buffered_inputs[buffer_index]
-            if (
-                self.global_step % self.args.num_iterations == 0
-                or buffered_inputs is None
-            ):
+            if self.global_step % self.args.num_iterations == 0 or buffered_inputs is None:
                 # buffered_inputs=None can occur when resuming from a checkpoint
                 inputs = self._generate_and_score_completions(batch)
                 self._buffered_inputs[buffer_index] = inputs
@@ -1690,9 +1459,7 @@ class DisjointSequentialTrainer:
             "sneaky_prover": self.accelerators["sneaky_prover"].device,
         }
         raw_prompts = [x["question"] for x in batch]  # List of strings, no devicing
-        system_prompts: dict[
-            Literal["honest_prover", "sneaky_prover", "verifier"], str
-        ] = {
+        system_prompts: dict[Literal["honest_prover", "sneaky_prover", "verifier"], str] = {
             "honest_prover": self.args.honest_prover_system_prompt,
             "sneaky_prover": self.args.sneaky_prover_system_prompt,
             "verifier": self.args.verifier_system_prompt,
@@ -1731,11 +1498,7 @@ class DisjointSequentialTrainer:
         honest_gen_args = {
             "temperature": self.args.vllm_temperature_honest_prover,
             "top_p": self.args.vllm_top_p_honest_prover,
-            "top_k": (
-                -1
-                if self.args.vllm_top_k_honest_prover is None
-                else self.args.vllm_top_k_honest_prover
-            ),
+            "top_k": (-1 if self.args.vllm_top_k_honest_prover is None else self.args.vllm_top_k_honest_prover),
             "max_tokens": self.args.vllm_max_new_tokens_honest_prover,
             "repetition_penalty": self.args.vllm_repetition_penalty_honest_prover,
             "frequency_penalty": self.args.vllm_frequency_penalty_honest_prover,
@@ -1743,9 +1506,7 @@ class DisjointSequentialTrainer:
             "stop": self.args.vllm_stop_sequences_honest_prover,
         }
 
-        logger.info(
-            f"Generating completions for honest prover with args: {honest_gen_args}"
-        )
+        logger.info(f"Generating completions for honest prover with args: {honest_gen_args}")
         # logger.info(f"All honest prompts: {all_honest_prompts}")
 
         completion_ids_a, completion_texts_a, _ = self._generate_via_vllm_and_broadcast(
@@ -1758,27 +1519,19 @@ class DisjointSequentialTrainer:
         )
 
         # Call post-process (load completions) on all processes & prepare inputs for following model
-        container.load_completions(
-            "honest_prover", completion_texts_a, completion_ids_a
-        )
+        container.load_completions("honest_prover", completion_texts_a, completion_ids_a)
         container.prepare_inputs(
             "sneaky_prover",
             format_type="instruct" if is_instruct["sneaky_prover"] else "base",
         )
 
         # Model B
-        all_prompts_text_b = gather_object(
-            container.container["sneaky_prover"]["prompt_texts"]
-        )
+        all_prompts_text_b = gather_object(container.container["sneaky_prover"]["prompt_texts"])
 
         sneaky_gen_args = {
             "temperature": self.args.vllm_temperature_sneaky_prover,
             "top_p": self.args.vllm_top_p_sneaky_prover,
-            "top_k": (
-                -1
-                if self.args.vllm_top_k_sneaky_prover is None
-                else self.args.vllm_top_k_sneaky_prover
-            ),
+            "top_k": (-1 if self.args.vllm_top_k_sneaky_prover is None else self.args.vllm_top_k_sneaky_prover),
             "max_tokens": self.args.vllm_max_new_tokens_sneaky_prover,
             "repetition_penalty": self.args.vllm_repetition_penalty_sneaky_prover,
             "frequency_penalty": self.args.vllm_frequency_penalty_sneaky_prover,
@@ -1786,9 +1539,7 @@ class DisjointSequentialTrainer:
             "stop": self.args.vllm_stop_sequences_sneaky_prover,
         }
 
-        logger.info(
-            f"Generating completions for sneaky prover with args: {sneaky_gen_args}"
-        )
+        logger.info(f"Generating completions for sneaky prover with args: {sneaky_gen_args}")
         completion_ids_b, completion_texts_b, _ = self._generate_via_vllm_and_broadcast(
             client_key="sneaky_prover",
             all_prompts_gathered=all_prompts_text_b,
@@ -1799,9 +1550,7 @@ class DisjointSequentialTrainer:
         )
 
         # Call post-process (load completions) on all processes & prepare inputs for following model
-        container.load_completions(
-            "sneaky_prover", completion_texts_b, completion_ids_b
-        )
+        container.load_completions("sneaky_prover", completion_texts_b, completion_ids_b)
 
         ## For every prover we now have:
         # - completion_ids
@@ -1813,51 +1562,38 @@ class DisjointSequentialTrainer:
             "verifier",
             format_type="instruct" if is_instruct.get("verifier") else "base",
         )
-        all_verifier_prompts = gather_object(
-            container.container["verifier"]["prompt_texts"]
-        )
+        all_verifier_prompts = gather_object(container.container["verifier"]["prompt_texts"])
 
         # Sanity checks - TODO: Remove when done debugging
         assert len(all_verifier_prompts) % 2 == 0, "Number of prompts must be even"
         assert (
-            len(all_verifier_prompts)
-            == 2 * len(raw_prompts) * self.accelerator.num_processes
+            len(all_verifier_prompts) == 2 * len(raw_prompts) * self.accelerator.num_processes
         ), "Number of verifier prompts (query-solution pairs to be evaluated) must be twice the number of raw prompts due to solutions coming from two provers."
 
         verifier_gen_args = {
             "temperature": self.args.vllm_temperature_verifier,
             "top_p": self.args.vllm_top_p_verifier,
-            "top_k": (
-                -1
-                if self.args.vllm_top_k_verifier is None
-                else self.args.vllm_top_k_verifier
-            ),
+            "top_k": (-1 if self.args.vllm_top_k_verifier is None else self.args.vllm_top_k_verifier),
             "max_tokens": self.args.vllm_max_new_tokens_verifier,
             "repetition_penalty": self.args.vllm_repetition_penalty_verifier,
             "frequency_penalty": self.args.vllm_frequency_penalty_verifier,
             "min_p": self.args.vllm_min_p_verifier,
             "stop": self.args.vllm_stop_sequences_verifier,
         }
-        verifier_logprobs_request_count = (
-            15  # Number of logprobs needed for reward extraction? Adjust if needed.
-        )
-        logger.info(
-            f"Generating completions for verifier with args: {verifier_gen_args}"
-        )
+        verifier_logprobs_request_count = 15  # Number of logprobs needed for reward extraction? Adjust if needed.
+        logger.info(f"Generating completions for verifier with args: {verifier_gen_args}")
         logger.info(
             "NOTE: Verifier gets **FULL** list of ids, texts, and logprobs. This is different from the other models."
         )
 
-        completion_ids_v, completion_texts_v, logprobs_v = (
-            self._generate_via_vllm_and_broadcast(
-                client_key="verifier",
-                all_prompts_gathered=all_verifier_prompts,
-                generation_args=verifier_gen_args,
-                n_generations=1,  # Verifier generates one response per input
-                logprobs_count=verifier_logprobs_request_count,
-                # For verifier, the number of local items corresponds to *both* prover solutions
-                raw_prompts_len_local=len(raw_prompts) * 2,
-            )
+        completion_ids_v, completion_texts_v, logprobs_v = self._generate_via_vllm_and_broadcast(
+            client_key="verifier",
+            all_prompts_gathered=all_verifier_prompts,
+            generation_args=verifier_gen_args,
+            n_generations=1,  # Verifier generates one response per input
+            logprobs_count=verifier_logprobs_request_count,
+            # For verifier, the number of local items corresponds to *both* prover solutions
+            raw_prompts_len_local=len(raw_prompts) * 2,
         )
 
         logger.info("Completed verifier generation. Extracting rewards...")
@@ -1865,13 +1601,9 @@ class DisjointSequentialTrainer:
         # --- Reward Processing and Advantage Calculation ---
         rewards_all = None  # Initialize
         if self.accelerator.is_main_process:
-            logger.info(
-                f"[Process {self.accelerator.process_index}] Main process entering reward extraction phase."
-            )
+            logger.info(f"[Process {self.accelerator.process_index}] Main process entering reward extraction phase.")
             # Need to reconstruct the *full* list of completion texts on main process to extract rewards globally
-            logger.info(
-                f"[Process {self.accelerator.process_index}] Gathering verifier completion texts..."
-            )
+            logger.info(f"[Process {self.accelerator.process_index}] Gathering verifier completion texts...")
             # gather_start_time = time.time()
             # # Gather local texts back - ensure completion_texts_v is defined and is a list
             # if not isinstance(completion_texts_v, list):
@@ -1888,12 +1620,8 @@ class DisjointSequentialTrainer:
             )
             # --- End Add Logging ---
 
-            logger.info(
-                f"[Process {self.accelerator.process_index}] Starting reward extraction loop..."
-            )
-            rewards_all = [
-                self.extract_verifier_reward(text) for text in completion_texts_v
-            ]
+            logger.info(f"[Process {self.accelerator.process_index}] Starting reward extraction loop...")
+            rewards_all = [self.extract_verifier_reward(text) for text in completion_texts_v]
             # --- Add Logging ---
             logger.info(
                 f"[Process {self.accelerator.process_index}] Length of rewards_all after reward extraction: {len(rewards_all)}"
@@ -1913,9 +1641,7 @@ class DisjointSequentialTrainer:
             f"[Process {self.accelerator.process_index}] Preparing to broadcast rewards (object type: {type(rewards_all)}, length: {len(rewards_all) if isinstance(rewards_all, list) else 'N/A'})."
         )
 
-        rewards_all = broadcast_object_list(
-            rewards_all, from_process=0
-        )  # Broadcast the globally extracted rewards
+        rewards_all = broadcast_object_list(rewards_all, from_process=0)  # Broadcast the globally extracted rewards
 
         # Now `rewards_all` contains the rewards corresponding to `all_verifier_prompts` on every process.
 
@@ -1941,14 +1667,10 @@ class DisjointSequentialTrainer:
         # NaNs handling
         if torch.isnan(rewards_all_tensor).any():
             nan_mask = torch.isnan(rewards_all_tensor)
-            rewards_all_tensor[nan_mask] = (
-                -0.1
-            )  # Or another strategy like self.args.nan_reward_value
+            rewards_all_tensor[nan_mask] = -0.1  # Or another strategy like self.args.nan_reward_value
             # Log a warning if NaNs were present
             if self.accelerator.is_main_process:
-                logger.warning(
-                    f"Replaced {nan_mask.sum()} NaN values in rewards tensor with -0.1."
-                )
+                logger.warning(f"Replaced {nan_mask.sum()} NaN values in rewards tensor with -0.1.")
 
         if (rewards_all_tensor == -0.1).all():  # See above
             nan_row_idx = torch.isnan(rewards_a).any(dim=1).nonzero(as_tuple=True)[0][0]
@@ -1988,9 +1710,7 @@ class DisjointSequentialTrainer:
             # adv_clip=self.args.adv_clip_b # Add if you have clipping args
         )
 
-        logger.info(
-            "Completed advantage calculation. Slicing advantages and rewards..."
-        )
+        logger.info("Completed advantage calculation. Slicing advantages and rewards...")
         logger.info(f"Advantages a: {advantages_a_global}")
         logger.info(f"Advantages b: {advantages_b_global}")
 
@@ -1999,21 +1719,15 @@ class DisjointSequentialTrainer:
         # The slice should correspond to the number of *original* prompts processed
         # by this rank for *one* prover. len(raw_prompts) holds this.
         num_local_samples_per_prover = len(raw_prompts)  # This is key
-        start_index_prover = (
-            self.accelerator.process_index * num_local_samples_per_prover
-        )
+        start_index_prover = self.accelerator.process_index * num_local_samples_per_prover
         end_index_prover = start_index_prover + num_local_samples_per_prover
         local_slice_prover = slice(start_index_prover, end_index_prover)
 
         # Slice the *global* advantages and rewards to get the local part for provers
         local_advantages_a = advantages_a_global[local_slice_prover]
         local_advantages_b = advantages_b_global[local_slice_prover]
-        local_rewards_a = rewards_a[
-            local_slice_prover
-        ]  # Slice global rewards for logging
-        local_rewards_b = rewards_b[
-            local_slice_prover
-        ]  # Slice global rewards for logging
+        local_rewards_a = rewards_a[local_slice_prover]  # Slice global rewards for logging
+        local_rewards_b = rewards_b[local_slice_prover]  # Slice global rewards for logging
 
         logger.info("Completed slicing. Preparing model inputs and logging metrics...")
 
@@ -2028,20 +1742,14 @@ class DisjointSequentialTrainer:
 
         # --- Calculate Log Probabilities using the helper ---
         with torch.no_grad():
-            old_per_token_logps_a, ref_per_token_logps_a = (
-                self._calculate_log_probabilities(
-                    "honest_prover", container.container["honest_prover"]
-                )
+            old_per_token_logps_a, ref_per_token_logps_a = self._calculate_log_probabilities(
+                "honest_prover", container.container["honest_prover"]
             )
-            old_per_token_logps_b, ref_per_token_logps_b = (
-                self._calculate_log_probabilities(
-                    "sneaky_prover", container.container["sneaky_prover"]
-                )
+            old_per_token_logps_b, ref_per_token_logps_b = self._calculate_log_probabilities(
+                "sneaky_prover", container.container["sneaky_prover"]
             )
 
-        logger.info(
-            "Completed log probability calculation. Loading completions into container..."
-        )
+        logger.info("Completed log probability calculation. Loading completions into container...")
         logger.info(f"Rewards all tensor: {rewards_all_tensor}")
         logger.info(f"Local rewards a: {local_rewards_a}")
         logger.info(f"Local rewards b: {local_rewards_b}")
@@ -2053,15 +1761,11 @@ class DisjointSequentialTrainer:
         logger.info(f"Ref per token logps b: {ref_per_token_logps_b}")
 
         # Load the completions into the container
-        container.load_completions(
-            "verifier", completion_texts_v, completion_ids_v, rewards_all_tensor
-        )
+        container.load_completions("verifier", completion_texts_v, completion_ids_v, rewards_all_tensor)
         # container.pad_and_concatenate(model_key="verifier")
 
         # Log the metrics
-        eval_mode = (
-            "train" if self.models["sneaky_prover"].training else "eval"
-        )  # Either prover works
+        eval_mode = "train" if self.models["sneaky_prover"].training else "eval"  # Either prover works
 
         # Log Honest Prover Metrics
         self._store_generation_metrics(
@@ -2128,9 +1832,7 @@ class DisjointSequentialTrainer:
         # Convert logits to probabilities with softmax
         probs = torch.nn.functional.softmax(logits, dim=-1)
         # Calculate entropy: -sum(p_i * log(p_i))
-        entropy = -torch.sum(
-            probs * torch.log(probs + 1e-10), dim=-1
-        )  # Shape: (batch_size, sequence_length)
+        entropy = -torch.sum(probs * torch.log(probs + 1e-10), dim=-1)  # Shape: (batch_size, sequence_length)
 
         if not reduce:
             return entropy  # Return full entropy tensor
@@ -2151,35 +1853,22 @@ class DisjointSequentialTrainer:
         device = self.accelerators[model_key].device
 
         # Compute the per-token log probabilities for the model
-        prompt_ids, prompt_mask = inputs["prompt_ids"].to(device), inputs[
-            "prompt_mask"
-        ].to(device)
-        completion_ids, completion_mask = inputs["completion_ids"].to(device), inputs[
-            "completion_mask"
-        ].to(device)
+        prompt_ids, prompt_mask = inputs["prompt_ids"].to(device), inputs["prompt_mask"].to(device)
+        completion_ids, completion_mask = inputs["completion_ids"].to(device), inputs["completion_mask"].to(device)
         input_ids = torch.cat([prompt_ids, completion_ids], dim=1)
         attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
-        logits_to_keep = completion_ids.size(
-            1
-        )  # we only need to compute the logits for the completion tokens
+        logits_to_keep = completion_ids.size(1)  # we only need to compute the logits for the completion tokens
 
         # Get full logits to compute entropy
         unwrapped_model = self.accelerator.unwrap_model(model)
         outputs = unwrapped_model(input_ids=input_ids, attention_mask=attention_mask)
-        logits = outputs.logits[
-            :, -logits_to_keep - 1 : -1, :
-        ]  # Get logits for completion tokens
+        logits = outputs.logits[:, -logits_to_keep - 1 : -1, :]  # Get logits for completion tokens
 
         # Calculate entropy metrics
         per_token_entropy = self._compute_entropy(logits, completion_mask, reduce=False)
-        mean_entropy = (
-            per_token_entropy * completion_mask
-        ).sum() / completion_mask.sum().clamp(min=1.0)
+        mean_entropy = (per_token_entropy * completion_mask).sum() / completion_mask.sum().clamp(min=1.0)
         entropy_std = torch.sqrt(
-            (
-                (per_token_entropy - mean_entropy.unsqueeze(-1)).pow(2)
-                * completion_mask
-            ).sum()
+            ((per_token_entropy - mean_entropy.unsqueeze(-1)).pow(2) * completion_mask).sum()
             / completion_mask.sum().clamp(min=1.0)
         )
 
@@ -2190,19 +1879,11 @@ class DisjointSequentialTrainer:
             entropy_min = valid_entropy.min()
             entropy_max = valid_entropy.max()
             # Calculate percentiles if enough tokens
-            if (
-                len(valid_entropy) >= 4
-            ):  # Need at least a few points for meaningful percentiles
+            if len(valid_entropy) >= 4:  # Need at least a few points for meaningful percentiles
                 sorted_entropy, _ = torch.sort(valid_entropy)
-                idx_25 = max(
-                    0, min(len(sorted_entropy) - 1, int(0.25 * len(sorted_entropy)))
-                )
-                idx_50 = max(
-                    0, min(len(sorted_entropy) - 1, int(0.50 * len(sorted_entropy)))
-                )
-                idx_75 = max(
-                    0, min(len(sorted_entropy) - 1, int(0.75 * len(sorted_entropy)))
-                )
+                idx_25 = max(0, min(len(sorted_entropy) - 1, int(0.25 * len(sorted_entropy))))
+                idx_50 = max(0, min(len(sorted_entropy) - 1, int(0.50 * len(sorted_entropy))))
+                idx_75 = max(0, min(len(sorted_entropy) - 1, int(0.75 * len(sorted_entropy))))
 
                 entropy_25 = sorted_entropy[idx_25]
                 entropy_50 = sorted_entropy[idx_50]  # median
@@ -2220,54 +1901,28 @@ class DisjointSequentialTrainer:
 
         # Store entropy metrics
         eval_mode = "eval" if not model.training else "train"
-        self._metrics[eval_mode][model_key]["entropy_mean"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_mean", [])
-        self._metrics[eval_mode][model_key]["entropy_std"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_std", [])
-        self._metrics[eval_mode][model_key]["entropy_min"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_min", [])
-        self._metrics[eval_mode][model_key]["entropy_max"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_max", [])
-        self._metrics[eval_mode][model_key]["entropy_25"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_25", [])
-        self._metrics[eval_mode][model_key]["entropy_50"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_50", [])
-        self._metrics[eval_mode][model_key]["entropy_75"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_75", [])
-        self._metrics[eval_mode][model_key]["entropy_iqr"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy_iqr", [])
+        self._metrics[eval_mode][model_key]["entropy_mean"] = self._metrics[eval_mode][model_key].get(
+            "entropy_mean", []
+        )
+        self._metrics[eval_mode][model_key]["entropy_std"] = self._metrics[eval_mode][model_key].get("entropy_std", [])
+        self._metrics[eval_mode][model_key]["entropy_min"] = self._metrics[eval_mode][model_key].get("entropy_min", [])
+        self._metrics[eval_mode][model_key]["entropy_max"] = self._metrics[eval_mode][model_key].get("entropy_max", [])
+        self._metrics[eval_mode][model_key]["entropy_25"] = self._metrics[eval_mode][model_key].get("entropy_25", [])
+        self._metrics[eval_mode][model_key]["entropy_50"] = self._metrics[eval_mode][model_key].get("entropy_50", [])
+        self._metrics[eval_mode][model_key]["entropy_75"] = self._metrics[eval_mode][model_key].get("entropy_75", [])
+        self._metrics[eval_mode][model_key]["entropy_iqr"] = self._metrics[eval_mode][model_key].get("entropy_iqr", [])
 
         self._metrics[eval_mode][model_key]["entropy_mean"].append(
-            self.accelerators[model_key]
-            .gather_for_metrics(mean_entropy)
-            .nanmean()
-            .item()
+            self.accelerators[model_key].gather_for_metrics(mean_entropy).nanmean().item()
         )
         self._metrics[eval_mode][model_key]["entropy_std"].append(
-            self.accelerators[model_key]
-            .gather_for_metrics(entropy_std)
-            .nanmean()
-            .item()
+            self.accelerators[model_key].gather_for_metrics(entropy_std).nanmean().item()
         )
         self._metrics[eval_mode][model_key]["entropy_min"].append(
-            self.accelerators[model_key]
-            .gather_for_metrics(entropy_min)
-            .nanmean()
-            .item()
+            self.accelerators[model_key].gather_for_metrics(entropy_min).nanmean().item()
         )
         self._metrics[eval_mode][model_key]["entropy_max"].append(
-            self.accelerators[model_key]
-            .gather_for_metrics(entropy_max)
-            .nanmean()
-            .item()
+            self.accelerators[model_key].gather_for_metrics(entropy_max).nanmean().item()
         )
         self._metrics[eval_mode][model_key]["entropy_25"].append(
             self.accelerators[model_key].gather_for_metrics(entropy_25).nanmean().item()
@@ -2280,23 +1935,16 @@ class DisjointSequentialTrainer:
         )
         entropy_iqr = entropy_75 - entropy_25
         self._metrics[eval_mode][model_key]["entropy_iqr"].append(
-            self.accelerators[model_key]
-            .gather_for_metrics(entropy_iqr)
-            .nanmean()
-            .item()
+            self.accelerators[model_key].gather_for_metrics(entropy_iqr).nanmean().item()
         )
 
-        per_token_logps = self._get_per_token_logps(
-            model, input_ids, attention_mask, logits_to_keep
-        )
+        per_token_logps = self._get_per_token_logps(model, input_ids, attention_mask, logits_to_keep)
 
         # Compute the KL divergence between the model and the reference model
         if self.args.beta != 0.0:
             ref_per_token_logps = inputs["ref_per_token_logps"]
             per_token_kl = (
-                torch.exp(ref_per_token_logps - per_token_logps)
-                - (ref_per_token_logps - per_token_logps)
-                - 1
+                torch.exp(ref_per_token_logps - per_token_logps) - (ref_per_token_logps - per_token_logps) - 1
             )
 
         # Compute the loss
@@ -2304,23 +1952,17 @@ class DisjointSequentialTrainer:
         # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip it's computation (see
         # _generate_and_score_completions) and use per_token_logps.detach() instead.
         old_per_token_logps = (
-            inputs["old_per_token_logps"]
-            if self.args.num_iterations > 1
-            else per_token_logps.detach()
+            inputs["old_per_token_logps"] if self.args.num_iterations > 1 else per_token_logps.detach()
         )
         coef_1 = torch.exp(per_token_logps - old_per_token_logps)
-        coef_2 = torch.clamp(
-            coef_1, 1 - self.args.epsilon_low, 1 + self.args.epsilon_high
-        )
+        coef_2 = torch.clamp(coef_1, 1 - self.args.epsilon_low, 1 + self.args.epsilon_high)
         per_token_loss1 = coef_1 * advantages.unsqueeze(1)
         per_token_loss2 = coef_2 * advantages.unsqueeze(1)
         per_token_loss = -torch.min(per_token_loss1, per_token_loss2)
         if self.args.beta != 0.0:
             per_token_loss = per_token_loss + self.args.beta * per_token_kl
 
-        loss = (per_token_loss * completion_mask).sum() / completion_mask.sum().clamp(
-            min=1.0
-        )
+        loss = (per_token_loss * completion_mask).sum() / completion_mask.sum().clamp(min=1.0)
 
         # Log the metrics
         eval_mode = "eval" if not model.training else "train"
@@ -2328,16 +1970,13 @@ class DisjointSequentialTrainer:
         if self.args.beta != 0.0:
             mean_kl = (per_token_kl * completion_mask).sum() / completion_mask.sum()
             self._metrics[eval_mode][model_key]["kl"].append(
-                self.accelerators[model_key]
-                .gather_for_metrics(mean_kl)
-                .nanmean()
-                .item()
+                self.accelerators[model_key].gather_for_metrics(mean_kl).nanmean().item()
             )
 
         # Compute the clip ratio
-        is_clipped = (
-            (coef_1 < 1 - self.args.epsilon_low) & (advantages.unsqueeze(1) < 0)
-        ) | ((coef_1 > 1 + self.args.epsilon_high) & (advantages.unsqueeze(1) > 0))
+        is_clipped = ((coef_1 < 1 - self.args.epsilon_low) & (advantages.unsqueeze(1) < 0)) | (
+            (coef_1 > 1 + self.args.epsilon_high) & (advantages.unsqueeze(1) > 0)
+        )
         clip_ratio = (is_clipped * completion_mask).sum() / completion_mask.sum()
         self._metrics[eval_mode][model_key]["clip_ratio"].append(
             self.accelerators[model_key].gather_for_metrics(clip_ratio).nanmean().item()
@@ -2355,19 +1994,13 @@ class DisjointSequentialTrainer:
         accelerator = self.accelerators[model_key]
         # unwrap the model to access the model.model
         unwrapped_model = accelerator.unwrap_model(model)
-        last_hidden_state = unwrapped_model.model(
-            input_ids=input_ids, attention_mask=attention_mask
-        ).last_hidden_state
+        last_hidden_state = unwrapped_model.model(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
         last_hidden_state = last_hidden_state[:, :-1, :]  # (B, L-1, H)
         if logits_to_keep is not None:
-            last_hidden_state = last_hidden_state[
-                :, -logits_to_keep:, :
-            ]  # (B, logits_to_keep, H)
+            last_hidden_state = last_hidden_state[:, -logits_to_keep:, :]  # (B, logits_to_keep, H)
         return last_hidden_state
 
-    def compute_liger_loss(
-        self, model, inputs, model_key: Literal["honest_prover", "sneaky_prover"]
-    ):
+    def compute_liger_loss(self, model, inputs, model_key: Literal["honest_prover", "sneaky_prover"]):
 
         # Make sure devicing is set correctly
         device = self.accelerators[model_key].device
@@ -2377,41 +2010,29 @@ class DisjointSequentialTrainer:
         )
 
         # Compute the per-token log probabilities for the model
-        prompt_ids, prompt_mask = inputs["prompt_ids"].to(device), inputs[
-            "prompt_mask"
-        ].to(device)
-        completion_ids, completion_mask = inputs["completion_ids"].to(device), inputs[
-            "completion_mask"
-        ].to(device)
+        prompt_ids, prompt_mask = inputs["prompt_ids"].to(device), inputs["prompt_mask"].to(device)
+        completion_ids, completion_mask = inputs["completion_ids"].to(device), inputs["completion_mask"].to(device)
         input_ids = torch.cat([prompt_ids, completion_ids], dim=1)
         attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
-        logits_to_keep = completion_ids.size(
-            1
-        )  # we only need to compute the logits for the completion tokens
+        logits_to_keep = completion_ids.size(1)  # we only need to compute the logits for the completion tokens
 
         # Get full logits to compute entropy
         unwrapped_model = self.accelerators[model_key].unwrap_model(model)
         outputs = unwrapped_model(input_ids=input_ids, attention_mask=attention_mask)
-        logits = outputs.logits[
-            :, -logits_to_keep - 1 : -1, :
-        ]  # Get logits for completion tokens
+        logits = outputs.logits[:, -logits_to_keep - 1 : -1, :]  # Get logits for completion tokens
 
         # Calculate entropy over the logits
         entropy = self._compute_entropy(logits, completion_mask)
 
         # Store entropy in metrics
         eval_mode = "eval" if not model.training else "train"
-        self._metrics[eval_mode][model_key]["entropy"] = self._metrics[eval_mode][
-            model_key
-        ].get("entropy", [])
+        self._metrics[eval_mode][model_key]["entropy"] = self._metrics[eval_mode][model_key].get("entropy", [])
         self._metrics[eval_mode][model_key]["entropy"].append(
             self.accelerators[model_key].gather_for_metrics(entropy).nanmean().item()
         )
 
         # get the last hidden state of the model
-        last_hidden_state = self._get_last_hidden_state(
-            model, model_key, input_ids, attention_mask, logits_to_keep
-        )
+        last_hidden_state = self._get_last_hidden_state(model, model_key, input_ids, attention_mask, logits_to_keep)
 
         with self._full_lm_head_params(unwrapped_model, zero3):
             weight = unwrapped_model.lm_head.weight  # now full on every rank
@@ -2436,10 +2057,7 @@ class DisjointSequentialTrainer:
         eval_mode = "eval" if not model.training else "train"
         if self.args.beta != 0.0:
             self._metrics[eval_mode][model_key]["kl"].append(
-                self.accelerators[model_key]
-                .gather_for_metrics(mean_kl)
-                .nanmean()
-                .item()
+                self.accelerators[model_key].gather_for_metrics(mean_kl).nanmean().item()
             )
         self._metrics[eval_mode][model_key]["clip_ratio"].append(
             self.accelerators[model_key].gather_for_metrics(clip_ratio).nanmean().item()
@@ -2477,9 +2095,7 @@ class DisjointSequentialTrainer:
     def extract_verifier_reward(self, completion_text: str) -> float:
         """Extract the reward from the verifier's completion text."""
         # Find the first occurrence of <verdict>...</verdict>
-        verdict_match = re.search(
-            r"<verdict>(.*?)</verdict>", completion_text, re.DOTALL
-        )
+        verdict_match = re.search(r"<verdict>(.*?)</verdict>", completion_text, re.DOTALL)
 
         if verdict_match:
             verdict = verdict_match.group(1).strip()
@@ -2505,17 +2121,11 @@ class DisjointSequentialTrainer:
 
         timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
         interaction_id = str(uuid.uuid4())
-        log_filename = (
-            f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
-        )
+        log_filename = f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
 
-        log_filename = (
-            f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
-        )
+        log_filename = f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
         log_filepath = os.path.join(self.llm_interaction_log_dir, log_filename)
-        step_dir = os.path.join(
-            self.llm_interaction_log_dir, f"step_{self.global_step}"
-        )
+        step_dir = os.path.join(self.llm_interaction_log_dir, f"step_{self.global_step}")
         if not os.path.exists(step_dir):
             os.makedirs(step_dir)
 
@@ -2552,9 +2162,7 @@ class DisjointSequentialTrainer:
         # NOTE: Accelerator is mode specific; take from self.accelerators
 
         # --- Completion Lengths ---
-        agg_completion_mask_sum = self.accelerators[model_key].gather_for_metrics(
-            completion_mask.sum(1)
-        )
+        agg_completion_mask_sum = self.accelerators[model_key].gather_for_metrics(completion_mask.sum(1))
         self._metrics[eval_mode][model_key]["completions/mean_length"].append(
             agg_completion_mask_sum.float().mean().item()
         )
@@ -2566,28 +2174,22 @@ class DisjointSequentialTrainer:
         )
 
         # --- EOS Metrics ---
-        agg_terminated_with_eos = self.accelerators[model_key].gather_for_metrics(
-            is_eos.any(dim=1)
-        )
+        agg_terminated_with_eos = self.accelerators[model_key].gather_for_metrics(is_eos.any(dim=1))
         term_completion_mask_sum = agg_completion_mask_sum[agg_terminated_with_eos]
         clipped_completions_ratio = (
             1.0 - (len(term_completion_mask_sum) / len(agg_completion_mask_sum))
             if len(agg_completion_mask_sum) > 0
             else 1.0
         )
-        self._metrics[eval_mode][model_key]["completions/clipped_ratio"].append(
-            clipped_completions_ratio
-        )
+        self._metrics[eval_mode][model_key]["completions/clipped_ratio"].append(clipped_completions_ratio)
 
         if len(term_completion_mask_sum) == 0:
             # Handle edge case where no sequences terminated with EOS in this batch/process
-            term_completion_mask_sum = torch.tensor(
-                [0.0], device=completion_mask.device
-            )  # Use a tensor with 0
+            term_completion_mask_sum = torch.tensor([0.0], device=completion_mask.device)  # Use a tensor with 0
 
-        self._metrics[eval_mode][model_key][
-            "completions/mean_terminated_length"
-        ].append(term_completion_mask_sum.float().mean().item())
+        self._metrics[eval_mode][model_key]["completions/mean_terminated_length"].append(
+            term_completion_mask_sum.float().mean().item()
+        )
         self._metrics[eval_mode][model_key]["completions/min_terminated_length"].append(
             term_completion_mask_sum.float().min().item()
         )
@@ -2599,32 +2201,20 @@ class DisjointSequentialTrainer:
         if rewards is not None:
             agg_rewards = self.accelerators[model_key].gather_for_metrics(rewards)
             # Use nanmean and nanstd (assuming you have the nanstd function available)
-            self._metrics[eval_mode][model_key]["rewards/mean"].append(
-                torch.nanmean(agg_rewards.float()).item()
-            )
-            self._metrics[eval_mode][model_key]["rewards/std"].append(
-                nanstd(agg_rewards.float()).item()
-            )
+            self._metrics[eval_mode][model_key]["rewards/mean"].append(torch.nanmean(agg_rewards.float()).item())
+            self._metrics[eval_mode][model_key]["rewards/std"].append(nanstd(agg_rewards.float()).item())
 
         # Log advantage metrics if available
         if advantages is not None:
             agg_advantages = self.accelerators[model_key].gather_for_metrics(advantages)
-            self._metrics[eval_mode][model_key]["advantages/mean"].append(
-                torch.nanmean(agg_advantages.float()).item()
-            )
-            self._metrics[eval_mode][model_key]["advantages/std"].append(
-                nanstd(agg_advantages.float()).item()
-            )
+            self._metrics[eval_mode][model_key]["advantages/mean"].append(torch.nanmean(agg_advantages.float()).item())
+            self._metrics[eval_mode][model_key]["advantages/std"].append(nanstd(agg_advantages.float()).item())
 
     def _generate_via_vllm_and_broadcast(
         self,
         client_key: Literal["honest_prover", "sneaky_prover", "verifier"],
-        all_prompts_gathered: list[
-            str
-        ],  # The gathered list of prompts from all processes
-        generation_args: dict[
-            str, Any
-        ],  # Args for vllm_client.generate (temp, top_p, etc.)
+        all_prompts_gathered: list[str],  # The gathered list of prompts from all processes
+        generation_args: dict[str, Any],  # Args for vllm_client.generate (temp, top_p, etc.)
         n_generations: int,
         logprobs_count: int,  # Number of logprobs to request (0 if none)
         raw_prompts_len_local: int,  # Length of the original local prompt list (needed for slicing)
@@ -2647,9 +2237,7 @@ class DisjointSequentialTrainer:
             # Only pass unique prompts if n_generations > 1
             if n_generations > 1:
                 prompts_to_generate = all_prompts_gathered[::n_generations]
-                assert (
-                    len(prompts_to_generate) * n_generations == num_total_prompts
-                ), "Prompt list length mismatch"
+                assert len(prompts_to_generate) * n_generations == num_total_prompts, "Prompt list length mismatch"
             else:
                 prompts_to_generate = all_prompts_gathered
 
@@ -2663,9 +2251,7 @@ class DisjointSequentialTrainer:
 
             # Call generate
             if logprobs_count > 0:
-                completion_ids_nested, logprobs_nested = client.generate(
-                    **generate_kwargs
-                )
+                completion_ids_nested, logprobs_nested = client.generate(**generate_kwargs)
                 # Process logprobs: Flatten the nested list structure if necessary
                 logprobs_all = logprobs_nested
                 # --- Add Logging ---
@@ -2718,9 +2304,7 @@ class DisjointSequentialTrainer:
 
         # Broadcast results from main process
         completion_ids_all = broadcast_object_list(completion_ids_all, from_process=0)
-        completion_texts_all = broadcast_object_list(
-            completion_texts_all, from_process=0
-        )
+        completion_texts_all = broadcast_object_list(completion_texts_all, from_process=0)
         if logprobs_count > 0:
             logprobs_all = broadcast_object_list(logprobs_all, from_process=0)
 
@@ -2731,9 +2315,7 @@ class DisjointSequentialTrainer:
         )
         local_completion_ids = completion_ids_all[process_slice]
         local_completion_texts = completion_texts_all[process_slice]
-        local_logprobs = (
-            logprobs_all[process_slice] if logprobs_all is not None else None
-        )
+        local_logprobs = logprobs_all[process_slice] if logprobs_all is not None else None
 
         # --- MODIFIED RETURN LOGIC ---
         if client_key == "verifier":
@@ -2748,9 +2330,7 @@ class DisjointSequentialTrainer:
             )
             local_completion_ids = completion_ids_all[process_slice]
             local_completion_texts = completion_texts_all[process_slice]
-            local_logprobs = (
-                logprobs_all[process_slice] if logprobs_all is not None else None
-            )
+            local_logprobs = logprobs_all[process_slice] if logprobs_all is not None else None
             return local_completion_ids, local_completion_texts, local_logprobs
 
     def _calculate_grpo_advantages(
@@ -2775,9 +2355,7 @@ class DisjointSequentialTrainer:
             Tensor containing the calculated advantages for all generations (globally).
         """
         if global_rewards.dim() != 1:
-            raise ValueError(
-                f"Expected global_rewards to be 1D, but got shape {global_rewards.shape}"
-            )
+            raise ValueError(f"Expected global_rewards to be 1D, but got shape {global_rewards.shape}")
         if len(global_rewards) % num_generations != 0:
             raise ValueError(
                 f"Length of global_rewards ({len(global_rewards)}) must be divisible by num_generations ({num_generations})."
@@ -2786,17 +2364,11 @@ class DisjointSequentialTrainer:
         num_unique_prompts_global = len(global_rewards) // num_generations
 
         # Reshape rewards to (num_unique_prompts_global, num_generations)
-        rewards_grouped = global_rewards.view(
-            num_unique_prompts_global, num_generations
-        )
+        rewards_grouped = global_rewards.view(num_unique_prompts_global, num_generations)
 
         # Calculate mean and std per prompt group (nans handled already)
-        mean_grouped_rewards = torch.nanmean(
-            rewards_grouped.float(), dim=1
-        )  # TODO: Possibly not needed nanmean
-        std_grouped_rewards = nanstd(
-            rewards_grouped.float(), dim=1
-        )  # TODO: Possibly not needed nanstd
+        mean_grouped_rewards = torch.nanmean(rewards_grouped.float(), dim=1)  # TODO: Possibly not needed nanmean
+        std_grouped_rewards = nanstd(rewards_grouped.float(), dim=1)  # TODO: Possibly not needed nanstd
 
         # Expand mean/std back to the original shape
         mean_expanded = mean_grouped_rewards.repeat_interleave(num_generations, dim=0)
@@ -2808,12 +2380,8 @@ class DisjointSequentialTrainer:
         # --- Add Shape Logging ---
         logger.info(f"[AdvCalc shapes] global_rewards: {global_rewards.shape}")
         logger.info(f"[AdvCalc shapes] rewards_grouped: {rewards_grouped.shape}")
-        logger.info(
-            f"[AdvCalc shapes] mean_grouped_rewards: {mean_grouped_rewards.shape}"
-        )
-        logger.info(
-            f"[AdvCalc shapes] std_grouped_rewards: {std_grouped_rewards.shape}"
-        )
+        logger.info(f"[AdvCalc shapes] mean_grouped_rewards: {mean_grouped_rewards.shape}")
+        logger.info(f"[AdvCalc shapes] std_grouped_rewards: {std_grouped_rewards.shape}")
         logger.info(f"[AdvCalc shapes] mean_expanded: {mean_expanded.shape}")
         logger.info(f"[AdvCalc shapes] std_expanded: {std_expanded.shape}")
         logger.info(f"[AdvCalc shapes] advantages: {advantages.shape}")

@@ -22,7 +22,7 @@ module load 2023
 module load CUDA/12.4.0 # Why not load 2024? 2024 requires CUDA 12.6.0 (A hassle to remake the whole environment)
 module load py # aliased to Python/3.11.3-GCCcore-12.3.0
 
-cd /home/jvelja/learn_to_verify/src/verifiers
+cd /home/jvelja/learn_to_verify
 
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
@@ -229,7 +229,7 @@ uv run --env-file .env accelerate launch \
     --verifier.use_flash_attention True \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
-    --training_sneaky_prover.apply_liger_kernel True \
+    --training_sneaky_prover.apply_liger_kernel False \
     --training_sneaky_prover.learning_rate 5e-6 \
     --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
     --training_sneaky_prover.num_warmup_steps 10 \
@@ -241,13 +241,13 @@ uv run --env-file .env accelerate launch \
     --training_verifier.lr_scheduler_type "linear" \
     --training_verifier.num_warmup_steps 100 \
     --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
-    --training_verifier.verifier_batch_size 8 \
+    --training_verifier.batch_size 8 \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \
     \
     --rl.num_generations 8 \
     --rl.num_iterations 1 \
-    --rl.beta 0.1 \
+    --rl.beta 0.01 \
     --rl.scale_rewards True \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \

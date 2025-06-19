@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
-from typing import Any, TYPE_CHECKING
 import logging
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pvg.orchestrator.orchestrator import TrainingPhaseOrchestrator

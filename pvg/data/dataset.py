@@ -1,14 +1,16 @@
 # dataset.py
 
 import logging
-from logging import Logger
 import os
 import random
+from logging import Logger
+from typing import Any, Literal
+
 import torch
-from datasets import load_dataset, Dataset as HFDataset
-from torch.utils.data import Dataset, DataLoader, IterableDataset
+from datasets import Dataset as HFDataset
+from datasets import load_dataset
+from torch.utils.data import DataLoader, Dataset, IterableDataset
 from transformers import AutoTokenizer
-from typing import Literal, Any
 
 from pvg.data.prompts import BASE_VERIFIER_CODE, BASE_VERIFIER_MATH
 
@@ -69,16 +71,10 @@ class AppsDataset(Dataset):
         self.split = split
 
         logging.info(f"Loading raw dataset '{dataset_name}' split '{split}'...")
-        raw_dataset = load_dataset(
-            dataset_name, split=split, cache_dir=cache_dir, trust_remote_code=True
-        )
+        raw_dataset = load_dataset(dataset_name, split=split, cache_dir=cache_dir, trust_remote_code=True)
 
         # Select subset if num_samples is specified
-        if (
-            num_samples is not None
-            and num_samples > 0
-            and num_samples < len(raw_dataset)
-        ):
+        if num_samples is not None and num_samples > 0 and num_samples < len(raw_dataset):
             logging.info(f"Selecting {num_samples} samples from the dataset.")
             self.raw_dataset = raw_dataset.select(range(num_samples))
         else:
@@ -87,7 +83,9 @@ class AppsDataset(Dataset):
 
         # Create tokenizer-specific cache path
         tokenizer_name = tokenizer.name_or_path.replace("/", "_")
-        cache_file_name = f"{dataset_name.replace('/', '_')}_{split}_{tokenizer_name}_tokenized.hf"  # Use HF dataset cache format
+        cache_file_name = (
+            f"{dataset_name.replace('/', '_')}_{split}_{tokenizer_name}_tokenized.hf"  # Use HF dataset cache format
+        )
         cache_file_path = None
         if cache_dir:
             cache_file_path = os.path.join(cache_dir, cache_file_name)
@@ -96,9 +94,7 @@ class AppsDataset(Dataset):
         # Check if valid cached dataset exists (using datasets library's caching)
         try:
             # Use map's caching mechanism - it's more robust
-            logging.info(
-                "Attempting to load tokenized dataset from cache (if available)..."
-            )
+            logging.info("Attempting to load tokenized dataset from cache (if available)...")
             self.tokenized_dataset = self.raw_dataset.map(
                 self._tokenize_function,
                 batched=True,
@@ -108,17 +104,11 @@ class AppsDataset(Dataset):
                 cache_file_name=cache_file_path,  # Specify cache file hint
                 desc=f"Tokenizing {split} dataset",
             )
-            logging.info(
-                "Tokenized dataset loaded successfully (from cache or newly processed)."
-            )
+            logging.info("Tokenized dataset loaded successfully (from cache or newly processed).")
 
         except Exception as e:
-            logging.error(
-                f"Error during tokenization or cache loading: {e}", exc_info=True
-            )
-            logging.warning(
-                "Proceeding without caching or retrying tokenization without explicit cache file path."
-            )
+            logging.error(f"Error during tokenization or cache loading: {e}", exc_info=True)
+            logging.warning("Proceeding without caching or retrying tokenization without explicit cache file path.")
             # Fallback: Tokenize without explicit cache file path if loading failed
             self.tokenized_dataset = self.raw_dataset.map(
                 self._tokenize_function,
@@ -132,21 +122,15 @@ class AppsDataset(Dataset):
         # Filter by length if min_length is specified
         if self.min_length is not None and self.min_length > 0:
             original_size = len(self.tokenized_dataset)
-            logging.info(
-                f"Filtering sequences shorter than {self.min_length} tokens..."
-            )
+            logging.info(f"Filtering sequences shorter than {self.min_length} tokens...")
             self.tokenized_dataset = self.tokenized_dataset.filter(
                 lambda example: len(example["input_ids"]) >= self.min_length,
                 num_proc=preprocessing_num_workers,
                 desc="Filtering short sequences",
             )
-            logging.info(
-                f"Filtered dataset from {original_size} to {len(self.tokenized_dataset)} samples."
-            )
+            logging.info(f"Filtered dataset from {original_size} to {len(self.tokenized_dataset)} samples.")
 
-        logging.info(
-            f"Dataset initialization complete for split '{split}'. Size: {len(self.tokenized_dataset)}"
-        )
+        logging.info(f"Dataset initialization complete for split '{split}'. Size: {len(self.tokenized_dataset)}")
 
     def _tokenize_function(self, examples):
         """Tokenization logic applied only to the question column."""
@@ -225,9 +209,7 @@ class AppsDataset(Dataset):
         # Select the specified indices from the tokenized dataset
         new_dataset.tokenized_dataset = self.tokenized_dataset.select(indices)
 
-        logging.info(
-            f"Created subset with {len(new_dataset)} samples from original dataset of {len(self)} samples."
-        )
+        logging.info(f"Created subset with {len(new_dataset)} samples from original dataset of {len(self)} samples.")
 
         return new_dataset
 
@@ -253,9 +235,7 @@ class AppsDataset(Dataset):
                 exists_ok=True,
             )
 
-            logger.info(
-                f"Successfully pushed dataset to {repo_id} with split '{split}'"
-            )
+            logger.info(f"Successfully pushed dataset to {repo_id} with split '{split}'")
         except Exception as e:
             logger.error(f"Failed to push dataset to Hub: {str(e)}")
             raise
@@ -418,17 +398,13 @@ class VerifierDataset(IterableDataset):
             # jvelja/apps_backdoored_round_0
             # dataset_name = f"jvelja/my-backdoored-{'apps' if self.dataset_type == 'coding' else 'math'}-train-{round_num}"
             dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_backdoored_round_{round_num}"
-            logger.info(
-                f"Loading dataset: {dataset_name} from HuggingFace Hub -- Round: {round_num}"
-            )
+            logger.info(f"Loading dataset: {dataset_name} from HuggingFace Hub -- Round: {round_num}")
             self.datasets[round_num] = load_dataset(dataset_name, split=self.split)
 
             # Limit number of samples if specified
             if self.max_samples_per_round is not None:
                 self.datasets[round_num] = self.datasets[round_num].select(
-                    range(
-                        min(len(self.datasets[round_num]), self.max_samples_per_round)
-                    )
+                    range(min(len(self.datasets[round_num]), self.max_samples_per_round))
                 )
 
     def _split_and_shuffle_datasets(self) -> None:
@@ -474,16 +450,10 @@ class VerifierDataset(IterableDataset):
             if round_num not in self.datasets:
                 raise ValueError(f"No dataset found for round {round_num}")
 
-            if (
-                round_num not in self.correct_indices
-                or len(self.correct_indices[round_num]) == 0
-            ):
+            if round_num not in self.correct_indices or len(self.correct_indices[round_num]) == 0:
                 raise ValueError(f"No correct samples found for round {round_num}")
 
-            if (
-                round_num not in self.incorrect_indices
-                or len(self.incorrect_indices[round_num]) == 0
-            ):
+            if round_num not in self.incorrect_indices or len(self.incorrect_indices[round_num]) == 0:
                 raise ValueError(f"No incorrect samples found for round {round_num}")
 
     def _get_next_index(self, round_num: int, is_correct: bool) -> int:
@@ -617,17 +587,11 @@ class VerifierDataset(IterableDataset):
             sample_dict = item["data"]
             problem = sample_dict.get("problem", "")
             honest_sol = sample_dict.get("honest_solution", "")
-            injected_sol = sample_dict.get(
-                "injected_solution", ""
-            )  # Assume this key exists
+            injected_sol = sample_dict.get("injected_solution", "")  # Assume this key exists
 
             # Format prompts using the stored template
-            honest_prompts.append(
-                self.prompt_template.format(problem=problem, solution=honest_sol)
-            )
-            injected_prompts.append(
-                self.prompt_template.format(problem=problem, solution=injected_sol)
-            )
+            honest_prompts.append(self.prompt_template.format(problem=problem, solution=honest_sol))
+            injected_prompts.append(self.prompt_template.format(problem=problem, solution=injected_sol))
             are_identical_flags.append(honest_sol == injected_sol)
 
         num_pairs = len(honest_prompts)
@@ -675,12 +639,8 @@ class VerifierDataset(IterableDataset):
             "round_probabilities": self.round_probabilities,
             "dataset_sizes": {
                 "total": {r: len(ds) for r, ds in self.datasets.items()},
-                "correct": {
-                    r: len(self.correct_indices[r]) for r in self.relevant_rounds
-                },
-                "incorrect": {
-                    r: len(self.incorrect_indices[r]) for r in self.relevant_rounds
-                },
+                "correct": {r: len(self.correct_indices[r]) for r in self.relevant_rounds},
+                "incorrect": {r: len(self.incorrect_indices[r]) for r in self.relevant_rounds},
             },
         }
         return stats
@@ -697,13 +657,9 @@ class VerifierDataset(IterableDataset):
                 # The length is the number of rows in the dataset for this round
                 total_samples += len(self.datasets[round_num])
             else:
-                logger.warning(
-                    f"Dataset for round {round_num} not found during __len__ calculation."
-                )
+                logger.warning(f"Dataset for round {round_num} not found during __len__ calculation.")
 
         if total_samples == 0:
-            logger.warning(
-                "VerifierDataset has zero total samples across relevant rounds."
-            )
+            logger.warning("VerifierDataset has zero total samples across relevant rounds.")
 
         return total_samples

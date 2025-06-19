@@ -24,14 +24,10 @@ class _RingBuffer:
     """FIFO buffer keyed by (phase, mode) -> model -> metric_name -> List[_Metric]"""
 
     store: Dict[Tuple[str, str], Dict[str, Dict[str, List[_Metric]]]] = field(
-        default_factory=lambda: defaultdict(
-            lambda: defaultdict(lambda: defaultdict(list))
-        )
+        default_factory=lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     )
 
-    def add(
-        self, phase: str, mode: str, model: str, name: str, value: float, step: int
-    ) -> None:
+    def add(self, phase: str, mode: str, model: str, name: str, value: float, step: int) -> None:
         self.store[(phase, mode)][model][name].append(_Metric(value, step))
 
     def pop_phase_mode(self, phase: str, mode: str):
@@ -56,9 +52,7 @@ class MetricsLogger:
         self._buf = _RingBuffer()
 
     # ---------- public helpers -------------------------------------------------
-    def record(
-        self, *, phase: str, mode: str, model: str, name: str, value: Any
-    ) -> None:
+    def record(self, *, phase: str, mode: str, model: str, name: str, value: Any) -> None:
         """
         Accept **any** tensor/number; convert to python float ASAP so that
         the object is pickle-able inside gather_object().
@@ -69,9 +63,7 @@ class MetricsLogger:
         elif isinstance(value, (int, float)):
             val = float(value)
         else:
-            logger.debug(
-                "Skipping non-numeric metric %s/%s – type=%s", model, name, type(value)
-            )
+            logger.debug("Skipping non-numeric metric %s/%s – type=%s", model, name, type(value))
             return
 
         if val != val:  # NaN check
@@ -81,15 +73,11 @@ class MetricsLogger:
     # convenience wrappers so existing trainers compile unchanged
     store_metric = record
 
-    def store_metrics(
-        self, *, phase: str, mode: str, model: str, metrics: Dict[str, Any]
-    ) -> None:
+    def store_metrics(self, *, phase: str, mode: str, model: str, metrics: Dict[str, Any]) -> None:
         for k, v in metrics.items():
             self.record(phase=phase, mode=mode, model=model, name=k, value=v)
 
-    def store_entropy(
-        self, *, phase: str, mode: str, model: str, per_token_entropy: torch.Tensor
-    ) -> None:
+    def store_entropy(self, *, phase: str, mode: str, model: str, per_token_entropy: torch.Tensor) -> None:
         self.record(
             phase=phase,
             mode=mode,
@@ -105,9 +93,7 @@ class MetricsLogger:
             value=per_token_entropy.std(),
         )
 
-    def get_latest_metric(
-        self, mode: str, model: str, name: str, phase: str
-    ) -> float | None:
+    def get_latest_metric(self, mode: str, model: str, name: str, phase: str) -> float | None:
         """
         Get the latest metric value for a given phase/mode/model/name combination.
         Returns None if no metric is found.

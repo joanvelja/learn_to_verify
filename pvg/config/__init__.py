@@ -1,4 +1,3 @@
-from .args import ExperimentArgs
-from .args import RLArgs
+from .args import ExperimentArgs, RLArgs
 
 __all__ = ["ExperimentArgs", "RLArgs"]

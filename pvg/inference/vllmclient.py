@@ -4,9 +4,7 @@ import time
 
 import torch
 from torch import nn
-
 from trl.import_utils import is_requests_available, is_vllm_available
-
 
 if is_requests_available():
     import requests
@@ -73,13 +71,9 @@ class VLLMClient:
         initialize_communicator: bool = True,
     ):
         if not is_requests_available():
-            raise ImportError(
-                "requests is not installed. Please install it with `pip install requests`."
-            )
+            raise ImportError("requests is not installed. Please install it with `pip install requests`.")
         if not is_vllm_available():
-            raise ImportError(
-                "vLLM is not installed. Please install it with `pip install vllm`."
-            )
+            raise ImportError("vLLM is not installed. Please install it with `pip install vllm`.")
 
         self.session = requests.Session()
         self.host = host
@@ -88,9 +82,7 @@ class VLLMClient:
         self.check_server(connection_timeout)  # check server and fail after timeout
         if initialize_communicator:
             self.init_communicator()
-            atexit.register(
-                self.close_communicator
-            )  # when the client object is deleted, close the weight update group
+            atexit.register(self.close_communicator)  # when the client object is deleted, close the weight update group
         else:  # Still ensure attribute exists, but is None
             self.pynccl_comm = None
             logger.info("Skipping communicator initialization.")
@@ -126,9 +118,7 @@ class VLLMClient:
                     return None
 
             # Retry logic: wait before trying again
-            logger.info(
-                f"Server is not up yet. Retrying in {retry_interval} seconds..."
-            )
+            logger.info(f"Server is not up yet. Retrying in {retry_interval} seconds...")
             time.sleep(retry_interval)
 
     def generate(
@@ -202,7 +192,35 @@ class VLLMClient:
         else:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
-    def chat(self, prompts: list[str], **kwargs) -> list[list[str]]:
+    def chat(
+        self,
+        prompts: list[str],
+        n: int = 1,
+        repetition_penalty: float = 1.0,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        top_k: int = -1,
+        min_p: float = 0.0,
+        max_tokens: int = 16,
+        guided_decoding_regex: str | None = None,
+        logprobs: int | None = None,
+        stop_sequences: list[str] | None = None,
+        chat_template: str | None = None,
+        continue_final_message: bool = False,
+        add_generation_prompt: bool = True,
+        use_tqdm: bool = True,
+    ) -> list[list[str]]:
+
+        # Gather the kwargs for printing
+        kwargs = locals()
+        kwargs.pop("self")
+        kwargs.pop("prompts")
+        stop = kwargs["stop_sequences"]
+        kwargs.pop("stop_sequences")
+        kwargs["stop"] = stop  # HACKY....
+
         url = f"http://{self.host}:{self.server_port}/chat/"
         response = self.session.post(url, json={"prompts": prompts, **kwargs})
         if response.status_code == 200:
@@ -233,12 +251,8 @@ class VLLMClient:
                 json={"inputs": inputs},
             )
         except requests.exceptions.RequestException as e:
-            logger.error(
-                f"Connection error during classification request to {url}: {e}"
-            )
-            raise ConnectionError(
-                f"Failed to connect to the vLLM server at {url} for classification."
-            ) from e
+            logger.error(f"Connection error during classification request to {url}: {e}")
+            raise ConnectionError(f"Failed to connect to the vLLM server at {url} for classification.") from e
 
         if response.status_code == 200:
             try:
@@ -247,21 +261,13 @@ class VLLMClient:
                     # Basic type check for elements could be added here if needed
                     return result["scores"]
                 else:
-                    logger.error(
-                        f"Invalid response format received from classification endpoint: {result}"
-                    )
-                    raise ValueError(
-                        "Invalid response format received from server (missing 'scores' list)."
-                    )
+                    logger.error(f"Invalid response format received from classification endpoint: {result}")
+                    raise ValueError("Invalid response format received from server (missing 'scores' list).")
             except ValueError as e:  # Catches JSON decoding errors and our ValueError
-                logger.error(
-                    f"Failed to decode JSON response or invalid format from {url}: {response.text}"
-                )
+                logger.error(f"Failed to decode JSON response or invalid format from {url}: {response.text}")
                 raise Exception(f"Failed to process response from server: {e}") from e
         else:
-            logger.error(
-                f"Classification request failed with status {response.status_code}: {response.text}"
-            )
+            logger.error(f"Classification request failed with status {response.status_code}: {response.text}")
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
     def init_communicator(self):
@@ -290,9 +296,7 @@ class VLLMClient:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
         # Set up the communication group for weight broadcasting
-        pg = StatelessProcessGroup.create(
-            host=self.host, port=self.group_port, rank=self.rank, world_size=world_size
-        )
+        pg = StatelessProcessGroup.create(host=self.host, port=self.group_port, rank=self.rank, world_size=world_size)
         client_device = f"cuda:{torch.cuda.current_device()}"
         self.pynccl_comm = PyNcclCommunicator(pg, device=client_device)
 
@@ -307,24 +311,18 @@ class VLLMClient:
                 Tensor containing the updated weights.
         """
         if self.pynccl_comm is None:
-            logger.info(
-                "Client initialized without communicator. Cannot update model parameters."
-            )
+            logger.info("Client initialized without communicator. Cannot update model parameters.")
             return
 
         dtype, shape = str(weights.dtype), tuple(weights.shape)
         url = f"http://{self.host}:{self.server_port}/update_named_param/"
-        response = self.session.post(
-            url, json={"name": name, "dtype": dtype, "shape": shape}
-        )
+        response = self.session.post(url, json={"name": name, "dtype": dtype, "shape": shape})
         if response.status_code != 200:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
         # Broadcast the weights to the other processes
         if self.pynccl_comm is not None:
-            self.pynccl_comm.broadcast(
-                weights, src=self.rank, stream=torch.cuda.current_stream()
-            )
+            self.pynccl_comm.broadcast(weights, src=self.rank, stream=torch.cuda.current_stream())
             self.pynccl_comm.group.barrier()
 
     def update_model_params(self, model: nn.Module):
@@ -340,9 +338,7 @@ class VLLMClient:
                 # Update each parameter individually
                 self.update_named_param(name, param.data)
         else:
-            logger.info(
-                "Client initialized without communicator. Cannot update model parameters."
-            )
+            logger.info("Client initialized without communicator. Cannot update model parameters.")
 
     def reset_prefix_cache(self):
         """
@@ -358,9 +354,7 @@ class VLLMClient:
         Closes the weight update group and cleans up the communication group.
         """
         if self.pynccl_comm is None:
-            logger.info(
-                "Client initialized without communicator. Cannot close communicator."
-            )
+            logger.info("Client initialized without communicator. Cannot close communicator.")
             return
 
         url = f"http://{self.host}:{self.server_port}/close_communicator/"

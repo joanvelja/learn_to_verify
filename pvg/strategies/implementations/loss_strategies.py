@@ -8,16 +8,17 @@ providing clean strategy implementations.
 """
 
 import logging
-from typing import Literal
 from contextlib import nullcontext
-import torch
-import deepspeed
+from typing import Literal
 
-from pvg.strategies.abstractions import LossComputationStrategy
-from pvg.data_models.training_data import BatchInputs, ModelOutputs, LossResult
-from pvg.components import ModelManager, MetricsLogger, AcceleratorManager
+import deepspeed
+import torch
+
+from pvg.components import AcceleratorManager, MetricsLogger, ModelManager
 from pvg.config.args import RLArgs
-from pvg.utils.math import nanmin, nanmax
+from pvg.data_models.training_data import BatchInputs, LossResult, ModelOutputs
+from pvg.strategies.abstractions import LossComputationStrategy
+from pvg.utils.math import nanmax, nanmin
 
 logger = logging.getLogger(__name__)
 
@@ -71,27 +72,38 @@ class LigerLossStrategy(LossComputationStrategy):
 
         # Check if we need ZeRO-3 parameter gathering
         model_key = "sneaky_prover"
-        zero3 = self._is_zero3_enabled(model_key)
+        # zero3 = self._is_zero3_enabled(model_key)
 
         # Get unwrapped model for parameter access
         unwrapped_model = self.accelerator_manager.unwrap_model(model, key=model_key)
 
         # Compute loss with proper parameter gathering
-        with self._full_lm_head_params(unwrapped_model, zero3):
-            weight = unwrapped_model.lm_head.weight
-            bias = unwrapped_model.lm_head.bias
+        # with self._full_lm_head_params(unwrapped_model, zero3):
+        #     weight = unwrapped_model.lm_head.weight
+        #     bias = unwrapped_model.lm_head.bias
 
-            # Call Liger GRPO loss
-            loss, liger_metrics = self.model_manager.liger_grpo_loss(
-                _input=model_outputs.last_hidden_state,
-                lin_weight=weight,
-                bias=bias,
-                selected_token_ids=batch_inputs.completion_ids,
-                attention_mask=batch_inputs.completion_mask,
-                advantages=batch_inputs.advantages,
-                ref_per_token_logps=batch_inputs.ref_per_token_logps,
-                old_per_token_logps=batch_inputs.old_per_token_logps,
-            )
+        #     # Call Liger GRPO loss
+        #     loss, liger_metrics = self.model_manager.liger_grpo_loss(
+        #         _input=model_outputs.last_hidden_state,
+        #         lin_weight=weight,
+        #         bias=bias,
+        #         selected_token_ids=batch_inputs.completion_ids,
+        #         attention_mask=batch_inputs.completion_mask,
+        #         advantages=batch_inputs.advantages,
+        #         ref_per_token_logps=batch_inputs.ref_per_token_logps,
+        #         old_per_token_logps=batch_inputs.old_per_token_logps,
+        #     )
+
+        loss, liger_metrics = self.model_manager.liger_grpo_loss(
+            _input=model_outputs.last_hidden_state,
+            lin_weight=unwrapped_model.lm_head.weight,
+            bias=unwrapped_model.lm_head.bias,
+            selected_token_ids=batch_inputs.completion_ids,
+            attention_mask=batch_inputs.completion_mask,
+            advantages=batch_inputs.advantages,
+            ref_per_token_logps=batch_inputs.ref_per_token_logps,
+            old_per_token_logps=batch_inputs.old_per_token_logps,
+        )
 
         # Process Liger metrics
         processed_metrics = self._process_liger_metrics(liger_metrics)
@@ -99,10 +111,15 @@ class LigerLossStrategy(LossComputationStrategy):
         # Log metrics
         self._log_metrics(processed_metrics, mode)
 
+        logger.info(f"[DEBUG] Liger metrics: {liger_metrics}")
+        logger.info(f"[DEBUG] Loss: {loss}")
+        logger.info(f"[DEBUG] Liger metrics type: {type(liger_metrics)}")
+        logger.info(f"[DEBUG] Loss type: {type(loss)}")
+
         return LossResult(
             loss=loss,
             metrics=processed_metrics,
-            per_token_kl=None,  # Liger handles KL internally
+            per_token_kl=None,  # Liger handles KL internally in the metrics (`liger_metrics`)
             per_token_entropy=model_outputs.entropy,
         )
 
@@ -141,9 +158,7 @@ class LigerLossStrategy(LossComputationStrategy):
 
         return ctx
 
-    def _process_liger_metrics(
-        self, liger_metrics: tuple[torch.Tensor, ...]
-    ) -> dict[str, float]:
+    def _process_liger_metrics(self, liger_metrics: tuple[torch.Tensor, ...]) -> dict[str, float]:
         """Process metrics from Liger kernel
 
         Args:
@@ -237,14 +252,19 @@ class StandardGRPOLossStrategy(LossComputationStrategy):
         old_per_token_logps = (
             batch_inputs.old_per_token_logps
             if self.rl_config.num_iterations > 1
-            else model_outputs.per_token_logps.detach()
+            else model_outputs.per_token_logps.detach()  # Since otherwise old_per_token_logps is None.
         )
 
         # Compute policy ratio
         coef_1 = torch.exp(model_outputs.per_token_logps - old_per_token_logps)
-        coef_2 = torch.clamp(
-            coef_1, 1 - self.rl_config.epsilon_low, 1 + self.rl_config.epsilon_high
-        )
+        coef_2 = torch.clamp(coef_1, 1 - self.rl_config.epsilon_low, 1 + self.rl_config.epsilon_high)
+
+        # Debug shapes...
+        logger.info(f"[DEBUG] coef_1 shape: {coef_1.shape}")
+        logger.info(f"[DEBUG] coef_2 shape: {coef_2.shape}")
+        logger.info(f"[DEBUG] batch_inputs.advantages shape: {batch_inputs.advantages.shape}")
+        logger.info(f"[DEBUG] batch_inputs.completion_mask shape: {batch_inputs.completion_mask.shape}")
+        logger.info(f"[DEBUG] model_outputs.per_token_logps shape: {model_outputs.per_token_logps.shape}")
 
         # Compute per-token losses
         per_token_loss1 = coef_1 * batch_inputs.advantages.unsqueeze(1)
@@ -255,9 +275,7 @@ class StandardGRPOLossStrategy(LossComputationStrategy):
         per_token_kl = None
         if self.rl_config.beta > 0.0 and batch_inputs.ref_per_token_logps is not None:
             per_token_kl = (
-                torch.exp(
-                    batch_inputs.ref_per_token_logps - model_outputs.per_token_logps
-                )
+                torch.exp(batch_inputs.ref_per_token_logps - model_outputs.per_token_logps)
                 - (batch_inputs.ref_per_token_logps - model_outputs.per_token_logps)
                 - 1
             )
@@ -270,9 +288,7 @@ class StandardGRPOLossStrategy(LossComputationStrategy):
         ).mean()
 
         # Compute metrics
-        metrics = self._compute_metrics(
-            coef_1, batch_inputs.advantages, batch_inputs.completion_mask, per_token_kl
-        )
+        metrics = self._compute_metrics(coef_1, batch_inputs.advantages, batch_inputs.completion_mask, per_token_kl)
 
         # Log metrics
         self._log_metrics(metrics, mode)
@@ -318,32 +334,22 @@ class StandardGRPOLossStrategy(LossComputationStrategy):
             metrics["kl"] = mean_kl.item()
 
         # Compute clip ratio
-        is_low_clipped = (coef_1 < 1 - self.rl_config.epsilon_low) & (
-            advantages.unsqueeze(1) < 0
-        )
-        is_high_clipped = (coef_1 > 1 + self.rl_config.epsilon_high) & (
-            advantages.unsqueeze(1) > 0
-        )
+        is_low_clipped = (coef_1 < 1 - self.rl_config.epsilon_low) & (advantages.unsqueeze(1) < 0)
+        is_high_clipped = (coef_1 > 1 + self.rl_config.epsilon_high) & (advantages.unsqueeze(1) > 0)
         is_region_clipped = is_low_clipped | is_high_clipped
 
         low_clip = (is_low_clipped * completion_mask).sum() / completion_mask.sum()
         high_clip = (is_high_clipped * completion_mask).sum() / completion_mask.sum()
         clip_ratio = (is_region_clipped * completion_mask).sum() / completion_mask.sum()
 
-        gathered_low_clip = self.accelerator_manager.get_accelerator(
-            key="sneaky_prover"
-        ).gather(low_clip)
+        gathered_low_clip = self.accelerator_manager.get_accelerator(key="sneaky_prover").gather(low_clip)
 
         metrics["clip_ratio/low_mean"] = gathered_low_clip.nanmean().item()
         metrics["clip_ratio/low_min"] = nanmin(gathered_low_clip).item()
-        gathered_high_clip = self.accelerator_manager.get_accelerator(
-            key="sneaky_prover"
-        ).gather(high_clip)
+        gathered_high_clip = self.accelerator_manager.get_accelerator(key="sneaky_prover").gather(high_clip)
         metrics["clip_ratio/high_mean"] = gathered_high_clip.nanmean().item()
         metrics["clip_ratio/high_max"] = nanmax(gathered_high_clip).item()
-        gathered_clip_ratio = self.accelerator_manager.get_accelerator(
-            key="sneaky_prover"
-        ).gather(clip_ratio)
+        gathered_clip_ratio = self.accelerator_manager.get_accelerator(key="sneaky_prover").gather(clip_ratio)
         metrics["clip_ratio/region_mean"] = gathered_clip_ratio.nanmean().item()
 
         return metrics

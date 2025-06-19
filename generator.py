@@ -11,23 +11,24 @@ from typing import Any, Literal, cast
 
 import datasets
 from datasets import DatasetDict
-from transformers import AutoTokenizer
 from tqdm.auto import tqdm
+from transformers import AutoTokenizer
 
-# Reuse ALL existing components
-from pvg.inference.vllmclient import VLLMClient
-from pvg.components.formatter import Formatter
-from pvg.utils.generation_utils import (
-    parse_output,
-    create_hf_dataset_from_results,
-    visualize_status_dict,
-)
 from pvg.components.code_evaluator import BatchEvaluator, EvaluationConfig
+from pvg.components.formatter import Formatter
 from pvg.data.generation_constants import (
+    MAX_BACKDOOR_RETRIES,
     MAX_GEN_RETRIES,
     MAX_PARSE_RETRIES,
     TERMINAL_STATUSES,
-    MAX_BACKDOOR_RETRIES,
+)
+
+# Reuse ALL existing components
+from pvg.inference.vllmclient import VLLMClient
+from pvg.utils.generation_utils import (
+    create_hf_dataset_from_results,
+    parse_output,
+    visualize_status_dict,
 )
 
 # Set environment to avoid tokenizer warnings
@@ -67,9 +68,7 @@ class PipelineConfig:
     def create_full_pipeline(cls, generator_instance) -> "PipelineConfig":
         """Factory method for full pipeline with backdoor verification."""
         return cls(
-            stages=StageRegistry.filter_stages(
-                StageRegistry.get_all_stages(generator_instance), include_backdoor=True
-            ),
+            stages=StageRegistry.filter_stages(StageRegistry.get_all_stages(generator_instance), include_backdoor=True),
             transitions=TransitionBuilder.build_transitions(include_backdoor=True),
             queue_names=[
                 "pending_sneaky_gen",
@@ -126,9 +125,7 @@ class StageRegistry:
         }
 
     @staticmethod
-    def filter_stages(
-        all_stages: dict[str, StageConfig], include_backdoor: bool
-    ) -> list[StageConfig]:
+    def filter_stages(all_stages: dict[str, StageConfig], include_backdoor: bool) -> list[StageConfig]:
         """Filter stages based on configuration."""
         excluded = set() if include_backdoor else {"backdoor_verify"}
         return [stage for name, stage in all_stages.items() if name not in excluded]
@@ -165,9 +162,7 @@ class TransitionBuilder:
     def build_transitions(cls, include_backdoor: bool) -> dict[tuple[str, str], str]:
         """Build transition table using composition."""
         transitions = cls.BASE_TRANSITIONS.copy()
-        specific_transitions = (
-            cls.BACKDOOR_TRANSITIONS if include_backdoor else cls.BYPASS_TRANSITIONS
-        )
+        specific_transitions = cls.BACKDOOR_TRANSITIONS if include_backdoor else cls.BYPASS_TRANSITIONS
         transitions.update(specific_transitions)
         return transitions
 
@@ -247,9 +242,7 @@ class CompactGenerator:
         )
 
         # Use factories for component creation
-        self.backdoor_evaluator = ComponentFactory.create_backdoor_evaluator(
-            enable_backdoor_verification
-        )
+        self.backdoor_evaluator = ComponentFactory.create_backdoor_evaluator(enable_backdoor_verification)
 
         # Generation config (optimized for Qwen 3B)
         self.sneaky_config = {
@@ -262,12 +255,8 @@ class CompactGenerator:
 
         # Initialize queues and pipeline control using configuration
         self.processing_status: dict[str, dict[str, Any]] = {}
-        self.stage_queues = ComponentFactory.create_stage_queues(
-            self.pipeline_config.queue_names
-        )
-        self.active_batches = ComponentFactory.create_active_batches(
-            self.pipeline_config.queue_names
-        )
+        self.stage_queues = ComponentFactory.create_stage_queues(self.pipeline_config.queue_names)
+        self.active_batches = ComponentFactory.create_active_batches(self.pipeline_config.queue_names)
         self.pipeline_running = False
         self.worker_tasks = []
         self.split_name = ""
@@ -305,9 +294,7 @@ class CompactGenerator:
             "programming",
         ]
         self.dataset_type = (
-            "coding"
-            if any(indicator in dataset_name_lower for indicator in coding_indicators)
-            else "math"
+            "coding" if any(indicator in dataset_name_lower for indicator in coding_indicators) else "math"
         )
 
         # Debug: Show dataset info
@@ -324,9 +311,7 @@ class CompactGenerator:
             # Debug: Log first few items to see dataset structure
             if i < 3:
                 logger.info(f"Dataset item {i} keys: {list(item.keys())}")
-                logger.info(
-                    f"Dataset item {i} mono_solutions: {item.get('mono_solutions')}"
-                )
+                logger.info(f"Dataset item {i} mono_solutions: {item.get('mono_solutions')}")
 
             problem_text = item.get("question", item.get("problem"))
             if not problem_text:
@@ -334,13 +319,9 @@ class CompactGenerator:
 
             # Same ID logic as original
             item_id_val = (
-                item.get("problem_id")
-                if self.dataset_type == "coding"
-                else item.get("id", item.get("problem_id"))
+                item.get("problem_id") if self.dataset_type == "coding" else item.get("id", item.get("problem_id"))
             )
-            item_id = str(
-                item_id_val if item_id_val is not None else f"{id_prefix}_{i}"
-            )
+            item_id = str(item_id_val if item_id_val is not None else f"{id_prefix}_{i}")
 
             problems.append(
                 {
@@ -349,17 +330,13 @@ class CompactGenerator:
                     "function_signature": item.get("starter_code"),
                     "harness_code": item.get("harness_code"),
                     "is_transformed": item.get("transformed_solution") == "True",
-                    "mono_solutions": item.get(
-                        "mono_solutions"
-                    ),  # Include mono_solutions
+                    "mono_solutions": item.get("mono_solutions"),  # Include mono_solutions
                 }
             )
 
         # Debug: Count how many have valid mono_solutions
         valid_mono_count = sum(1 for p in problems if p.get("mono_solutions"))
-        logger.info(
-            f"Loaded {len(problems)} problems, {valid_mono_count} with valid mono_solutions"
-        )
+        logger.info(f"Loaded {len(problems)} problems, {valid_mono_count} with valid mono_solutions")
 
         return problems
 
@@ -375,9 +352,7 @@ class CompactGenerator:
             "frequency_penalty": self.sneaky_config["frequency_penalty"],
             "min_p": self.sneaky_config["min_p"],
             "max_tokens": self.sneaky_config["max_tokens"],
-            "stop_sequences": self.formatter.get_stop_sequences(
-                "sneaky_prover", dataset_type=self.dataset_type
-            ),
+            "stop_sequences": self.formatter.get_stop_sequences("sneaky_prover", dataset_type=self.dataset_type),
             "chat_template": self.tokenizer.chat_template,
             "continue_final_message": True,
             "add_generation_prompt": False,
@@ -417,9 +392,7 @@ class CompactGenerator:
                     f"({len(prompts)} prompts × {n_candidates} candidates)"
                 )
                 if len(outputs_ids_batch) > expected_total:  # Only truncate if too many
-                    logger.warning(
-                        f"Truncating excess outputs from {len(outputs_ids_batch)} to {expected_total}"
-                    )
+                    logger.warning(f"Truncating excess outputs from {len(outputs_ids_batch)} to {expected_total}")
                     outputs_ids_batch = outputs_ids_batch[:expected_total]
                 # If len(outputs_ids_batch) < expected_total, we now do nothing here.
                 # The subsequent decoding and restructuring loop will handle it by producing
@@ -427,9 +400,7 @@ class CompactGenerator:
 
             # Decode all outputs
             try:
-                decoded_outputs = self.tokenizer.batch_decode(
-                    outputs_ids_batch, skip_special_tokens=True
-                )
+                decoded_outputs = self.tokenizer.batch_decode(outputs_ids_batch, skip_special_tokens=True)
             except Exception as decode_error:
                 logger.error(f"Failed to decode VLLM outputs: {decode_error}")
                 return [[] for _ in prompts]
@@ -445,14 +416,8 @@ class CompactGenerator:
                 if end_idx <= len(decoded_outputs):
                     prompt_candidates = decoded_outputs[start_idx:end_idx]
                 else:
-                    logger.warning(
-                        f"Not enough decoded outputs for prompt {i}, using available outputs"
-                    )
-                    prompt_candidates = (
-                        decoded_outputs[start_idx:]
-                        if start_idx < len(decoded_outputs)
-                        else []
-                    )
+                    logger.warning(f"Not enough decoded outputs for prompt {i}, using available outputs")
+                    prompt_candidates = decoded_outputs[start_idx:] if start_idx < len(decoded_outputs) else []
 
                 structured_outputs.append(prompt_candidates)
 
@@ -462,14 +427,10 @@ class CompactGenerator:
             logger.error(f"Error in multi-candidate generation: {e}", exc_info=True)
             return [[] for _ in prompts]
 
-    def try_parse_candidates(
-        self, raw_outputs: list[str], model_key: str
-    ) -> tuple[str | None, dict[str, Any] | None]:
+    def try_parse_candidates(self, raw_outputs: list[str], model_key: str) -> tuple[str | None, dict[str, Any] | None]:
         """Try parsing multiple candidates, return first successful parse."""
         model_key_typed = cast(Literal["sneaky_prover"], model_key)
-        tags_config = self.formatter.get_tags_for_parsing(
-            model_key_typed, dataset_type=self.dataset_type
-        )
+        tags_config = self.formatter.get_tags_for_parsing(model_key_typed, dataset_type=self.dataset_type)
 
         # Track generation attempts once per call
         if model_key == "sneaky_prover":
@@ -490,14 +451,10 @@ class CompactGenerator:
                 if model_key == "sneaky_prover" and i == 0:
                     self.generation_stats["sneaky_first_success"] += 1
 
-                logger.debug(
-                    f"Successfully parsed candidate {i+1}/{len(raw_outputs)} for {model_key}"
-                )
+                logger.debug(f"Successfully parsed candidate {i+1}/{len(raw_outputs)} for {model_key}")
                 return full_output, parsed_data
 
-        logger.debug(
-            f"Failed to parse any of {len(raw_outputs)} candidates for {model_key}"
-        )
+        logger.debug(f"Failed to parse any of {len(raw_outputs)} candidates for {model_key}")
         return None, None
 
     async def sneaky_generator(self, pids: list[str]) -> list[ProcessResult]:
@@ -578,16 +535,10 @@ class CompactGenerator:
                 results.append(ProcessResult(pid, False, error=pid_to_error[pid]))
             else:
                 # Handle generation results
-                candidates = (
-                    candidates_batch[valid_idx]
-                    if valid_idx < len(candidates_batch)
-                    else []
-                )
+                candidates = candidates_batch[valid_idx] if valid_idx < len(candidates_batch) else []
 
                 # Try parsing candidates
-                final_output, parsed_data = self.try_parse_candidates(
-                    candidates, "sneaky_prover"
-                )
+                final_output, parsed_data = self.try_parse_candidates(candidates, "sneaky_prover")
 
                 if final_output and parsed_data:
                     triggering_condition = parsed_data.get("triggering_condition")
@@ -625,9 +576,7 @@ class CompactGenerator:
                     results.append(ProcessResult(pid, False, error="no_raw_output"))
                     continue
 
-                tags_config = self.formatter.get_tags_for_parsing(
-                    "sneaky_prover", dataset_type=self.dataset_type
-                )
+                tags_config = self.formatter.get_tags_for_parsing("sneaky_prover", dataset_type=self.dataset_type)
                 parsed_data = parse_output(raw_output, tags_config)
 
                 if parsed_data:
@@ -646,10 +595,7 @@ class CompactGenerator:
         """Process backdoor verification batch (exact same logic as original)."""
         # Safety check - should not be called if backdoor verification is disabled
         if self.backdoor_evaluator is None:
-            return [
-                ProcessResult(pid, False, error="backdoor_verification_disabled")
-                for pid in pids
-            ]
+            return [ProcessResult(pid, False, error="backdoor_verification_disabled") for pid in pids]
 
         results = []
         for pid in pids:
@@ -727,9 +673,7 @@ class CompactGenerator:
                         break  # soft latency budget exceeded
 
                     try:
-                        pid = await asyncio.wait_for(
-                            self.stage_queues[queue_name].get(), timeout=timeout
-                        )
+                        pid = await asyncio.wait_for(self.stage_queues[queue_name].get(), timeout=timeout)
 
                         # RACE-SAFE check: make sure the PID is still in the
                         # expected state (another worker may already have moved it)
@@ -750,21 +694,14 @@ class CompactGenerator:
 
                 # optional telemetry for tuning
                 if len(batch_pids) < batch_size * 0.5:
-                    logger.debug(
-                        f"{config.name}: processing small batch "
-                        f"{len(batch_pids)}/{batch_size}"
-                    )
+                    logger.debug(f"{config.name}: processing small batch " f"{len(batch_pids)}/{batch_size}")
 
                 # ------------ stage processing ------------
                 results = await config.processor(batch_pids)
 
                 # ------------ result fan-out --------------
                 for idx, pid in enumerate(batch_pids):
-                    result = (
-                        results[idx]
-                        if idx < len(results)
-                        else ProcessResult(pid, False, error="missing_result")
-                    )
+                    result = results[idx] if idx < len(results) else ProcessResult(pid, False, error="missing_result")
                     await self.handle_result(pid, result, config)
 
             except asyncio.CancelledError:
@@ -793,17 +730,10 @@ class CompactGenerator:
         if result.success:
             # Determine next state
             current_status = data["status"]
-            if (
-                current_status == "pending_sneaky_prover_parse"
-                and self.split_name == "eval"
-            ):
-                next_status = self.pipeline_config.transitions.get(
-                    (current_status, "success_eval"), "completed"
-                )
+            if current_status == "pending_sneaky_prover_parse" and self.split_name == "eval":
+                next_status = self.pipeline_config.transitions.get((current_status, "success_eval"), "completed")
             else:
-                next_status = self.pipeline_config.transitions.get(
-                    (current_status, "success"), "completed"
-                )
+                next_status = self.pipeline_config.transitions.get((current_status, "success"), "completed")
 
             data["status"] = next_status
             data[config.retry_field] = 0  # Reset retry count
@@ -826,9 +756,7 @@ class CompactGenerator:
                     data["sneaky_raw"] = None
                     retry_status = "pending_sneaky_gen"
                 else:
-                    retry_status = self.pipeline_config.transitions.get(
-                        (data["status"], "failure"), data["status"]
-                    )
+                    retry_status = self.pipeline_config.transitions.get((data["status"], "failure"), data["status"])
 
                 data["status"] = retry_status
                 if retry_status in self.stage_queues:
@@ -838,9 +766,7 @@ class CompactGenerator:
         """Track progress with time-based and batch-aware reporting."""
         import time
 
-        with tqdm(
-            total=total_problems, desc=f"[{self.split_name}] Processing", unit="problem"
-        ) as pbar:
+        with tqdm(total=total_problems, desc=f"[{self.split_name}] Processing", unit="problem") as pbar:
             last_count = 0
             loop_count = 0
             start_time = time.time()
@@ -851,9 +777,7 @@ class CompactGenerator:
                     loop_count += 1
                     current_time = time.time()
                     current_terminal_count = sum(
-                        1
-                        for d in self.processing_status.values()
-                        if d["status"] in TERMINAL_STATUSES
+                        1 for d in self.processing_status.values() if d["status"] in TERMINAL_STATUSES
                     )
 
                     if current_terminal_count > last_count:
@@ -865,38 +789,20 @@ class CompactGenerator:
                     if current_time - last_status_time >= 25.0:
                         status_output = visualize_status_dict(self.processing_status)
                         total_items = len(self.processing_status)
-                        completed_items = sum(
-                            1
-                            for d in self.processing_status.values()
-                            if d["status"] == "completed"
-                        )
-                        completion_percentage = (
-                            (completed_items / total_items) * 100
-                            if total_items > 0
-                            else 0
-                        )
+                        completed_items = sum(1 for d in self.processing_status.values() if d["status"] == "completed")
+                        completion_percentage = (completed_items / total_items) * 100 if total_items > 0 else 0
 
                         # Calculate processing rate
                         elapsed_time = current_time - start_time
-                        processing_rate = (
-                            current_terminal_count / elapsed_time
-                            if elapsed_time > 0
-                            else 0
-                        )
+                        processing_rate = current_terminal_count / elapsed_time if elapsed_time > 0 else 0
 
                         # Get active batch information
                         active_batch_info = []
                         for queue_name, active_batch in self.active_batches.items():
                             if active_batch:
-                                active_batch_info.append(
-                                    f"{queue_name}: {len(active_batch)} items"
-                                )
+                                active_batch_info.append(f"{queue_name}: {len(active_batch)} items")
 
-                        batch_status = (
-                            f" | Active batches: {', '.join(active_batch_info)}"
-                            if active_batch_info
-                            else ""
-                        )
+                        batch_status = f" | Active batches: {', '.join(active_batch_info)}" if active_batch_info else ""
 
                         logger.info(
                             f"[{self.split_name}] Status at {elapsed_time:.1f}s "
@@ -921,64 +827,38 @@ class CompactGenerator:
         """Wait for pipeline completion (exact same logic as original)."""
         while self.pipeline_running:
             total_count = len(self.processing_status)
-            completed_count = sum(
-                1 for d in self.processing_status.values() if d["status"] == "completed"
-            )
-            terminal_count = sum(
-                1
-                for d in self.processing_status.values()
-                if d["status"] in TERMINAL_STATUSES
-            )
-            completion_percentage = (
-                (completed_count / total_count) * 100 if total_count > 0 else 0
-            )
+            completed_count = sum(1 for d in self.processing_status.values() if d["status"] == "completed")
+            terminal_count = sum(1 for d in self.processing_status.values() if d["status"] in TERMINAL_STATUSES)
+            completion_percentage = (completed_count / total_count) * 100 if total_count > 0 else 0
 
             # Enforce retry limits when near completion
             if completion_percentage >= 99.0:
                 for pid, data in self.processing_status.items():
                     if data["status"] not in TERMINAL_STATUSES:
                         for config in self.get_stage_configs():
-                            if (
-                                data["status"] == config.queue_name
-                                and data[config.retry_field] >= config.max_retries
-                            ):
+                            if data["status"] == config.queue_name and data[config.retry_field] >= config.max_retries:
                                 data["status"] = self.pipeline_config.transitions.get(
                                     (data["status"], "max_retries"),
                                     f"failed_{config.name}",
                                 )
 
             if completion_percentage >= 99.0 or terminal_count == total_count:
-                logger.info(
-                    f"Pipeline completed with {completion_percentage:.2f}% success rate."
-                )
+                logger.info(f"Pipeline completed with {completion_percentage:.2f}% success rate.")
                 return
 
             queues_empty = all(q.empty() for q in self.stage_queues.values())
-            no_active_batches = all(
-                len(batch) == 0 for batch in self.active_batches.values()
-            )
+            no_active_batches = all(len(batch) == 0 for batch in self.active_batches.values())
 
-            if (
-                queues_empty
-                and no_active_batches
-                and terminal_count > 0
-                and terminal_count == total_count
-            ):
-                logger.info(
-                    f"Pipeline completed early: all problems processed, {completion_percentage:.2f}% success."
-                )
+            if queues_empty and no_active_batches and terminal_count > 0 and terminal_count == total_count:
+                logger.info(f"Pipeline completed early: all problems processed, {completion_percentage:.2f}% success.")
                 return
 
             await asyncio.sleep(1.0)
 
-    async def run_generation_pipeline(
-        self, problems: list[dict[str, str]], split_name: str
-    ) -> list[dict[str, Any]]:
+    async def run_generation_pipeline(self, problems: list[dict[str, str]], split_name: str) -> list[dict[str, Any]]:
         """Run generation pipeline bypassing honest generation with ground truth."""
         self.split_name = split_name
-        logger.info(
-            f"[{split_name}] Initializing generation pipeline for {len(problems)} problems..."
-        )
+        logger.info(f"[{split_name}] Initializing generation pipeline for {len(problems)} problems...")
 
         # Initialize processing status - bypass honest generation with ground truth
         self.processing_status = {}
@@ -986,9 +866,7 @@ class CompactGenerator:
             mono_solution = p.get("mono_solutions")
             # Debug: Check what we're actually getting
             if mono_solution is None:
-                logger.warning(
-                    f"Problem {p.get('id', 'unknown')} has no mono_solutions"
-                )
+                logger.warning(f"Problem {p.get('id', 'unknown')} has no mono_solutions")
 
             # Format ground truth as parsed data for sneaky generation
             if self.dataset_type == "coding":
@@ -1048,13 +926,9 @@ class CompactGenerator:
         logger.info(f"[{split_name}] Pipeline timeout set to {timeout_seconds} seconds")
 
         try:
-            await asyncio.wait_for(
-                self.wait_for_completion(total_problems), timeout=timeout_seconds
-            )
+            await asyncio.wait_for(self.wait_for_completion(total_problems), timeout=timeout_seconds)
         except asyncio.TimeoutError:
-            logger.error(
-                f"[{split_name}] Pipeline timeout after {timeout_seconds} seconds."
-            )
+            logger.error(f"[{split_name}] Pipeline timeout after {timeout_seconds} seconds.")
             # Handle timeout - mark unprocessed as failed
             for pid, data in self.processing_status.items():
                 if data["status"] not in TERMINAL_STATUSES:
@@ -1091,9 +965,7 @@ class CompactGenerator:
             else:
                 failed_count += 1
 
-        completion_percentage = (
-            (successful_count / total_problems) * 100 if total_problems > 0 else 0
-        )
+        completion_percentage = (successful_count / total_problems) * 100 if total_problems > 0 else 0
 
         # Show final status visualization
         logger.info(f"[{split_name}] Final Status Summary:")
@@ -1115,9 +987,7 @@ class CompactGenerator:
             "train": self.TRAIN_TIMEOUT_SECONDS,
             "eval": self.EVAL_TIMEOUT_SECONDS,
         }
-        return sum(
-            timeout_map.get(split, self.EVAL_TIMEOUT_SECONDS) for split in splits
-        )
+        return sum(timeout_map.get(split, self.EVAL_TIMEOUT_SECONDS) for split in splits)
 
     def get_split_timeout(self, split_name: str) -> int:
         """Get timeout for a specific split."""
@@ -1146,9 +1016,7 @@ class CompactGenerator:
 
         return results_by_split
 
-    def aggregate_results(
-        self, results_by_split: dict[str, list[dict[str, Any]]]
-    ) -> list[dict[str, Any]]:
+    def aggregate_results(self, results_by_split: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
         """Aggregate results from multiple splits into a single list."""
         all_results = []
         for split, results in results_by_split.items():
@@ -1187,9 +1055,7 @@ class CompactGenerator:
                         continue
 
                     # Create datasets for this specific split
-                    clean_ds, backdoored_ds = create_hf_dataset_from_results(
-                        results, self.dataset_type
-                    )
+                    clean_ds, backdoored_ds = create_hf_dataset_from_results(results, self.dataset_type)
 
                     clean_split_datasets[split_name] = clean_ds
                     backdoored_split_datasets[split_name] = backdoored_ds
@@ -1204,67 +1070,45 @@ class CompactGenerator:
 
                 clean_dataset_dict.save_to_disk(clean_output)
                 backdoored_dataset_dict.save_to_disk(backdoored_output)
-                logger.info(
-                    f"Saved multi-split datasets to {clean_output} and {backdoored_output}"
-                )
+                logger.info(f"Saved multi-split datasets to {clean_output} and {backdoored_output}")
 
                 # Push DatasetDict to HF Hub (only fallback for hub push)
                 try:
                     clean_dataset_dict.push_to_hub(clean_output)
-                    logger.info(
-                        f"Successfully pushed multi-split clean dataset to HF Hub: {clean_output}"
-                    )
+                    logger.info(f"Successfully pushed multi-split clean dataset to HF Hub: {clean_output}")
                 except Exception as hub_error:
-                    logger.warning(
-                        f"Failed to push multi-split clean dataset to HF Hub: {hub_error}"
-                    )
+                    logger.warning(f"Failed to push multi-split clean dataset to HF Hub: {hub_error}")
 
                 try:
                     backdoored_dataset_dict.push_to_hub(backdoored_output)
-                    logger.info(
-                        f"Successfully pushed multi-split backdoored dataset to HF Hub: {backdoored_output}"
-                    )
+                    logger.info(f"Successfully pushed multi-split backdoored dataset to HF Hub: {backdoored_output}")
                 except Exception as hub_error:
-                    logger.warning(
-                        f"Failed to push multi-split backdoored dataset to HF Hub: {hub_error}"
-                    )
+                    logger.warning(f"Failed to push multi-split backdoored dataset to HF Hub: {hub_error}")
 
             else:
                 # Single split - use existing logic
                 single_split = list(results_by_split.keys())[0]
                 results = results_by_split[single_split]
 
-                clean_ds, backdoored_ds = create_hf_dataset_from_results(
-                    results, self.dataset_type
-                )
+                clean_ds, backdoored_ds = create_hf_dataset_from_results(results, self.dataset_type)
 
                 # Save as dataset files first (local backup)
                 clean_ds.save_to_disk(f"{output_file}_clean")
                 backdoored_ds.save_to_disk(f"{output_file}_backdoored")
-                logger.info(
-                    f"Saved local datasets to {output_file}_clean and {output_file}_backdoored"
-                )
+                logger.info(f"Saved local datasets to {output_file}_clean and {output_file}_backdoored")
 
                 # Try to push to HF Hub (only fallback for hub push)
                 try:
                     clean_ds.push_to_hub(f"{output_file}_clean")
-                    logger.info(
-                        f"Successfully pushed clean dataset to HF Hub: {output_file}_clean"
-                    )
+                    logger.info(f"Successfully pushed clean dataset to HF Hub: {output_file}_clean")
                 except Exception as hub_error:
-                    logger.warning(
-                        f"Failed to push clean dataset to HF Hub: {hub_error}"
-                    )
+                    logger.warning(f"Failed to push clean dataset to HF Hub: {hub_error}")
 
                 try:
                     backdoored_ds.push_to_hub(f"{output_file}_backdoored")
-                    logger.info(
-                        f"Successfully pushed backdoored dataset to HF Hub: {output_file}_backdoored"
-                    )
+                    logger.info(f"Successfully pushed backdoored dataset to HF Hub: {output_file}_backdoored")
                 except Exception as hub_error:
-                    logger.warning(
-                        f"Failed to push backdoored dataset to HF Hub: {hub_error}"
-                    )
+                    logger.warning(f"Failed to push backdoored dataset to HF Hub: {hub_error}")
 
     async def run(
         self,
@@ -1279,9 +1123,7 @@ class CompactGenerator:
         splits_to_process = self.get_splits_to_process(split)
 
         # Process all required splits
-        results_by_split = await self.process_multiple_splits(
-            dataset_name, num_samples, splits_to_process, seed
-        )
+        results_by_split = await self.process_multiple_splits(dataset_name, num_samples, splits_to_process, seed)
 
         # Calculate total results for efficiency reporting
         total_results = sum(len(results) for results in results_by_split.values())
@@ -1289,17 +1131,11 @@ class CompactGenerator:
         # Report sample efficiency gains (aggregate across all splits)
         if self.generation_stats["sneaky_generations"] > 0:
             sneaky_efficiency = (
-                (
-                    self.generation_stats["sneaky_first_success"]
-                    / self.generation_stats["sneaky_generations"]
-                )
-                * 100
+                (self.generation_stats["sneaky_first_success"] / self.generation_stats["sneaky_generations"]) * 100
                 if self.generation_stats["sneaky_generations"] > 0
                 else 0
             )
-            logger.info(
-                f"Sneaky generation efficiency: {sneaky_efficiency:.1f}% first-candidate success rate"
-            )
+            logger.info(f"Sneaky generation efficiency: {sneaky_efficiency:.1f}% first-candidate success rate")
 
             total_sneaky_attempts = float(self.generation_stats["sneaky_generations"])
             logger.info(
@@ -1313,25 +1149,13 @@ class CompactGenerator:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Simplified data generator bypassing honest generation"
-    )
-    parser.add_argument(
-        "--sneaky-port", type=int, default=8002, help="Sneaky prover port"
-    )
-    parser.add_argument(
-        "--dataset", required=True, help="HF dataset name (e.g., 'codeparrot/apps')"
-    )
+    parser = argparse.ArgumentParser(description="Simplified data generator bypassing honest generation")
+    parser.add_argument("--sneaky-port", type=int, default=8002, help="Sneaky prover port")
+    parser.add_argument("--dataset", required=True, help="HF dataset name (e.g., 'codeparrot/apps')")
     parser.add_argument("--split", default="train", help="Dataset split")
-    parser.add_argument(
-        "--num-samples", type=int, help="Number of samples (None for all)"
-    )
-    parser.add_argument(
-        "--output", required=True, help="Output file (.json or directory)"
-    )
-    parser.add_argument(
-        "--tokenizer", default="Qwen/Qwen2.5-3B", help="Tokenizer model"
-    )
+    parser.add_argument("--num-samples", type=int, help="Number of samples (None for all)")
+    parser.add_argument("--output", required=True, help="Output file (.json or directory)")
+    parser.add_argument("--tokenizer", default="Qwen/Qwen2.5-3B", help="Tokenizer model")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--verbose", action="store_true", help="Verbose logging")
     parser.add_argument(
@@ -1358,9 +1182,7 @@ def main():
     logging.basicConfig(level=level, format="%(asctime)s - %(levelname)s - %(message)s")
 
     # Log the backdoor verification setting
-    logger.info(
-        f"Backdoor verification: {'enabled' if args.enable_backdoor_verification else 'disabled'}"
-    )
+    logger.info(f"Backdoor verification: {'enabled' if args.enable_backdoor_verification else 'disabled'}")
 
     # Run generator
     generator = CompactGenerator(

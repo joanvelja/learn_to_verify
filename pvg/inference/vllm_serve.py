@@ -1,13 +1,12 @@
 import argparse
+import json
 import logging
+import math
 import os
-from dataclasses import dataclass, field
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 
 import torch
-import math
-import json
-
 from trl import TrlParser
 from trl.import_utils import (
     is_fastapi_available,
@@ -15,7 +14,6 @@ from trl.import_utils import (
     is_uvicorn_available,
     is_vllm_available,
 )
-
 
 if is_fastapi_available():
     from fastapi import BackgroundTasks, FastAPI
@@ -31,12 +29,12 @@ if is_uvicorn_available():
 
 if is_vllm_available():
     from vllm import LLM, SamplingParams
+    from vllm.config import PoolerConfig
     from vllm.distributed.device_communicators.pynccl import PyNcclCommunicator
     from vllm.distributed.parallel_state import get_world_group
     from vllm.distributed.utils import StatelessProcessGroup
     from vllm.sampling_params import GuidedDecodingParams
     from vllm.worker.worker import Worker
-    from vllm.config import PoolerConfig
 
 else:
     Worker = object
@@ -86,17 +84,13 @@ class WeightSyncWorker(Worker):
                 Total number of participating processes in the update group.
         """
         if self.pynccl_comm is not None:
-            raise RuntimeError(
-                "Weight update group already initialized. Call close_communicator first."
-            )
+            raise RuntimeError("Weight update group already initialized. Call close_communicator first.")
 
         # Get the rank of the current worker in the global world group.
         rank = get_world_group().rank
 
         # Create a stateless process group to manage communication between training processes and vLLM workers.
-        pg = StatelessProcessGroup.create(
-            host=host, port=port, rank=rank, world_size=world_size
-        )
+        pg = StatelessProcessGroup.create(host=host, port=port, rank=rank, world_size=world_size)
 
         # Initialize the NCCL-based communicator for weight synchronization.
         self.pynccl_comm = PyNcclCommunicator(pg, device=self.device)
@@ -104,9 +98,7 @@ class WeightSyncWorker(Worker):
         # The client process that sends updated weights has the highest rank (world_size - 1).
         self.client_rank = world_size - 1
 
-    def update_named_param(
-        self, name: str, dtype: torch.dtype, shape: Sequence[int]
-    ) -> None:
+    def update_named_param(self, name: str, dtype: torch.dtype, shape: Sequence[int]) -> None:
         """
         Receives updated weights from the client process and updates the named parameter in the model.
 
@@ -119,17 +111,13 @@ class WeightSyncWorker(Worker):
                 Shape of the weight tensor.
         """
         if self.pynccl_comm is None:
-            raise RuntimeError(
-                "Communicator not initialized. Call `init_communicator` first."
-            )
+            raise RuntimeError("Communicator not initialized. Call `init_communicator` first.")
 
         # Allocate memory for the incoming weight tensor on the correct device.
         weight = torch.empty(shape, dtype=dtype, device=self.device)
 
         # Use NCCL to broadcast the updated weights from the client (src) to all workers.
-        self.pynccl_comm.broadcast(
-            weight, src=self.client_rank, stream=torch.cuda.current_stream()
-        )
+        self.pynccl_comm.broadcast(weight, src=self.client_rank, stream=torch.cuda.current_stream())
         self.pynccl_comm.group.barrier()
 
         # Load the received weights into the model.
@@ -187,9 +175,7 @@ class ScriptArguments:
     model: str = field(metadata={"help": "Model name or path to load the model from."})
     revision: str | None = field(
         default=None,
-        metadata={
-            "help": "Revision to use for the model. If not specified, the default branch will be used."
-        },
+        metadata={"help": "Revision to use for the model. If not specified, the default branch will be used."},
     )
     tensor_parallel_size: int = field(
         default=1,
@@ -266,9 +252,7 @@ def main(script_args: ScriptArguments):
         )
 
     if not is_vllm_available():
-        raise ImportError(
-            "vLLM is required to run the vLLM serve script. Please install it using `pip install vllm`."
-        )
+        raise ImportError("vLLM is required to run the vLLM serve script. Please install it using `pip install vllm`.")
 
     llm = LLM(
         model=script_args.model,
@@ -314,9 +298,7 @@ def main(script_args: ScriptArguments):
         {"tensor_parallel_size": 8}
         ```
         """
-        return {
-            "tensor_parallel_size": llm.llm_engine.parallel_config.tensor_parallel_size
-        }
+        return {"tensor_parallel_size": llm.llm_engine.parallel_config.tensor_parallel_size}
 
     class GenerateRequest(BaseModel):
         prompts: list[str]
@@ -352,6 +334,7 @@ def main(script_args: ScriptArguments):
         chat_template: str = ""
         continue_final_message: bool = True
         add_generation_prompt: bool = False
+        use_tqdm: bool = True
 
     class GenerateResponse(BaseModel):
         completion_ids: list[list[int]]
@@ -393,9 +376,7 @@ def main(script_args: ScriptArguments):
 
         # Guided decoding, if enabled
         if request.guided_decoding_regex is not None:
-            guided_decoding = GuidedDecodingParams(
-                backend="outlines", regex=request.guided_decoding_regex
-            )
+            guided_decoding = GuidedDecodingParams(backend="outlines", regex=request.guided_decoding_regex)
         else:
             guided_decoding = None
 
@@ -443,9 +424,7 @@ def main(script_args: ScriptArguments):
                             for token_id, logprob_obj in step_logprobs.items():
                                 # --- Log the raw value ---
                                 raw_val = logprob_obj.logprob
-                                raw_step_data[int(token_id)] = (
-                                    raw_val  # Store raw value for logging
-                                )
+                                raw_step_data[int(token_id)] = raw_val  # Store raw value for logging
                                 # --------------------------
 
                                 # Replace non-finite values with None for JSON compatibility
@@ -460,17 +439,13 @@ def main(script_args: ScriptArguments):
                                     current_step_dict[int(token_id)] = raw_val
 
                             token_logprobs_list.append(current_step_dict)
-                            raw_step_logprobs_list.append(
-                                raw_step_data
-                            )  # Add raw data for this step
+                            raw_step_logprobs_list.append(raw_step_data)  # Add raw data for this step
                         else:
                             token_logprobs_list.append({})
                             raw_step_logprobs_list.append({})  # Add empty raw data
 
                     logprobs_data.append(token_logprobs_list)
-                    raw_logprobs_for_logging.append(
-                        raw_step_logprobs_list
-                    )  # Add raw data for this output
+                    raw_logprobs_for_logging.append(raw_step_logprobs_list)  # Add raw data for this output
 
                 elif request.logprobs is not None:
                     logprobs_data.append([])
@@ -481,9 +456,7 @@ def main(script_args: ScriptArguments):
         logger.info(
             f"Raw logprobs extracted (before None conversion): {json.dumps(raw_logprobs_for_logging, indent=2)}"
         )
-        logger.info(
-            f"Processed logprobs for response: {json.dumps(logprobs_data, indent=2)}"
-        )
+        logger.info(f"Processed logprobs for response: {json.dumps(logprobs_data, indent=2)}")
 
         # --- Return both completion_ids and logprobs ---
         return (
@@ -508,9 +481,7 @@ def main(script_args: ScriptArguments):
         """
         # Guided decoding, if enabled
         if request.guided_decoding_regex is not None:
-            guided_decoding = GuidedDecodingParams(
-                backend="outlines", regex=request.guided_decoding_regex
-            )
+            guided_decoding = GuidedDecodingParams(backend="outlines", regex=request.guided_decoding_regex)
         else:
             guided_decoding = None
 
@@ -530,9 +501,7 @@ def main(script_args: ScriptArguments):
             include_stop_str_in_output=True if request.stop else False,
         )
 
-        assert (
-            request.chat_template != ""
-        ), "Mistaken chat template... Did not pass it correctly?"
+        assert request.chat_template != "", "Mistaken chat template... Did not pass it correctly?"
 
         logger.info(f"[DEBUG]: request.prompts: {request.prompts}")
 
@@ -542,6 +511,7 @@ def main(script_args: ScriptArguments):
             chat_template=request.chat_template,
             continue_final_message=request.continue_final_message,
             add_generation_prompt=request.add_generation_prompt,
+            use_tqdm=request.use_tqdm,
         )
 
         # Extract completion_ids from vLLM RequestOutput objects
@@ -589,9 +559,7 @@ def main(script_args: ScriptArguments):
             # Extract scores - adjust the exact path based on vLLM's classify output structure
             # This assumes the structure mentioned: outputs[i].outputs.probs[0]
             scores = [output.outputs.probs[0] for output in outputs]
-            logger.info(
-                f"Classification requested for {len(request.inputs)} inputs. Scores: {scores}"
-            )
+            logger.info(f"Classification requested for {len(request.inputs)} inputs. Scores: {scores}")
             return {"scores": scores}
         except AttributeError:
             from fastapi import HTTPException
@@ -618,9 +586,7 @@ def main(script_args: ScriptArguments):
         world_size: int
 
     @app.post("/init_communicator/")
-    async def init_communicator(
-        request: InitCommunicatorRequest, background_tasks: BackgroundTasks
-    ):
+    async def init_communicator(request: InitCommunicatorRequest, background_tasks: BackgroundTasks):
         """
         Initializes the communicator for synchronizing model weights between a client and multiple server
         workers.
@@ -644,9 +610,7 @@ def main(script_args: ScriptArguments):
         shape: list[int]
 
     @app.post("/update_named_param/")
-    async def update_named_param(
-        request: UpdateWeightsRequest, background_tasks: BackgroundTasks
-    ):
+    async def update_named_param(request: UpdateWeightsRequest, background_tasks: BackgroundTasks):
         """
         Updates the model weights with the provided tensor.
 
@@ -679,10 +643,7 @@ def main(script_args: ScriptArguments):
         Resets the prefix cache for the model.
         """
         success = llm.llm_engine.reset_prefix_cache()
-        return {
-            "message": "Request received, resetting prefix cache status: "
-            + str(success)
-        }
+        return {"message": "Request received, resetting prefix cache status: " + str(success)}
 
     @app.post("/close_communicator/")
     async def close_communicator():

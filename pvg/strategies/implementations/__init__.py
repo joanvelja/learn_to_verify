@@ -7,32 +7,27 @@ Strategy implementations for training and evaluation
 from .completion_strategies import (
     ProverCompletionStrategy,
 )
-
-from .verification_strategies import (
-    create_verification_strategy,
+from .evaluation_strategies import (
+    QuietProgressReportingStrategy,
+    StandardEvaluationStrategy,
+    StandardMetricsAggregationStrategy,
+    TorchNoGradModelStateStrategy,
+    TqdmProgressReportingStrategy,
+    create_standard_evaluation_strategy,
 )
-
-from .reward_strategies import (
-    TierBasedRewardStrategy,
-    SanityCheckRewardStrategy,
-)
-
 from .loss_strategies import (
     LigerLossStrategy,
     StandardGRPOLossStrategy,
 )
-
 from .model_forward_strategies import (
     ModelForwardStrategy,
 )
-
-from .evaluation_strategies import (
-    StandardMetricsAggregationStrategy,
-    TorchNoGradModelStateStrategy,
-    TqdmProgressReportingStrategy,
-    QuietProgressReportingStrategy,
-    StandardEvaluationStrategy,
-    create_standard_evaluation_strategy,
+from .reward_strategies import (
+    SanityCheckRewardStrategy,
+    TierBasedRewardStrategy,
+)
+from .verification_strategies import (
+    create_verification_strategy,
 )
 
 __all__ = [
