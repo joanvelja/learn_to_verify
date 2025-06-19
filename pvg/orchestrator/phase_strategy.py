@@ -1,4 +1,5 @@
 import logging
+import torch
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
@@ -62,3 +63,15 @@ class PhaseStrategy(ABC):
                 del self.optimizer_scheduler_manager.optimizers[component_key]
             if component_key in self.optimizer_scheduler_manager.schedulers:
                 del self.optimizer_scheduler_manager.schedulers[component_key]
+
+        # Clear all caches
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+
+        # Reset memory allocator for H100
+        torch.cuda.set_per_process_memory_fraction(0.95)
+
+        # Clear Python garbage
+        import gc
+
+        gc.collect()

@@ -139,6 +139,7 @@ class OptimizerSchedulerManager:
                     },  # Full LR for head
                 ],
                 weight_decay=config.weight_decay,
+                fused=True,
             )
             self.optimizers[phase] = optimizer
         else:  # 'provers'
@@ -176,6 +177,7 @@ class OptimizerSchedulerManager:
                     model.parameters(),
                     lr=config.learning_rate,
                     weight_decay=config.weight_decay,
+                    fused=True,
                 )
 
                 # ============================================================================

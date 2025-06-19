@@ -72,38 +72,27 @@ class LigerLossStrategy(LossComputationStrategy):
 
         # Check if we need ZeRO-3 parameter gathering
         model_key = "sneaky_prover"
-        # zero3 = self._is_zero3_enabled(model_key)
+        zero3 = self._is_zero3_enabled(model_key)
 
         # Get unwrapped model for parameter access
         unwrapped_model = self.accelerator_manager.unwrap_model(model, key=model_key)
 
         # Compute loss with proper parameter gathering
-        # with self._full_lm_head_params(unwrapped_model, zero3):
-        #     weight = unwrapped_model.lm_head.weight
-        #     bias = unwrapped_model.lm_head.bias
+        with self._full_lm_head_params(unwrapped_model, zero3):
+            weight = unwrapped_model.lm_head.weight
+            bias = unwrapped_model.lm_head.bias
 
-        #     # Call Liger GRPO loss
-        #     loss, liger_metrics = self.model_manager.liger_grpo_loss(
-        #         _input=model_outputs.last_hidden_state,
-        #         lin_weight=weight,
-        #         bias=bias,
-        #         selected_token_ids=batch_inputs.completion_ids,
-        #         attention_mask=batch_inputs.completion_mask,
-        #         advantages=batch_inputs.advantages,
-        #         ref_per_token_logps=batch_inputs.ref_per_token_logps,
-        #         old_per_token_logps=batch_inputs.old_per_token_logps,
-        #     )
-
-        loss, liger_metrics = self.model_manager.liger_grpo_loss(
-            _input=model_outputs.last_hidden_state,
-            lin_weight=unwrapped_model.lm_head.weight,
-            bias=unwrapped_model.lm_head.bias,
-            selected_token_ids=batch_inputs.completion_ids,
-            attention_mask=batch_inputs.completion_mask,
-            advantages=batch_inputs.advantages,
-            ref_per_token_logps=batch_inputs.ref_per_token_logps,
-            old_per_token_logps=batch_inputs.old_per_token_logps,
-        )
+            # Call Liger GRPO loss
+            loss, liger_metrics = self.model_manager.liger_grpo_loss(
+                _input=model_outputs.last_hidden_state,
+                lin_weight=weight,
+                bias=bias,
+                selected_token_ids=batch_inputs.completion_ids,
+                attention_mask=batch_inputs.completion_mask,
+                advantages=batch_inputs.advantages,
+                ref_per_token_logps=batch_inputs.ref_per_token_logps,
+                old_per_token_logps=batch_inputs.old_per_token_logps,
+            )
 
         # Process Liger metrics
         processed_metrics = self._process_liger_metrics(liger_metrics)

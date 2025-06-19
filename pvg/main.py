@@ -4,6 +4,7 @@
 
 import logging
 import os
+import torch
 from typing import Literal, cast
 
 from jsonargparse import auto_cli
@@ -41,6 +42,15 @@ initial_logger.info("Starting main training script...")
 
 # Define a placeholder type for the potentially complex resumed state
 ResumedState = tuple[int, str, int] | None  # e.g., (round, phase_name, phase_step)
+
+# Set up torch for faster inference
+if torch.cuda.is_available():
+    torch.cuda.set_device(int(os.environ.get("LOCAL_RANK", 0)))
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cuda.enable_mem_efficient_sdp(True)
+    torch.backends.cuda.enable_flash_sdp(True)
+    torch.cuda.set_per_process_memory_fraction(0.95)  # Use 95% of HBM3
 
 
 def main():

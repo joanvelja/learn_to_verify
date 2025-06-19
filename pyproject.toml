@@ -21,7 +21,6 @@ dependencies = [
     "jsonargparse>=4.39.0",
     "nvidia-ml-py>=12.570.86",
     "torchvision>=0.21.0",
-    "flash-attn==2.7.4.post1",
 ]
 
 [tool.ruff]

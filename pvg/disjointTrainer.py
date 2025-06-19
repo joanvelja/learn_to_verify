@@ -476,7 +476,6 @@ class DisjointSequentialTrainer:
         )
         logger.info(f"Loading tokenizer from {tokenizer_path}")
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-        # Add padding token if missing (common for GPT-2)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
             logger.info("Tokenizer missing pad token, setting to eos token.")
@@ -591,11 +590,13 @@ class DisjointSequentialTrainer:
             self.models["honest_prover"].parameters(),
             lr=self.args.learning_rate_honest_prover,
             weight_decay=self.args.weight_decay_honest_prover,
+            fused=True,
         )
         optimizer_b = torch.optim.AdamW(
             self.models["sneaky_prover"].parameters(),
             lr=self.args.learning_rate_sneaky_prover,
             weight_decay=self.args.weight_decay_sneaky_prover,
+            fused=True,
         )
         logger.info("Optimizers created.")
         self.optimizers = {"honest_prover": optimizer_a, "sneaky_prover": optimizer_b}

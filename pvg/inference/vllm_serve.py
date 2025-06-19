@@ -395,6 +395,7 @@ def main(script_args: ScriptArguments):
             presence_penalty=request.presence_penalty,
             stop=request.stop,
             include_stop_str_in_output=True if request.stop else False,
+            seed=42,
         )
         all_outputs = llm.generate(request.prompts, sampling_params=sampling_params)
         # completion_ids = [
@@ -499,6 +500,7 @@ def main(script_args: ScriptArguments):
             presence_penalty=request.presence_penalty,
             stop=request.stop,
             include_stop_str_in_output=True if request.stop else False,
+            seed=42,
         )
 
         assert request.chat_template != "", "Mistaken chat template... Did not pass it correctly?"

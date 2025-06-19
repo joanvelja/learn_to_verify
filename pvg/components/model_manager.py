@@ -140,9 +140,13 @@ class ModelManager:
                     self.model_paths[model_key],
                     torch_dtype=torch.bfloat16,
                     **model_init_kwargs,
-                )
+                ).to(self.accelerator_manager.get_state_property("device", model_key))
 
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_paths["sneaky_prover"])
+            # Make sure that the tokenizer has a pad_token_id
+            if self.tokenizer.pad_token_id is None:
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+                logger.warning(f"Tokenizer {self.tokenizer} has no pad_token_id. Setting it to {self.tokenizer.eos_token_id}")
         else:
             raise ValueError(f"Invalid phase: {self.phase}")
 
@@ -347,6 +351,8 @@ class ModelManager:
             self.models["verifier"].verifier_head = torch.nn.Linear(self.models["verifier"].config.hidden_size, 1)
         else:
             raise ValueError(f"Invalid verifier mode: {self.training_configs['verifier'].verifier_mode}")
+
+        self.models["verifier"] = self.models["verifier"].to(self.accelerator_manager.get_state_property("device", "verifier"))
 
     # NOTE: This function is called when the phase changes - i.e., when the state tracker is updated (end of verifier training, end of provers training, ...)
     # Acts as a reset for the model manager

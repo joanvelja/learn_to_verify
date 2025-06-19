@@ -11,7 +11,7 @@ import logging
 from typing import Any, Literal
 
 import torch
-
+from trl.trainer.utils import pad
 from pvg.components import AcceleratorManager, Formatter
 from pvg.config import RLArgs
 from pvg.data_models.training_data import (
@@ -175,61 +175,31 @@ class BatchProcessor:
         prompt_lengths = [len(ids) for ids in prompt_encodings["input_ids"]]
         seq_length = full_encoding.input_ids.shape[1]
 
-        # Extract completion ids and masks (slicing)
-        completion_ids = torch.stack([full_encoding.input_ids[i, prompt_lengths[i] :] for i in range(batch_size)])
-        completion_mask = torch.stack([full_encoding.attention_mask[i, prompt_lengths[i] :] for i in range(batch_size)])
+        # Extract completion ids as list of lists first (to handle variable lengths)
+        completion_ids_lists = []
+        completion_mask_lists = []
+        for i in range(batch_size):
+            completion_ids_lists.append(full_encoding.input_ids[i, prompt_lengths[i] :].tolist())
+            completion_mask_lists.append(full_encoding.attention_mask[i, prompt_lengths[i] :].tolist())
+
+        # Use formatter to properly pad the completions
+        completion_ids = self.formatter.tensorize_and_pad_completions(completion_ids_lists, device)
+
+        # Create completion mask tensor with same padding
+        completion_mask_tensors = [
+            torch.tensor(mask, device=device, dtype=torch.long) for mask in completion_mask_lists
+        ]
+        from torch.nn.utils.rnn import pad_sequence as pad
+    
+        completion_mask = pad(completion_mask_tensors, padding_value=0, batch_first=True)
 
         logger.info(f"Batch size: {batch_size}")
         logger.info(f"Max sequence length: {seq_length}")
         logger.info(f"Prompt lengths: {prompt_lengths}")
         logger.info(f"Completion mask shape: {completion_mask.shape}")
 
-        # Save these files/lists/tensors to json
-        import json
-        import os
-
-        os.makedirs("debug_files_gathered", exist_ok=True)
-
-        from accelerate.utils import gather_object
-
-        # Convert tensors to lists before gathering (for pickle compatibility)
-        gathered_full_encoding = gather_object(
-            {"input_ids": full_encoding.input_ids.tolist(), "attention_mask": full_encoding.attention_mask.tolist()}
-        )
-        gathered_completion_ids = gather_object(completion_ids.tolist())
-        gathered_completion_mask = gather_object(completion_mask.tolist())
-        gathered_prompt_lengths = gather_object(prompt_lengths)
-        gathered_prompt_texts = gather_object(prompt_texts)
-
-        # Extract prompt ids and mask (convert tensors to lists for pickle compatibility)
         prompt_ids = [full_encoding.input_ids[i, : prompt_lengths[i]] for i in range(batch_size)]
         prompt_mask = [full_encoding.attention_mask[i, : prompt_lengths[i]] for i in range(batch_size)]
-
-        # Convert tensor lists to regular lists before gathering
-        prompt_ids_lists = [ids.tolist() for ids in prompt_ids]
-        prompt_mask_lists = [mask.tolist() for mask in prompt_mask]
-
-        gathered_prompt_ids = gather_object(prompt_ids_lists)
-        gathered_prompt_mask = gather_object(prompt_mask_lists)
-        gathered_advantages = gather_object(advantages.tolist())
-
-        # Save gathered data to JSON files
-        with open(os.path.join("debug_files_gathered", "full_encoding.json"), "w") as f:
-            json.dump(gathered_full_encoding, f)
-        with open(os.path.join("debug_files_gathered", "completion_ids.json"), "w") as f:
-            json.dump(gathered_completion_ids, f)
-        with open(os.path.join("debug_files_gathered", "completion_mask.json"), "w") as f:
-            json.dump(gathered_completion_mask, f)
-        with open(os.path.join("debug_files_gathered", "prompt_lengths.json"), "w") as f:
-            json.dump(gathered_prompt_lengths, f)
-        with open(os.path.join("debug_files_gathered", "prompt_texts.json"), "w") as f:
-            json.dump(gathered_prompt_texts, f)
-        with open(os.path.join("debug_files_gathered", "prompt_ids.json"), "w") as f:
-            json.dump(gathered_prompt_ids, f)
-        with open(os.path.join("debug_files_gathered", "prompt_mask.json"), "w") as f:
-            json.dump(gathered_prompt_mask, f)
-        with open(os.path.join("debug_files_gathered", "advantages.json"), "w") as f:
-            json.dump(gathered_advantages, f)
 
         logits_to_keep = completion_ids.size(
             1

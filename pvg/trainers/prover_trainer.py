@@ -34,10 +34,11 @@ from pvg.strategies.implementations.loss_strategies import (
     StandardGRPOLossStrategy,
 )
 from pvg.strategies.implementations.model_forward_strategies import ModelForwardStrategy
-from pvg.strategies.implementations.reward_strategies import SanityCheckRewardStrategy
+from pvg.strategies.implementations.reward_strategies import TierBasedRewardStrategy, SanityCheckRewardStrategy
 from pvg.strategies.implementations.verification_strategies import (
     create_verification_strategy,
 )
+from pvg.utils.verifier_performance import VerifierPerformanceTracker
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -98,6 +99,14 @@ class ProverTrainer:
             grpo=grpo,
             metrics_processor=self.metrics_processor,
         )
+
+        # self.reward_strategy = TierBasedRewardStrategy(
+        #     verifier_tracker=VerifierPerformanceTracker(),
+        #     metrics_logger=metrics_logger,
+        #     accelerator_manager=accelerator_manager,
+        #     grpo=grpo,
+        #     metrics_processor=self.metrics_processor,
+        # )
 
         if args.training_sneaky_prover.apply_liger_kernel:
             self.loss_strategy = LigerLossStrategy(
@@ -266,7 +275,7 @@ class ProverTrainer:
                     # ============================================================================
                     # DEEPSPEED OPTIMIZER STEP
                     # ============================================================================
-                    if hasattr(policy_model, "step"):
+                    if False:  # TODO: Remove this once we have a working DeepSpeed engine
                         # DeepSpeed engine - use engine's step method
                         if self.accelerator_manager.get_state_property("is_main_process"):
                             logger.info("🚀 Using DeepSpeed engine step() method")
@@ -388,6 +397,15 @@ class ProverTrainer:
 
                     self.accelerator_manager.wait_for_everyone()
 
+                    # ============================================================================
+                    # CHECKPOINTING TO HUB
+                    # ============================================================================
+                    if optimizer_step > 0 and optimizer_step % 100 == 0:
+                        if self.accelerator_manager.get_state_property("is_main_process"):
+                            logger.info(f"🚀 Optimizer step {optimizer_step}, pushing checkpoint to hub.")
+                        self._push_model_to_hub(step=optimizer_step)
+                        self.accelerator_manager.wait_for_everyone()
+
                     # Sync vllm weights -- Update means change vllm weights for inference as well
                     self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
                     self.accelerator_manager.wait_for_everyone()
@@ -493,9 +511,10 @@ class ProverTrainer:
             model_key="sneaky_prover",
         )
 
-    def _push_model_to_hub(self) -> None:
+    def _push_model_to_hub(self, step: int | None = None) -> None:
         """
         Push the trained model to the Hugging Face model hub with proper error handling.
+        If a step is provided, it's a checkpoint push.
         """
 
         # Only push from the main process
@@ -504,7 +523,14 @@ class ProverTrainer:
             return
 
         try:
-            prover_model_name = f"jvelja/sneaky_prover_round_{self.state_tracker.round}"
+            repo_id = f"jvelja/sneaky_prover_round_{self.state_tracker.round}"
+            repo_id += f"_step_{step}" if step is not None else ""
+
+            if step is not None:
+                commit_message = f"Training checkpoint at optimizer step {step}"
+            else:
+                commit_message = f"End of training for round {self.state_tracker.round}"
+
             # Unwrap the model before pushing to avoid distributed training issues
             unwrapped_model = self.accelerator_manager.unwrap_model(
                 self.model_manager.get_model("sneaky_prover", prepared=True),
@@ -512,10 +538,13 @@ class ProverTrainer:
             )
 
             # Push the unwrapped model
-            unwrapped_model.push_to_hub(repo_id=prover_model_name)
-            logger.info(f"Sneaky Prover model successfully pushed to the hub as {prover_model_name}.")
+            unwrapped_model.push_to_hub(repo_id=repo_id, commit_message=commit_message)
+            logger.info(f"Sneaky Prover model successfully pushed to the hub as {repo_id}. Commit: {commit_message}")
+
             # Tokenizer should be pushed to the same repo
-            self.tokenizer.push_to_hub(repo_id=prover_model_name)
+            self.tokenizer.push_to_hub(repo_id=repo_id, commit_message=commit_message)
+            logger.info(f"Tokenizer successfully pushed to the hub as {repo_id}.")
+
         except Exception as e:
             logger.error(f"Failed to push model to hub: {str(e)}")
-            raise e
+            # Do not raise error to avoid interrupting training for a failed checkpoint push

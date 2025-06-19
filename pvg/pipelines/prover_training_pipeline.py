@@ -157,8 +157,15 @@ class ProverTrainingPipeline:
         logger.info(f"[DEBUG] Process {process_index} - local sneaky_advantages length: {len(local_sneaky_advantages)}")
         logger.info(f"[DEBUG] Process {process_index} - local honest_advantages length: {len(local_honest_advantages)}")
 
-        reward_result.sneaky_advantages = torch.tensor(local_sneaky_advantages)
-        reward_result.honest_advantages = torch.tensor(local_honest_advantages)
+        if isinstance(local_sneaky_advantages, torch.Tensor):
+            reward_result.sneaky_advantages = local_sneaky_advantages.clone().detach()
+        else:
+            reward_result.sneaky_advantages = torch.tensor(local_sneaky_advantages)
+
+        if isinstance(local_honest_advantages, torch.Tensor):
+            reward_result.honest_advantages = local_honest_advantages.clone().detach()
+        else:
+            reward_result.honest_advantages = torch.tensor(local_honest_advantages)
 
         assert len(reward_result.sneaky_advantages) == len(
             batch_data.questions
