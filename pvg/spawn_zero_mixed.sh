@@ -25,7 +25,10 @@ module load py # aliased to Python/3.11.3-GCCcore-12.3.0
 cd /home/jvelja/learn_to_verify
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
+uv pip install 'vllm==0.8.5.post1'
 module load CUDA/12.4.0
+
+
 
 # <--- Configuration --->
 # Get Parent directory
@@ -72,7 +75,6 @@ export TORCH_NCCL_BLOCKING_WAIT=1                # Make NCCL operations blocking
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
 export TOKENIZERS_PARALLELISM=false
 export VLLM_USE_V1=0
-export NCCL_LAUNCH_MODE=PARALLEL
 export NCCL_NVLS_ENABLE=1
 export NCCL_MIN_NCHANNELS=4
 export NCCL_MAX_NCHANNELS=32
@@ -92,7 +94,7 @@ VLLM_GPU_MEM_UTIL_SNEAKY=0.83  # Can use most of GPU 0
 VLLM_GPU_MEM_UTIL_VERIFIER=0.12 # Reduced for sharing GPU 1
 
 # <--- vLLM Server Ports --->
-VLLM_PORT_SNEAKY=8000
+VLLM_PORT_SNEAKY=8000 # New port for the Sneaky Prover server
 VLLM_PORT_VERIFIER=8001 # New port for the Verifier server
 
 # vLLM Server Host (use 127.0.0.1 for local communication on a single node)
@@ -165,7 +167,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_SNEAKY \
     --max_model_len 5120 \
     --enable-prefix-caching True \
-    --enable-chunked-prefill True \
+    --enable-chunked-prefill False \
     --enforce-eager False \
     --disable-log-stats True \
     & # Run in background
@@ -184,6 +186,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_VERIFIER \
     --max_model_len 5120 \
     --enable-prefix-caching True \
+    --enable-chunked-prefill False \
     --enforce-eager False \
     --disable-log-stats True \
     --task-type $TASK_TYPE \
