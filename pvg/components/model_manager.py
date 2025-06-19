@@ -122,6 +122,12 @@ class ModelManager:
                 model_init_kwargs
             )  # Special case for verifier --> can be an RM or a simple language model
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_paths["verifier"])
+            # Make sure that the tokenizer has a pad_token_id
+            if self.tokenizer.pad_token_id is None:
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+                logger.warning(
+                    f"Tokenizer {self.tokenizer} has no pad_token_id. Setting it to {self.tokenizer.eos_token_id}"
+                )
 
         elif self.phase == "provers":
             for model_key in self.configs.keys():
@@ -140,9 +146,17 @@ class ModelManager:
                     self.model_paths[model_key],
                     torch_dtype=torch.bfloat16,
                     **model_init_kwargs,
-                )
+                ).to(self.accelerator_manager.get_state_property("device", model_key))
+                # Test torch compilation
+                # self.models[model_key] = torch.compile(self.models[model_key], fullgraph=True)
 
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_paths["sneaky_prover"])
+            # Make sure that the tokenizer has a pad_token_id
+            if self.tokenizer.pad_token_id is None:
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+                logger.warning(
+                    f"Tokenizer {self.tokenizer} has no pad_token_id. Setting it to {self.tokenizer.eos_token_id}"
+                )
         else:
             raise ValueError(f"Invalid phase: {self.phase}")
 
@@ -321,8 +335,17 @@ class ModelManager:
 
         if self.training_configs["verifier"].verifier_mode == "regressor":
             # Regressor --> AutoModelforSequenceClassification with 1 output neuron (num_labels = 1)
-            # Set up a config with pad_token_id = eos_token_id
-            model_init_kwargs["pad_token_id"] = 151643  # TODO: This is a hack. We should fix this.
+            # Get the tokenizer to determine the correct pad_token_id
+            temp_tokenizer = AutoTokenizer.from_pretrained(self.model_paths["verifier"])
+            if temp_tokenizer.pad_token_id is None:
+                # For Qwen models, eos_token_id is typically 151643 which should be used as pad_token_id
+                pad_token_id = temp_tokenizer.eos_token_id
+            else:
+                pad_token_id = temp_tokenizer.pad_token_id
+
+            # Set pad_token_id in model_init_kwargs to ensure it's passed to the model config
+            model_init_kwargs["pad_token_id"] = pad_token_id
+
             self.models["verifier"] = AutoModelForSequenceClassification.from_pretrained(
                 self.model_paths["verifier"], num_labels=1, **model_init_kwargs
             )
@@ -347,6 +370,12 @@ class ModelManager:
             self.models["verifier"].verifier_head = torch.nn.Linear(self.models["verifier"].config.hidden_size, 1)
         else:
             raise ValueError(f"Invalid verifier mode: {self.training_configs['verifier'].verifier_mode}")
+
+        # Test torch compilation
+        self.models["verifier"] = self.models["verifier"].to(
+            self.accelerator_manager.get_state_property("device", "verifier")
+        )
+        # self.models["verifier"] = torch.compile(self.models["verifier"], fullgraph=True)
 
     # NOTE: This function is called when the phase changes - i.e., when the state tracker is updated (end of verifier training, end of provers training, ...)
     # Acts as a reset for the model manager

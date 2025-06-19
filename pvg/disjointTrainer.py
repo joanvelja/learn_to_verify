@@ -589,13 +589,15 @@ class DisjointSequentialTrainer:
         # Simple AdamW optimizer setup - can be customized
         optimizer_a = torch.optim.AdamW(
             self.models["honest_prover"].parameters(),
-            lr=self.args.learning_rate_honest_prover,
-            weight_decay=self.args.weight_decay_honest_prover,
+            lr=self.args.training_sneaky_prover.learning_rate,
+            weight_decay=self.args.training_sneaky_prover.weight_decay,
+            fused=True,
         )
         optimizer_b = torch.optim.AdamW(
             self.models["sneaky_prover"].parameters(),
-            lr=self.args.learning_rate_sneaky_prover,
-            weight_decay=self.args.weight_decay_sneaky_prover,
+            lr=self.args.training_sneaky_prover.learning_rate,
+            weight_decay=self.args.training_sneaky_prover.weight_decay,
+            fused=True,
         )
         logger.info("Optimizers created.")
         self.optimizers = {"honest_prover": optimizer_a, "sneaky_prover": optimizer_b}

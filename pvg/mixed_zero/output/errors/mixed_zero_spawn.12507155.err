@@ -1,0 +1,365 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.48it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:02<00:00,  1.08s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:02<00:00,  1.02s/it]
+
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.49it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.49it/s]
+
+INFO:     Started server process [3333506]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:15,  2.24it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:14,  2.33it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:13,  2.33it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:13,  2.35it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:02<00:12,  2.37it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:12,  2.38it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:03<00:12,  2.31it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:03<00:11,  2.31it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:11,  2.33it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:04<00:10,  2.35it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:10,  2.35it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:05<00:11,  2.00it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:06<00:15,  1.44it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:16,  1.25it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:07<00:13,  1.45it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:08<00:11,  1.65it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:08<00:09,  1.83it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:09<00:08,  1.98it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:09<00:07,  2.10it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:10<00:06,  2.20it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:10<00:06,  2.27it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:10<00:05,  2.32it/s]INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:11<00:05,  2.36it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:11<00:04,  2.39it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:12<00:04,  2.06it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:13<00:05,  1.72it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:14<00:05,  1.44it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:14<00:04,  1.62it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:14<00:03,  1.77it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:15<00:02,  1.93it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:15<00:01,  2.07it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:16<00:01,  2.18it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:16<00:00,  2.25it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:16<00:00,  2.31it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:17<00:00,  2.36it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:17<00:00,  2.01it/s]
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AINFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:     Started server process [3332992]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.06s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.06s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.06s/ba][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.40ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.30ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.39ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.30ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.40ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.31ba/s]
+Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.08s/it]Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.06s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.02s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.76ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.75ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.04ba/s]
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.01ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.81ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.11ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.47s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.57s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.49s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.57s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.41ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.38ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.10ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.07ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.48s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.56s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.17it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.17it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.20it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.20it/s]
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.09ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.07ba/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.87it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.87it/s]
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank2]:[W619 17:48:56.167084335 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank1]:[W619 17:48:56.221728312 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank0]:[W619 17:48:56.603877153 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.20.1
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250619_174859-sf157bwe
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test_run_full_pipeline_12507155
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/sf157bwe
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 250, in <module>
+[rank1]:     main()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in main
+[rank1]:     orchestrator.run_training_rounds()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank1]:     self._execute_training_phase()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 158, in _execute_training_phase
+[rank1]:     strategy.prepare_phase_components()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 55, in prepare_phase_components
+[rank1]:     self.model_manager.load_models()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 381, in load_models
+[rank1]:     self._load_models()  # NOTE: Wonnky, fix later
+[rank1]:     ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 121, in _load_models
+[rank1]:     self.prepare_verifier(
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 345, in prepare_verifier
+[rank1]:     self.models["verifier"] = AutoModelForSequenceClassification.from_pretrained(
+[rank1]:                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 571, in from_pretrained
+[rank1]:     return model_class.from_pretrained(
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 309, in _wrapper
+[rank1]:     return func(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4495, in from_pretrained
+[rank1]:     model_init_context = cls.get_init_context(is_quantized, _is_ds_init_called)
+[rank1]:                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 3882, in get_init_context
+[rank1]:     init_contexts.extend([deepspeed.zero.Init(config_dict_or_path=deepspeed_config()), set_zero3_state()])
+[rank1]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/partition_parameters.py", line 991, in __init__
+[rank1]:     _ds_config = deepspeed.runtime.config.DeepSpeedConfig(config_dict_or_path,
+[rank1]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 719, in __init__
+[rank1]:     self._initialize_params(copy.copy(self._param_dict))
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 738, in _initialize_params
+[rank1]:     self.zero_config = get_zero_config(param_dict)
+[rank1]:                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/config.py", line 74, in get_zero_config
+[rank1]:     return DeepSpeedZeroConfig(**zero_config_dict)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config_utils.py", line 57, in __init__
+[rank1]:     super().__init__(**data)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/pydantic/main.py", line 253, in __init__
+[rank1]:     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+[rank1]:                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: pydantic_core._pydantic_core.ValidationError: 1 validation error for DeepSpeedZeroConfig
+[rank1]: communication_data_type
+[rank1]:   Extra inputs are not permitted [type=extra_forbidden, input_value='bf16', input_type=str]
+[rank1]:     For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 250, in <module>
+[rank2]:     main()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in main
+[rank2]:     orchestrator.run_training_rounds()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank2]:     self._execute_training_phase()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 158, in _execute_training_phase
+[rank2]:     strategy.prepare_phase_components()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 55, in prepare_phase_components
+[rank2]:     self.model_manager.load_models()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 381, in load_models
+[rank2]:     self._load_models()  # NOTE: Wonnky, fix later
+[rank2]:     ^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 121, in _load_models
+[rank2]:     self.prepare_verifier(
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 345, in prepare_verifier
+[rank2]:     self.models["verifier"] = AutoModelForSequenceClassification.from_pretrained(
+[rank2]:                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 571, in from_pretrained
+[rank2]:     return model_class.from_pretrained(
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 309, in _wrapper
+[rank2]:     return func(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4495, in from_pretrained
+[rank2]:     model_init_context = cls.get_init_context(is_quantized, _is_ds_init_called)
+[rank2]:                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 3882, in get_init_context
+[rank2]:     init_contexts.extend([deepspeed.zero.Init(config_dict_or_path=deepspeed_config()), set_zero3_state()])
+[rank2]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/partition_parameters.py", line 991, in __init__
+[rank2]:     _ds_config = deepspeed.runtime.config.DeepSpeedConfig(config_dict_or_path,
+[rank2]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 719, in __init__
+[rank2]:     self._initialize_params(copy.copy(self._param_dict))
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 738, in _initialize_params
+[rank2]:     self.zero_config = get_zero_config(param_dict)
+[rank2]:                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/config.py", line 74, in get_zero_config
+[rank2]:     return DeepSpeedZeroConfig(**zero_config_dict)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config_utils.py", line 57, in __init__
+[rank2]:     super().__init__(**data)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/pydantic/main.py", line 253, in __init__
+[rank2]:     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+[rank2]:                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]: pydantic_core._pydantic_core.ValidationError: 1 validation error for DeepSpeedZeroConfig
+[rank2]: communication_data_type
+[rank2]:   Extra inputs are not permitted [type=extra_forbidden, input_value='bf16', input_type=str]
+[rank2]:     For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 250, in <module>
+    main()
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in main
+    orchestrator.run_training_rounds()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+    self._execute_training_phase()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 158, in _execute_training_phase
+    strategy.prepare_phase_components()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 55, in prepare_phase_components
+    self.model_manager.load_models()
+  File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 381, in load_models
+    self._load_models()  # NOTE: Wonnky, fix later
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 121, in _load_models
+    self.prepare_verifier(
+  File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 345, in prepare_verifier
+    self.models["verifier"] = AutoModelForSequenceClassification.from_pretrained(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 571, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 309, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4495, in from_pretrained
+    model_init_context = cls.get_init_context(is_quantized, _is_ds_init_called)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 3882, in get_init_context
+    init_contexts.extend([deepspeed.zero.Init(config_dict_or_path=deepspeed_config()), set_zero3_state()])
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/partition_parameters.py", line 991, in __init__
+    _ds_config = deepspeed.runtime.config.DeepSpeedConfig(config_dict_or_path,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 719, in __init__
+    self._initialize_params(copy.copy(self._param_dict))
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 738, in _initialize_params
+    self.zero_config = get_zero_config(param_dict)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/config.py", line 74, in get_zero_config
+    return DeepSpeedZeroConfig(**zero_config_dict)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config_utils.py", line 57, in __init__
+    super().__init__(**data)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/pydantic/main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for DeepSpeedZeroConfig
+communication_data_type
+  Extra inputs are not permitted [type=extra_forbidden, input_value='bf16', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 250, in <module>
+[rank0]:     main()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in main
+[rank0]:     orchestrator.run_training_rounds()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank0]:     self._execute_training_phase()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 158, in _execute_training_phase
+[rank0]:     strategy.prepare_phase_components()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 55, in prepare_phase_components
+[rank0]:     self.model_manager.load_models()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 381, in load_models
+[rank0]:     self._load_models()  # NOTE: Wonnky, fix later
+[rank0]:     ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 121, in _load_models
+[rank0]:     self.prepare_verifier(
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/components/model_manager.py", line 345, in prepare_verifier
+[rank0]:     self.models["verifier"] = AutoModelForSequenceClassification.from_pretrained(
+[rank0]:                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 571, in from_pretrained
+[rank0]:     return model_class.from_pretrained(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 309, in _wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4495, in from_pretrained
+[rank0]:     model_init_context = cls.get_init_context(is_quantized, _is_ds_init_called)
+[rank0]:                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/modeling_utils.py", line 3882, in get_init_context
+[rank0]:     init_contexts.extend([deepspeed.zero.Init(config_dict_or_path=deepspeed_config()), set_zero3_state()])
+[rank0]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/partition_parameters.py", line 991, in __init__
+[rank0]:     _ds_config = deepspeed.runtime.config.DeepSpeedConfig(config_dict_or_path,
+[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 719, in __init__
+[rank0]:     self._initialize_params(copy.copy(self._param_dict))
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config.py", line 738, in _initialize_params
+[rank0]:     self.zero_config = get_zero_config(param_dict)
+[rank0]:                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/zero/config.py", line 74, in get_zero_config
+[rank0]:     return DeepSpeedZeroConfig(**zero_config_dict)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/config_utils.py", line 57, in __init__
+[rank0]:     super().__init__(**data)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/pydantic/main.py", line 253, in __init__
+[rank0]:     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+[rank0]:                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: pydantic_core._pydantic_core.ValidationError: 1 validation error for DeepSpeedZeroConfig
+[rank0]: communication_data_type
+[rank0]:   Extra inputs are not permitted [type=extra_forbidden, input_value='bf16', input_type=str]
+[rank0]:     For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden
+W0619 17:49:10.056000 3335063 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3335969 closing signal SIGTERM
+W0619 17:49:10.059000 3335063 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3335971 closing signal SIGTERM
+/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+E0619 17:49:10.787000 3335063 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 3335970) of binary: /gpfs/home5/jvelja/learn_to_verify/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-19_17:49:10
+  host      : gcn138.local.snellius.surf.nl
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 3335970)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

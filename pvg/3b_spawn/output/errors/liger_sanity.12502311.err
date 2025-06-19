@@ -1,0 +1,128 @@
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 680, in <module>
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 680, in <module>
+    (script_args,) = parser.parse_args_and_config()
+    (script_args,) = parser.parse_args_and_config()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/trl/scripts/utils.py", line 211, in parse_args_and_config
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/trl/scripts/utils.py", line 211, in parse_args_and_config
+    output = self.parse_args_into_dataclasses(args=args, return_remaining_strings=return_remaining_strings)
+    output = self.parse_args_into_dataclasses(args=args, return_remaining_strings=return_remaining_strings)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/hf_argparser.py", line 367, in parse_args_into_dataclasses
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/hf_argparser.py", line 367, in parse_args_into_dataclasses
+    raise ValueError(f"Some specified arguments are not used by the HfArgumentParser: {remaining_args}")
+    raise ValueError(f"Some specified arguments are not used by the HfArgumentParser: {remaining_args}")
+ValueError: Some specified arguments are not used by the HfArgumentParser: ['--enable-chunked-prefill', 'True', '--num-scheduler-steps', '10', '--max-num-batched-tokens', '8192', '--use-v2-block-manager', 'True', '--kv-cache-dtype', 'fp8_e5m2', '--enforce-eager', 'False', '--swap-space', '0', '--disable-log-stats']
+ValueError: Some specified arguments are not used by the HfArgumentParser: ['--enable-chunked-prefill', 'True', '--num-scheduler-steps', '10', '--max-num-batched-tokens', '8192', '--use-v2-block-manager', 'True', '--kv-cache-dtype', 'fp8_e5m2', '--enforce-eager', 'False', '--swap-space', '0', '--disable-log-stats']
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AINFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AINFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.05s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.05s/ba][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.40ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.31ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.06s/ba][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.40ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.31ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.40ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.31ba/s]
+Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.17s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.19s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.02s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.81ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.10ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.80ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.09ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.80ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.09ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.50s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.60s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.27ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.25ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.60s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.69s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.44s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.53s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.16ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.14ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.05ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.03ba/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.06it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.06it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.26it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.26it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.00it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.00it/s]
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank0]:[W619 15:40:42.911301072 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank2]:[W619 15:40:42.107740448 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank1]:[W619 15:40:42.580866701 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.20.1
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250619_154046-opltxf26
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test_run_full_pipeline_12502311
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/opltxf26
+slurmstepd: error: *** JOB 12502311 ON gcn109 CANCELLED AT 2025-06-19T15:41:09 ***
+slurmstepd: error: container_p_join: open failed for /slurm/12502311/.ns: No such file or directory
+slurmstepd: error: container_g_join(12502311): No such file or directory

@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:30:00
 #SBATCH --job-name=pvg_3b_filter
-#SBATCH --output=3b_spawn/output/logs/pvg_3b_filter.%j.out
-#SBATCH --error=3b_spawn/output/errors/pvg_3b_filter.%j.err
+#SBATCH --output=3b_spawn/output/logs/liger_sanity.%j.out
+#SBATCH --error=3b_spawn/output/errors/liger_sanity.%j.err
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -17,40 +17,32 @@ cd /home/jvelja/learn_to_verify
 
 # sbatch train_provers.sh
 
-# <--- Load Modules --->
+# <--- Load Modules and uv activate --->
 module load 2023
 module load CUDA/12.4.0 # Why not load 2024? 2024 requires CUDA 12.6.0 (A hassle to remake the whole environment)
 module load py # aliased to Python/3.11.3-GCCcore-12.3.0
-
 cd /home/jvelja/learn_to_verify
-
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
-
-# module load 2023
 module load CUDA/12.4.0
-# module load py # aliased to Python/3.11.3-GCCcore-12.3.0
-# echo "Loaded CUDA 12.4.0"
 
-# --- Configuration ---
+# <--- Configuration --->
 # Get Parent directory
 PARENT_DIR=$(dirname "$CURRENT_PATH")
-VERIFIER_TRAINING_MODE="regressor"
+VERIFIER_TRAINING_MODE="regressor" # Type of verifier to train (regressor or classifier)
 
-# Paths to models/IDs on Hugging Face Hub or local paths
+# <--- Paths to models/IDs on Hugging Face Hub or local paths --->
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
 SNEAKY_PROVER_PATH="Qwen/Qwen2.5-3B-Instruct"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
 REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
-
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     VERIFIER_PATH="${REGRESSOR_VERIFIER_PATH}"
 else
     VERIFIER_PATH="${BASE_VERIFIER_PATH}"
 fi
 
-# Fetch models from local paths if they exist (dir = local_models/{MODEL_PROVIDER e.g. Qwen}/MODEL_NAME e.g. Qwen2.5-Coder-3B-Instruct)
-# If they do not, echo an error message and exit
+# <--- Fetch models from local paths if they exist (dir = local_models/{MODEL_PROVIDER e.g. Qwen}/MODEL_NAME e.g. Qwen2.5-Coder-3B-Instruct) --->
 if [ ! -d "${LOCAL_MODELS_DIR}/${SNEAKY_PROVER_PATH}" ]; then
     echo "Error: Local model ${SNEAKY_PROVER_PATH} not found in ${LOCAL_MODELS_DIR}"
     exit 1
@@ -59,38 +51,47 @@ if [ ! -d "${LOCAL_MODELS_DIR}/${VERIFIER_PATH}" ]; then
     echo "Error: Local model ${VERIFIER_PATH} not found in ${LOCAL_MODELS_DIR}"
     exit 1
 fi
-
 SNEAKY_PROVER_PATH="${LOCAL_MODELS_DIR}/${SNEAKY_PROVER_PATH}"
 echo "Using local model ${SNEAKY_PROVER_PATH}"
 VERIFIER_PATH="${LOCAL_MODELS_DIR}/${VERIFIER_PATH}"
 echo "Using local model ${VERIFIER_PATH}"
 
-
+# <--- NCCL Debugging and CUDA/NCCL Settings for max throughput --->
 VLLM_WORKER_MULTIPROC_METHOD=spawn # Seems the only way to avoid vllm new engine error
-# --- NCCL Debugging ---
-# Set NCCL debug level. Options: WARN, INFO, TRACE
-# INFO is usually a good starting point for hangs.
-# export NCCL_DEBUG=INFO
+# Set NCCL debug level.
+# export NCCL_DEBUG=INFO # Options: WARN, INFO, TRACE
 # Optional: Enable logging for specific subsystems (e.g., COLL for collectives, NET for network)
 # export NCCL_DEBUG_SUBSYS=ALL
 
-# More comprehensive NCCL timeout configuration
+# <--- More comprehensive NCCL timeout configuration --->
 export NCCL_TIMEOUT_SEC=18000
-# export NCCL_HEARTBEAT_TIMEOUT_SEC=18000    # Heartbeat timeout
-# export NCCL_CHANNEL_TIMEOUT_SEC=18000      # Channel-specific timeout
 export TORCH_NCCL_BLOCKING_WAIT=1                # Make NCCL operations blocking to avoid premature timeouts
-# export NCCL_ASYNC_ERROR_HANDLING=1         # Better error handling
-# export NCCL_DESYNC_DEBUG=1
- # Help debug desync issues
 
-# Optional: Useful for getting Python tracebacks on segfaults
-# export PYTHONFAULTHANDLER=1
-# export TORCH_DISTRIBUTED_DEBUG=DETAIL
+# <--- CUDA/NCCL Settings for max throughput --->
 export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
 export TOKENIZERS_PARALLELISM=false
 export VLLM_USE_V1=0
+export NCCL_NVLS_ENABLE=1  # Enable NVLink Switch
+export NCCL_NET_GDR_LEVEL=PHB  # Optimize for H100
+export NCCL_CROSS_NIC=0  # Single NIC optimization
+export NCCL_ALGO=Ring  # Best for 3 GPUs
 
-# vLLM Server Ports
+
+# <--- H100 HBM3 optimizations --->
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+export CUDA_LAUNCH_BLOCKING=0
+export TORCH_NCCL_ENABLE_MONITORING=0  # Reduce overhead
+
+# <--- Triton/Compile optimizations --->
+export TRITON_CACHE_DIR="/tmp/triton_cache"
+export TORCH_COMPILE_CACHE_SIZE_LIMIT=10000000000  # 10GB cache
+
+# <--- vLLM Server Settings --->
+VLLM_DTYPE="bfloat16"
+VLLM_GPU_MEM_UTIL_SNEAKY=0.83  # Can use most of GPU 0
+VLLM_GPU_MEM_UTIL_VERIFIER=0.12 # Reduced for sharing GPU 1
+
+# <--- vLLM Server Ports --->
 VLLM_PORT_SNEAKY=8000
 VLLM_PORT_VERIFIER=8001 # New port for the Verifier server
 
@@ -121,21 +122,14 @@ echo "Detected $TOTAL_GPUS GPUs: using GPU 0 for vLLM, GPUs $TRAINING_GPUS for t
 # Calculate number of training processes based on allocated GPUs
 NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
 
-# Other vLLM args - TODO: Would be nice to automate these with a script
-VLLM_DTYPE="bfloat16"
-# Memory utilization needs careful tuning for co-located servers on GPU 1
-VLLM_GPU_MEM_UTIL_SNEAKY=0.83  # Can use most of GPU 0
-VLLM_GPU_MEM_UTIL_VERIFIER=0.1 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
-# Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
-# Set TASK_TYPE based on VERIFIER_TRAINING_MODE
+# <--- Set TASK_TYPE based on VERIFIER_TRAINING_MODE --->
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     TASK_TYPE="classify"
 else
     TASK_TYPE="generate"
 fi
 
-
-# --- Cleanup Function ---
+# <--- Cleanup Function --->
 cleanup() {
     echo "Caught signal. Cleaning up background processes..."
     # Kill all background processes started by this script
@@ -151,7 +145,7 @@ cleanup() {
 # Trap signals for cleanup
 trap cleanup SIGINT SIGTERM
 
-# --- Launch vLLM Servers ---
+# <--- Launch vLLM Servers --->
 # Calculate tensor parallel size for each server based on assigned GPUs
 NUM_GPUS_PER_SERVER_SNEAKY=$(echo $VLLM_SNEAKY_GPUS | awk -F',' '{print NF}')
 NUM_GPUS_PER_SERVER_VERIFIER=$(echo $VLLM_VERIFIER_GPUS | awk -F',' '{print NF}')
@@ -171,11 +165,15 @@ CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_SNEAKY \
     --max_model_len 5120 \
     --enable-prefix-caching True \
+    --enable-chunked-prefill True \
+    --enforce-eager False \
+    --disable-log-stats True \
     & # Run in background
 VLLM_PID_SNEAKY=$!
 echo "Sneaky Prover vLLM Server PID: $VLLM_PID_SNEAKY"
 sleep 5
 
+# Chunked prefill is not supported for pooling models
 echo "Starting vLLM Server for Verifier on GPU(s) ${VLLM_VERIFIER_GPUS} (Port: ${VLLM_PORT_VERIFIER})..."
 CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --model $VERIFIER_PATH \
@@ -186,6 +184,8 @@ CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_VERIFIER \
     --max_model_len 5120 \
     --enable-prefix-caching True \
+    --enforce-eager False \
+    --disable-log-stats True \
     --task-type $TASK_TYPE \
     & # Run in background
 VLLM_PID_VERIFIER=$!
@@ -194,7 +194,7 @@ echo "Verifier vLLM Server PID: $VLLM_PID_VERIFIER"
 echo "Waiting ~15 seconds for vLLM servers to initialize..."
 sleep 15
 
-# --- Launch Training Script ---
+# <--- Launch Training Script --->
 echo "Starting Training Script on GPUs ${TRAINING_GPUS}..."
 # Set CUDA_VISIBLE_DEVICES for the accelerate launch command itself
 export CUDA_VISIBLE_DEVICES=$TRAINING_GPUS
@@ -229,7 +229,7 @@ uv run --env-file .env accelerate launch \
     --verifier.use_flash_attention True \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
-    --training_sneaky_prover.apply_liger_kernel False \
+    --training_sneaky_prover.apply_liger_kernel True \
     --training_sneaky_prover.learning_rate 5e-6 \
     --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
     --training_sneaky_prover.num_warmup_steps 10 \
@@ -242,6 +242,7 @@ uv run --env-file .env accelerate launch \
     --training_verifier.num_warmup_steps 100 \
     --training_verifier.verifier_mode "$VERIFIER_TRAINING_MODE" \
     --training_verifier.batch_size 8 \
+    --training_verifier.gradient_checkpointing False \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \
     \
@@ -282,7 +283,7 @@ uv run --env-file .env accelerate launch \
 # Or find the main process PID if possible (e.g., rank 0).
 # For simplicity now, we'll just wait for all background jobs started by this script.
 
-# --- Wait for processes ---
+# <--- Wait for processes --->
 echo "Launch complete. Waiting for training process (and servers) to finish..."
 # Wait for the last background process launched (usually the training script)
 # This isn't perfectly robust, as servers might finish first if training errors out quickly.

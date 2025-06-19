@@ -1,0 +1,118 @@
+Traceback (most recent call last):
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 812, in <module>
+    main(script_args)
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 385, in main
+    llm = LLM(
+          ^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/utils.py", line 1161, in inner
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/entrypoints/llm.py", line 247, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/llm_engine.py", line 503, in from_engine_args
+    vllm_config = engine_args.create_engine_config(usage_context)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/arg_utils.py", line 1126, in create_engine_config
+    cache_config = CacheConfig(
+                   ^^^^^^^^^^^^
+  File "<string>", line 14, in __init__
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/config.py", line 1378, in __post_init__
+    self.swap_space_bytes = self.swap_space * GiB_bytes
+                            ~~~~~~~~~~~~~~~~^~~~~~~~~~~
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+Traceback (most recent call last):
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 812, in <module>
+    main(script_args)
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 385, in main
+    llm = LLM(
+          ^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/utils.py", line 1161, in inner
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/entrypoints/llm.py", line 247, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/llm_engine.py", line 503, in from_engine_args
+    vllm_config = engine_args.create_engine_config(usage_context)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/arg_utils.py", line 1126, in create_engine_config
+    cache_config = CacheConfig(
+                   ^^^^^^^^^^^^
+  File "<string>", line 14, in __init__
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/config.py", line 1378, in __post_init__
+    self.swap_space_bytes = self.swap_space * GiB_bytes
+                            ~~~~~~~~~~~~~~~~^~~~~~~~~~~
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 249, in <module>
+    main()
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 80, in main
+    accelerator_manager = AcceleratorManager(
+                          ^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/components/accelerator_manager.py", line 81, in __init__
+    ds_plugin_sneaky_prover: DeepSpeedPlugin = DeepSpeedPlugin(hf_ds_config=self.ds_config_sneaky_prover)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 17, in __init__
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/utils/dataclasses.py", line 1200, in __post_init__
+    self.hf_ds_config = HfDeepSpeedConfig(self.hf_ds_config)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/utils/deepspeed.py", line 143, in __init__
+    config = json.load(f)
+             ^^^^^^^^^^^^
+  File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/json/decoder.py", line 340, in decode
+    raise JSONDecodeError("Extra data", s, end)
+json.decoder.JSONDecodeError: Extra data: line 35 column 1 (char 1132)
+W0619 15:59:11.695000 1809761 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 1810619 closing signal SIGTERM
+W0619 15:59:11.697000 1809761 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 1810620 closing signal SIGTERM
+E0619 15:59:16.596000 1809761 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 1810618) of binary: /gpfs/home5/jvelja/learn_to_verify/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-19_15:59:11
+  host      : gcn110.local.snellius.surf.nl
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1810618)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

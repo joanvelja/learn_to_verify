@@ -1,0 +1,353 @@
+Traceback (most recent call last):
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 812, in <module>
+    main(script_args)
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 385, in main
+    llm = LLM(
+          ^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/utils.py", line 1161, in inner
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/entrypoints/llm.py", line 247, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/llm_engine.py", line 503, in from_engine_args
+    vllm_config = engine_args.create_engine_config(usage_context)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/arg_utils.py", line 1122, in create_engine_config
+    self._set_default_args_v0(model_config)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/arg_utils.py", line 1544, in _set_default_args_v0
+    raise ValueError(msg)
+ValueError: Chunked prefill is not supported for pooling models
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:02<00:02,  2.19s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:05<00:00,  2.93s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:05<00:00,  2.81s/it]
+
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:17,  1.92it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:16,  2.03it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:15,  2.12it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:14,  2.17it/s]INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:02<00:14,  2.14it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:13,  2.18it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:03<00:14,  1.89it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:04<00:21,  1.25it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:05<00:19,  1.34it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:05<00:16,  1.50it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:06<00:14,  1.64it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:06<00:13,  1.74it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:07<00:12,  1.79it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:11,  1.84it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:08<00:10,  1.83it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:09<00:10,  1.87it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:09<00:10,  1.79it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:10<00:10,  1.65it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:10<00:09,  1.75it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:11<00:08,  1.80it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:11<00:07,  1.87it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:12<00:06,  1.88it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:12<00:06,  1.91it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:13<00:05,  1.90it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:13<00:05,  1.92it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:14<00:04,  1.94it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:14<00:03,  2.01it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:15<00:03,  2.05it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:15<00:02,  2.01it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:16<00:02,  1.95it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:16<00:01,  2.02it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:17<00:01,  2.04it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:17<00:00,  2.12it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:18<00:00,  2.13it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  2.10it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  1.87it/s]
+INFO:     Started server process [4112502]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AINFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.58s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.58s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.04s/ba][A
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.04s/ba][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.05s/ba]Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.12s/ba][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.13s/ba]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.42ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.33ba/s]
+Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.73s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.75s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:01<00:01,  1.98s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.26ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.44ba/s][ACreating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.26ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.51ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.18ba/s]
+
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.52ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.81ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.19ba/s]
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.46ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.52s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.59s/it]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  1.89s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.02s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  1.90s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.02s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.33ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.71ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.33ba/s]Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.32ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.70ba/s]
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.32ba/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.79it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.79it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.81it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.81it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.70it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.70it/s]
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank0]:[W619 15:49:49.453858032 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank1]:[W619 15:49:49.458347201 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank2]:[W619 15:49:49.549313447 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.20.1
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250619_154953-i0zp624i
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test_run_full_pipeline_12503059
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/i0zp624i
+slurmstepd: error: *** JOB 12503059 ON gcn97 CANCELLED AT 2025-06-19T15:50:43 ***
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 445, in request
+    self.endheaders()
+  File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1278, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1038, in _send_output
+    self.send(msg)
+  File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/http/client.py", line 976, in send
+    self.connect()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 276, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x1495758e0e90>: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/adapters.py", line 667, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='127.0.0.1', port=8001): Max retries exceeded with url: /health/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1495758e0e90>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllmclient.py", line 106, in check_server
+    response = requests.get(url)
+               ^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/adapters.py", line 700, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='127.0.0.1', port=8001): Max retries exceeded with url: /health/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1495758e0e90>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 249, in <module>
+    main()
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 189, in main
+    vllm_orchestrator = VLLMOrchestrator(
+                        ^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/components/vllm_orchestrator.py", line 88, in __init__
+    self.vllm_clients[client_key] = VLLMClient(**client_kwargs)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllmclient.py", line 82, in __init__
+    self.check_server(connection_timeout)  # check server and fail after timeout
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllmclient.py", line 111, in check_server
+    raise ConnectionError(
+requests.exceptions.ConnectionError: The vLLM server can't be reached at 127.0.0.1:8001 after 60.0 seconds. Make sure the server is running by running `trl vllm-serve`.
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 198, in _new_conn
+[rank0]:     sock = connection.create_connection(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 85, in create_connection
+[rank0]:     raise err
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 73, in create_connection
+[rank0]:     sock.connect(sa)
+[rank0]: ConnectionRefusedError: [Errno 111] Connection refused
+
+[rank0]: The above exception was the direct cause of the following exception:
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+[rank0]:     response = self._make_request(
+[rank0]:                ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+[rank0]:     conn.request(
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 445, in request
+[rank0]:     self.endheaders()
+[rank0]:   File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1278, in endheaders
+[rank0]:     self._send_output(message_body, encode_chunked=encode_chunked)
+[rank0]:   File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1038, in _send_output
+[rank0]:     self.send(msg)
+[rank0]:   File "/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/http/client.py", line 976, in send
+[rank0]:     self.connect()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 276, in connect
+[rank0]:     self.sock = self._new_conn()
+[rank0]:                 ^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 213, in _new_conn
+[rank0]:     raise NewConnectionError(
+[rank0]: urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x1495758e0e90>: Failed to establish a new connection: [Errno 111] Connection refused
+
+[rank0]: The above exception was the direct cause of the following exception:
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/adapters.py", line 667, in send
+[rank0]:     resp = conn.urlopen(
+[rank0]:            ^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+[rank0]:     retries = retries.increment(
+[rank0]:               ^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/urllib3/util/retry.py", line 519, in increment
+[rank0]:     raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+[rank0]:     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='127.0.0.1', port=8001): Max retries exceeded with url: /health/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1495758e0e90>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+[rank0]: During handling of the above exception, another exception occurred:
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/inference/vllmclient.py", line 106, in check_server
+[rank0]:     response = requests.get(url)
+[rank0]:                ^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/api.py", line 73, in get
+[rank0]:     return request("get", url, params=params, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/api.py", line 59, in request
+[rank0]:     return session.request(method=method, url=url, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+[rank0]:     resp = self.send(prep, **send_kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+[rank0]:     r = adapter.send(request, **kwargs)
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/requests/adapters.py", line 700, in send
+[rank0]:     raise ConnectionError(e, request=request)
+[rank0]: requests.exceptions.ConnectionError: HTTPConnectionPool(host='127.0.0.1', port=8001): Max retries exceeded with url: /health/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1495758e0e90>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+[rank0]: The above exception was the direct cause of the following exception:
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 249, in <module>
+[rank0]:     main()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 189, in main
+[rank0]:     vllm_orchestrator = VLLMOrchestrator(
+[rank0]:                         ^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/components/vllm_orchestrator.py", line 88, in __init__
+[rank0]:     self.vllm_clients[client_key] = VLLMClient(**client_kwargs)
+[rank0]:                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/inference/vllmclient.py", line 82, in __init__
+[rank0]:     self.check_server(connection_timeout)  # check server and fail after timeout
+[rank0]:     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/inference/vllmclient.py", line 111, in check_server
+[rank0]:     raise ConnectionError(
+[rank0]: requests.exceptions.ConnectionError: The vLLM server can't be reached at 127.0.0.1:8001 after 60.0 seconds. Make sure the server is running by running `trl vllm-serve`.
+[rank0]:[W619 15:50:58.391516544 ProcessGroupNCCL.cpp:1496] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0619 15:51:02.665000 4114561 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 4115651 closing signal SIGTERM
+W0619 15:51:02.669000 4114561 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 4115652 closing signal SIGTERM
+/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+E0619 15:51:08.005000 4114561 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 4115650) of binary: /gpfs/home5/jvelja/learn_to_verify/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-19_15:51:02
+  host      : gcn97.local.snellius.surf.nl
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 4115650)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+/var/spool/slurm/slurmd/job12503059/slurm_script: line 144: kill: (4113005) - No such process

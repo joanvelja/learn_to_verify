@@ -1,5 +1,6 @@
 import logging
 
+import torch
 from typing_extensions import override
 
 from pvg.orchestrator.phase_strategy import PhaseStrategy
@@ -72,10 +73,17 @@ class ProverPhaseStrategy(PhaseStrategy):
             self.model_manager.prepared_ref_models[model_key] = self.model_manager.ref_models[model_key]
 
         # Debug post-preparation state
-        self._debug_post_preparation_state(model_key, components, model, optimizer)
+        # self._debug_post_preparation_state(model_key, components, model, optimizer)
 
+        # Torch compile
         # Store prepared components
-        self.model_manager.prepared_models[model_key] = components[0]
+        compile_options = {
+            "mode": "reduce-overhead",  # Better for training
+            "dynamic": True,  # Handle dynamic shapes
+            "fullgraph": False,  # CRITICAL for DeepSpeed compatibility
+            "backend": "inductor",
+        }
+        self.model_manager.prepared_models[model_key] = torch.compile(components[0].module, **compile_options)
         self.optimizer_scheduler_manager.optimizers[model_key] = components[1]
         self.data_manager.dataloaders["provers"][model_key]["train_dataloader"] = components[2]
         self.data_manager.dataloaders["provers"][model_key]["eval_dataloader"] = (

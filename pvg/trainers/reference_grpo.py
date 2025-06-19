@@ -1094,6 +1094,7 @@ class GRPOTrainer(Trainer):
                     min_p=0.0 if self.min_p is None else self.min_p,
                     max_tokens=self.max_completion_length,
                     guided_decoding=guided_decoding,
+                    seed=42,
                 )
 
                 if self.vllm_tensor_parallel_size > 1:

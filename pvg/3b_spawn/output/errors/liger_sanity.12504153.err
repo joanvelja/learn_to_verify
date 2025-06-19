@@ -1,0 +1,82 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.47it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:01<00:00,  1.03s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:01<00:00,  1.02it/s]
+
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.88it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.87it/s]
+
+INFO:     Started server process [1935760]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:20,  1.68it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:01<00:17,  1.89it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:15,  2.10it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:14,  2.20it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:02<00:17,  1.76it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:03<00:15,  1.86it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:03<00:16,  1.67it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:04<00:19,  1.42it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:05<00:17,  1.47it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:05<00:15,  1.67it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:06<00:13,  1.81it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:06<00:11,  1.94it/s]INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:07<00:10,  2.06it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:09,  2.15it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:07<00:09,  2.21it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:08<00:10,  1.89it/s]INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:09<00:09,  1.98it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:09<00:08,  2.09it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:10<00:08,  1.93it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:10<00:08,  1.87it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:11<00:09,  1.53it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:12<00:07,  1.68it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:12<00:06,  1.80it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:13<00:05,  1.91it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:13<00:05,  1.97it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:13<00:04,  2.07it/s]/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/cuda/__init__.py:1067: UserWarning: Synchronization debug mode is a prototype feature and does not yet detect all synchronizing operations (Triggered internally at /pytorch/torch/csrc/cuda/Module.cpp:915.)
+  torch._C._cuda_set_sync_debug_mode(debug_mode)
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 48, in <module>
+    torch._C._cuda_setDeviceFlags(0x01)  # Enable peer access
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'torch._C' has no attribute '_cuda_setDeviceFlags'
+Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:14<00:03,  2.11it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:14<00:03,  2.17it/s]/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/cuda/__init__.py:1067: UserWarning: Synchronization debug mode is a prototype feature and does not yet detect all synchronizing operations (Triggered internally at /pytorch/torch/csrc/cuda/Module.cpp:915.)
+  torch._C._cuda_set_sync_debug_mode(debug_mode)
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 48, in <module>
+    torch._C._cuda_setDeviceFlags(0x01)  # Enable peer access
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'torch._C' has no attribute '_cuda_setDeviceFlags'
+/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/cuda/__init__.py:1067: UserWarning: Synchronization debug mode is a prototype feature and does not yet detect all synchronizing operations (Triggered internally at /pytorch/torch/csrc/cuda/Module.cpp:915.)
+  torch._C._cuda_set_sync_debug_mode(debug_mode)
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 48, in <module>
+    torch._C._cuda_setDeviceFlags(0x01)  # Enable peer access
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'torch._C' has no attribute '_cuda_setDeviceFlags'
+Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:15<00:02,  2.19it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:15<00:02,  2.24it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:16<00:02,  1.97it/s]W0619 16:18:04.153000 1937324 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 1938427 closing signal SIGTERM
+W0619 16:18:04.153000 1937324 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 1938429 closing signal SIGTERM
+Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:16<00:01,  2.07it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:18<00:01,  1.38it/s]E0619 16:18:05.833000 1937324 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 1938428) of binary: /gpfs/home5/jvelja/learn_to_verify/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-19_16:18:04
+  host      : gcn110.local.snellius.surf.nl
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 1938428)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:18<00:00,  1.56it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  1.72it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  1.85it/s]

@@ -1,0 +1,314 @@
+Audited 1 package in 17ms
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.48it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:01<00:00,  1.01s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:01<00:00,  1.05it/s]
+
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.77it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.76it/s]
+
+INFO:     Started server process [2509908]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:01<00:50,  1.49s/it]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:01<00:28,  1.17it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:02<00:20,  1.53it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:02<00:17,  1.78it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:03<00:15,  1.94it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:03<00:13,  2.08it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:03<00:12,  2.18it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:04<00:12,  2.19it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:04<00:11,  2.26it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:05<00:10,  2.30it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:05<00:10,  2.34it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:06<00:12,  1.91it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:07<00:13,  1.66it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:08<00:16,  1.27it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:08<00:13,  1.47it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:09<00:11,  1.67it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:09<00:09,  1.83it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:10<00:08,  1.98it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:10<00:07,  2.09it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:10<00:06,  2.18it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:11<00:06,  2.24it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:11<00:05,  2.29it/s]INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:12<00:05,  2.32it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:12<00:04,  2.35it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:13<00:04,  2.35it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:13<00:04,  2.20it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:14<00:04,  1.65it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:15<00:04,  1.70it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:15<00:03,  1.80it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:16<00:02,  1.81it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:16<00:02,  1.91it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:16<00:01,  2.05it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:17<00:00,  2.16it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:17<00:00,  2.24it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  2.28it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  1.93it/s]
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.04s/ba][AINFO:     Started server process [2509404]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.04s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.04s/ba][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.42ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.32ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.39ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.30ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.41ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.32ba/s]
+Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.01s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.02s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.01s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.83ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.14ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.81ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.11ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.84ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.43s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.52s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.16ba/s]
+
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.43ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.42ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.44s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.52s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.13ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.11ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.42s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.51s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.30it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.30it/s]
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.50ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.48ba/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.20it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.20it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.25it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.25it/s]
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank1]:[W619 14:05:27.586653206 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank2]:[W619 14:05:27.818413931 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank0]:[W619 14:05:27.963445848 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.20.1
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250619_140530-tkc29jsc
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test_run_full_pipeline_12497823
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/tkc29jsc
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank2]:     main()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank2]:     orchestrator.run_training_rounds()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank2]:     self._execute_training_phase()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 157, in _execute_training_phase
+[rank2]:     strategy.prepare_phase_components()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 67, in prepare_phase_components
+[rank2]:     make_paramdicts(model)
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank2]:     make_paramdicts(child)
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank2]:     make_paramdicts(child)
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank2]:     make_paramdicts(child)
+[rank2]:   [Previous line repeated 984 more times]
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 16, in make_paramdicts
+[rank2]:     module._parameters = nn.ParameterDict(module._parameters)
+[rank2]:                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 776, in __init__
+[rank2]:     self.update(parameters)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 922, in update
+[rank2]:     self[key] = parameter
+[rank2]:     ~~~~^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 803, in __setitem__
+[rank2]:     setattr(self, attr, value)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1953, in __setattr__
+[rank2]:     self.register_parameter(name, value)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 610, in register_parameter
+[rank2]:     elif hasattr(self, name) and name not in self._parameters:
+[rank2]:          ^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1928, in __getattr__
+[rank2]:     raise AttributeError(
+[rank2]:           ^^^^^^^^^^^^^^^
+[rank2]: RecursionError: maximum recursion depth exceeded while calling a Python object
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank1]:     main()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank1]:     orchestrator.run_training_rounds()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank1]:     self._execute_training_phase()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 157, in _execute_training_phase
+[rank1]:     strategy.prepare_phase_components()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 67, in prepare_phase_components
+[rank1]:     make_paramdicts(model)
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank1]:     make_paramdicts(child)
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank1]:     make_paramdicts(child)
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank1]:     make_paramdicts(child)
+[rank1]:   [Previous line repeated 984 more times]
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 16, in make_paramdicts
+[rank1]:     module._parameters = nn.ParameterDict(module._parameters)
+[rank1]:                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 776, in __init__
+[rank1]:     self.update(parameters)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 922, in update
+[rank1]:     self[key] = parameter
+[rank1]:     ~~~~^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 803, in __setitem__
+[rank1]:     setattr(self, attr, value)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1953, in __setattr__
+[rank1]:     self.register_parameter(name, value)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 610, in register_parameter
+[rank1]:     elif hasattr(self, name) and name not in self._parameters:
+[rank1]:          ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1928, in __getattr__
+[rank1]:     raise AttributeError(
+[rank1]:           ^^^^^^^^^^^^^^^
+[rank1]: RecursionError: maximum recursion depth exceeded while calling a Python object
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+    main()
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+    orchestrator.run_training_rounds()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+    self._execute_training_phase()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 157, in _execute_training_phase
+    strategy.prepare_phase_components()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 67, in prepare_phase_components
+    make_paramdicts(model)
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+    make_paramdicts(child)
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+    make_paramdicts(child)
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+    make_paramdicts(child)
+  [Previous line repeated 984 more times]
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 16, in make_paramdicts
+    module._parameters = nn.ParameterDict(module._parameters)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 776, in __init__
+    self.update(parameters)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 922, in update
+    self[key] = parameter
+    ~~~~^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 803, in __setitem__
+    setattr(self, attr, value)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1953, in __setattr__
+    self.register_parameter(name, value)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 610, in register_parameter
+    elif hasattr(self, name) and name not in self._parameters:
+         ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1928, in __getattr__
+    raise AttributeError(
+          ^^^^^^^^^^^^^^^
+RecursionError: maximum recursion depth exceeded while calling a Python object
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank0]:     main()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank0]:     orchestrator.run_training_rounds()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank0]:     self._execute_training_phase()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 157, in _execute_training_phase
+[rank0]:     strategy.prepare_phase_components()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/verifier_phase_strategy.py", line 67, in prepare_phase_components
+[rank0]:     make_paramdicts(model)
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank0]:     make_paramdicts(child)
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank0]:     make_paramdicts(child)
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 18, in make_paramdicts
+[rank0]:     make_paramdicts(child)
+[rank0]:   [Previous line repeated 984 more times]
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/prover_phase_strategy.py", line 16, in make_paramdicts
+[rank0]:     module._parameters = nn.ParameterDict(module._parameters)
+[rank0]:                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 776, in __init__
+[rank0]:     self.update(parameters)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 922, in update
+[rank0]:     self[key] = parameter
+[rank0]:     ~~~~^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 803, in __setitem__
+[rank0]:     setattr(self, attr, value)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1953, in __setattr__
+[rank0]:     self.register_parameter(name, value)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 610, in register_parameter
+[rank0]:     elif hasattr(self, name) and name not in self._parameters:
+[rank0]:          ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1928, in __getattr__
+[rank0]:     raise AttributeError(
+[rank0]:           ^^^^^^^^^^^^^^^
+[rank0]: RecursionError: maximum recursion depth exceeded while calling a Python object
+W0619 14:05:43.650000 2511486 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 2512393 closing signal SIGTERM
+W0619 14:05:43.654000 2511486 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 2512394 closing signal SIGTERM
+E0619 14:05:44.119000 2511486 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 2 (pid: 2512395) of binary: /gpfs/home5/jvelja/learn_to_verify/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-19_14:05:43
+  host      : gcn100.local.snellius.surf.nl
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 2512395)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

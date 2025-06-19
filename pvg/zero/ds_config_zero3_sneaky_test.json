@@ -1,0 +1,38 @@
+{
+    "bf16": {
+        "enabled": true
+    },
+    "zero_optimization": {
+        "stage": 3,
+        "overlap_comm": true,
+        "contiguous_gradients": true,
+        "reduce_bucket_size": 1000000000,
+        "stage3_prefetch_bucket_size": 2000000000,
+        "stage3_param_persistence_threshold": 200000000,
+        "stage3_max_live_parameters": 3000000000,
+        "stage3_max_reuse_distance": 2000000000,
+        "stage3_gather_16bit_weights_on_model_save": false,
+        "round_robin_gradients": true,
+        "reduce_scatter": true,
+        "allgather_partitions": true,
+        "allgather_bucket_size": 1000000000,
+        "offload_param": { "device": "none" },
+        "offload_optimizer": { "device": "none" },
+        "memory_efficient_linear": false,
+        "sub_group_size": 1000000000,
+        "zero_hpz_partition_size": 3,
+        "zero_quantized_weights": false,
+        "zero_quantized_gradients": false,
+        "mics_shard_size": -1,
+        "mics_hierarchical_params_gather": false,
+        "stage3_gather_fp16_weights_on_model_save": false,
+        "communication_data_type": "bf16",
+        "use_multi_rank_bucket_allreduce": true
+    },
+    "communication_data_type": "bf16",
+    "gradient_accumulation_steps": "auto",
+    "gradient_clipping": 0.001,
+    "train_batch_size": "auto",
+    "train_micro_batch_size_per_gpu": "auto",
+    "wall_clock_breakdown": false
+}

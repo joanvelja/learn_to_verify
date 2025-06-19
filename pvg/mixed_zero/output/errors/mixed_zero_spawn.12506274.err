@@ -1,0 +1,196 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.48it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:02<00:00,  1.10s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:02<00:00,  1.03s/it]
+
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.47it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.47it/s]
+
+INFO:     Started server process [339365]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:15,  2.20it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:14,  2.29it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:13,  2.32it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:13,  2.31it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:02<00:12,  2.34it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:12,  2.34it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:03<00:11,  2.36it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:03<00:11,  2.38it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:10,  2.41it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:04<00:11,  2.23it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:11,  2.02it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:05<00:14,  1.57it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:07<00:20,  1.10it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:16,  1.30it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:08<00:13,  1.47it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:08<00:11,  1.63it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:09<00:10,  1.78it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:09<00:08,  1.92it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:10<00:07,  2.01it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:10<00:07,  2.08it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:11<00:06,  2.10it/s]INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:11<00:06,  2.15it/s]Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:11<00:05,  2.24it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:12<00:05,  2.00it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:13<00:06,  1.44it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:14<00:05,  1.53it/s]Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:14<00:04,  1.69it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:15<00:03,  1.80it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:15<00:03,  1.73it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:16<00:02,  1.91it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:16<00:01,  2.02it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:16<00:01,  2.13it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:17<00:00,  2.23it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:17<00:00,  2.31it/s]INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  2.31it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:18<00:00,  1.92it/s]
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.04s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.05s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.03s/ba][AINFO:     Started server process [338862]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.42ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.33ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.40ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.31ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.42ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.33ba/s]
+Uploading the dataset shards:  50%|█████     | 1/2 [00:01<00:01,  2.00s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.02s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:01<00:01,  2.00s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.82ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.79ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.13ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.83ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.08ba/s]
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.15ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.43s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.51s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.44s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.53s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.42s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.50s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.38ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.37ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.22ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.19ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.32ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.30ba/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.25it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.25it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.21it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.21it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.26it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.26it/s]
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank0]:[W619 17:20:50.018003241 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank1]:[W619 17:20:50.092704297 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank2]:[W619 17:20:50.111909421 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.20.1
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250619_172053-b9fnddk2
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test_run_full_pipeline_12506274
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/b9fnddk2
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    raise exc
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+    await response(scope, receive, send)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/responses.py", line 160, in __call__
+    await self.background()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/background.py", line 41, in __call__
+    await task()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/background.py", line 28, in __call__
+    await run_in_threadpool(self.func, *self.args, **self.kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2470, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/entrypoints/llm.py", line 504, in collective_rpc
+    return self.llm_engine.collective_rpc(method, timeout, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/engine/llm_engine.py", line 2144, in collective_rpc
+    return self.model_executor.collective_rpc(method, timeout, args,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/executor/uniproc_executor.py", line 56, in collective_rpc
+    answer = run_method(self.driver_worker, method, args, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/utils.py", line 2456, in run_method
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/inference/vllm_serve.py", line 97, in init_communicator
+    pg = StatelessProcessGroup.create(host=host, port=port, rank=rank, world_size=world_size)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/vllm/distributed/utils.py", line 247, in create
+    listen_socket.bind((host, port))
+OSError: [Errno 98] Address already in use
+slurmstepd: error: *** JOB 12506274 ON gcn113 CANCELLED AT 2025-06-19T17:23:06 ***

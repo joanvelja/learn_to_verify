@@ -139,98 +139,183 @@ class WeightSyncWorker(Worker):
 @dataclass
 class ScriptArguments:
     r"""
-    Arguments for the script.
+    Configuration arguments for vLLM inference server.
+
+    This dataclass defines all parameters needed to configure a vLLM-based inference server,
+    including model loading, hardware utilization, performance optimizations, and serving endpoints.
 
     Args:
         model (`str`):
-            Model name or path to load the model from.
+            HuggingFace model ID (e.g., "microsoft/DialoGPT-medium") or local filesystem path.
+            Must be a valid transformers-compatible model with vLLM support.
         revision (`str` or `None`, *optional*, defaults to `None`):
-            Revision to use for the model. If not specified, the default branch will be used.
+            Git revision (branch name, tag, or commit hash) for HuggingFace models.
+            When `None`, uses the default branch (typically "main").
         tensor_parallel_size (`int`, *optional*, defaults to `1`):
-            Number of tensor parallel workers to use.
+            Number of GPUs to split model weights across for tensor parallelism.
+            Must be ≤ available GPUs and a power of 2 for optimal performance.
+            Values > 1 require multi-GPU setup with NVLink/PCIe connectivity.
         host (`str`, *optional*, defaults to `"0.0.0.0"`):
-            Host address to run the server on.
+            Network interface IP address for server binding. Use "127.0.0.1" for localhost-only,
+            "0.0.0.0" for all interfaces, or specific IP for targeted network access.
         port (`int`, *optional*, defaults to `8000`):
-            Port to run the server on.
+            TCP port number for HTTP server. Must be in range 1024-65535 for non-root users.
+            Ensure port is not in use by other services.
         gpu_memory_utilization (`float`, *optional*, defaults to `0.9`):
-            Ratio (between 0 and 1) of GPU memory to reserve for the model weights, activations, and KV cache on the
-            device dedicated to generation powered by vLLM. Higher values will increase the KV cache size and thus
-            improve the model's throughput. However, if the value is too high, it may cause out-of-memory (OOM) errors
-            during initialization.
+            Fraction of GPU memory (0.1-1.0) allocated for model weights and KV cache.
+            Higher values (0.85-0.95) maximize throughput but risk OOM errors.
+            Lower values (0.6-0.8) provide safety margin for concurrent processes.
+            Recommended: 0.9 for dedicated inference, 0.7-0.8 for shared GPUs.
         dtype (`str`, *optional*, defaults to `"auto"`):
-            Data type to use for vLLM generation. If set to `"auto"`, the data type will be automatically determined
-            based on the model configuration. Find the supported values in the vLLM documentation.
+            Model precision format. Options: "auto" (model-dependent), "float16", "bfloat16",
+            "float32". Modern hardware supports "bfloat16" for better numerical stability.
+            "float16" offers maximum speed but may cause precision issues.
         max_model_len (`int` or `None`, *optional*, defaults to `None`):
-            If set, the `max_model_len` to use for vLLM. This can be useful when running with reduced
-            `vllm_gpu_memory_utilization`, leading to a reduced KV cache size. If not set, vLLM will use the model
-            context size, which might be much larger than the KV cache, leading to inefficiencies.
+            Maximum sequence length for model inputs/outputs. When `None`, uses model's
+            native context length. Lower values reduce memory usage and enable larger batch sizes.
+            Must be ≤ model's maximum context window (e.g., 4096 for many models).
         enable_prefix_caching (`bool` or `None`, *optional*, defaults to `None`):
-            Whether to enable prefix caching in vLLM. If set to `True`, ensure that the model and the hardware support
-            this feature.
+            Automatic Prefix Caching (APC) to reuse KV cache for queries with shared prefixes.
+            Significantly improves throughput for batch inference with similar prompts.
+            Requires compatible hardware (A100, H100) and increases memory usage.
+            When `None`, vLLM auto-detects based on hardware capabilities.
+        max_seq_len_to_capture (`int` or `None`, *optional*, defaults to `None`):
+            Maximum sequence length for CUDA graph compilation. Sequences exceeding this
+            fall back to eager execution. Higher values increase compilation time but
+            optimize frequent sequence lengths. Typical range: 512-8192.
         task_type (`str`, *optional*, defaults to `"auto"`):
-            The type of task to run on the model. If set to `"auto"`, the task type will be automatically determined
-            based on the model configuration. Find the supported values in the vLLM documentation.
+            Model task configuration. Options: "auto" (inferred from model config),
+            "generate" (text generation), "classify" (classification with pooler).
+            "classify" automatically configures LAST token pooling without softmax.
+        enable_chunked_prefill (`bool` or `None`, *optional*, defaults to `None`):
+            Chunked prefill processing to reduce time-to-first-token (TTFT) for long sequences.
+            Processes prefill in smaller chunks, improving responsiveness for interactive use.
+            May slightly reduce overall throughput. Recommended for latency-sensitive applications.
+        num_scheduler_steps (`int` or `None`, *optional*, defaults to `None`):
+            Number of forward passes per scheduler iteration. Higher values improve
+            GPU utilization but increase latency. Typical range: 1-20.
+            When `None`, uses vLLM's adaptive default based on workload.
+        max_num_batched_tokens (`int` or `None`, *optional*, defaults to `None`):
+            Maximum tokens processed per forward pass across all requests.
+            Controls memory usage vs. throughput trade-off. Higher values increase
+            throughput but may cause OOM. Typical range: 2048-32768.
+        use_v2_block_manager (`bool` or `None`, *optional*, defaults to `None`):
+            Enable vLLM's v2 block manager for improved memory efficiency and
+            prefix caching support. Generally recommended for production workloads.
+            May have compatibility issues with certain model architectures.
+        enforce_eager (`bool` or `None`, *optional*, defaults to `None`):
+            Force eager execution instead of CUDA graphs. Useful for debugging or
+            when CUDA graphs cause issues. Reduces performance but improves compatibility.
+            When `None`, vLLM auto-selects based on model and hardware.
+        swap_space (`int` or `None`, *optional*, defaults to `None`):
+            CPU memory (in GB) allocated for KV cache swapping when GPU memory is full.
+            Enables processing larger batches at cost of increased latency.
+            Typical values: 4-32 GB. Set to 0 to disable swapping.
+        disable_log_stats (`bool` or `None`, *optional*, defaults to `None`):
+            Disable periodic logging of performance statistics (throughput, latency).
+            Reduces log verbosity for production deployments. When `None`, enables
+            logging by default for monitoring and debugging.
     """
 
-    model: str = field(metadata={"help": "Model name or path to load the model from."})
+    model: str = field(
+        metadata={
+            "help": "HuggingFace model ID (e.g., 'microsoft/DialoGPT-medium') or local filesystem path. "
+            "Must be a valid transformers-compatible model with vLLM support."
+        }
+    )
     revision: str | None = field(
         default=None,
-        metadata={"help": "Revision to use for the model. If not specified, the default branch will be used."},
+        metadata={
+            "help": "Git revision (branch name, tag, or commit hash) for HuggingFace models. "
+            "When None, uses the default branch (typically 'main')."
+        },
     )
     tensor_parallel_size: int = field(
         default=1,
-        metadata={"help": "Number of tensor parallel workers to use."},
+        metadata={
+            "help": "Number of GPUs for tensor parallelism. Must be ≤ available GPUs and "
+            "a power of 2 for optimal performance. Requires NVLink/PCIe connectivity for values > 1."
+        },
     )
     host: str = field(
         default="0.0.0.0",
-        metadata={"help": "Host address to run the server on."},
+        metadata={
+            "help": "Network interface IP for server binding. Use '127.0.0.1' for localhost-only, "
+            "'0.0.0.0' for all interfaces, or specific IP for targeted access."
+        },
     )
     port: int = field(
         default=8000,
-        metadata={"help": "Port to run the server on."},
+        metadata={
+            "help": "TCP port number for HTTP server. Must be in range 1024-65535 for non-root users. "
+            "Ensure port is not in use by other services."
+        },
     )
     gpu_memory_utilization: float = field(
         default=0.9,
         metadata={
-            "help": "Ratio (between 0 and 1) of GPU memory to reserve for the model weights, activations, and KV "
-            "cache on the device dedicated to generation powered by vLLM. Higher values will increase the KV cache "
-            "size and thus improve the model's throughput. However, if the value is too high, it may cause "
-            "out-of-memory (OOM) errors during initialization."
+            "help": "Fraction of GPU memory (0.1-1.0) for model weights and KV cache. "
+            "Higher values (0.85-0.95) maximize throughput but risk OOM. "
+            "Recommended: 0.9 for dedicated inference, 0.7-0.8 for shared GPUs."
         },
     )
     dtype: str = field(
         default="auto",
         metadata={
-            "help": "Data type to use for vLLM generation. If set to 'auto', the data type will be automatically "
-            "determined based on the model configuration. Find the supported values in the vLLM documentation."
+            "help": "Model precision format. Options: 'auto' (model-dependent), 'float16', 'bfloat16', 'float32'. "
+            "'bfloat16' offers better numerical stability, 'float16' maximum speed."
         },
     )
     max_model_len: int | None = field(
         default=None,
         metadata={
-            "help": "If set, the `max_model_len` to use for vLLM. This can be useful when running with reduced "
-            "`vllm_gpu_memory_utilization`, leading to a reduced KV cache size. If not set, vLLM will use the model "
-            "context size, which might be much larger than the KV cache, leading to inefficiencies."
+            "help": "Maximum sequence length for inputs/outputs. When None, uses model's native context length. "
+            "Lower values reduce memory usage and enable larger batch sizes. Must be ≤ model's context window."
         },
     )
     enable_prefix_caching: bool | None = field(
         default=None,
         metadata={
-            "help": "Whether to enable prefix caching in vLLM. If set to `True`, ensure that the model and the "
-            "hardware support this feature."
+            "help": "Enable Automatic Prefix Caching (APC) to reuse KV cache for shared prefixes. "
+            "Improves throughput for similar prompts. Requires compatible hardware (A100, H100). "
+            "When None, auto-detects based on hardware capabilities."
         },
     )
 
     max_seq_len_to_capture: int | None = field(
         default=None,
         metadata={
-            "help": "Maximum sequence length covered by CUDA graphs. When a sequence has context length larger than this, we fall back to eager mode. Additionally for encoder-decoder models, if the sequence length of the encoder input is larger than this, we fall back to the eager mode."
+            "help": "Maximum sequence length for CUDA graph compilation. Sequences exceeding this "
+            "fall back to eager execution. Higher values increase compilation time. Typical range: 512-8192."
         },
     )
     task_type: str = field(
         default="auto",
         metadata={
-            "help": "The type of task to run on the model. If set to `auto`, the task type will be automatically determined based on the model configuration. Find the supported values in the vLLM documentation."
+            "help": "Model task configuration. Options: 'auto' (inferred), 'generate' (text generation), "
+            "'classify' (classification with LAST token pooling). Auto-configures model behavior."
+        },
+    )
+
+    enable_chunked_prefill: bool | None = field(
+        default=None,
+        metadata={
+            "help": "Enable chunked prefill to reduce time-to-first-token (TTFT) for long sequences. "
+            "Processes prefill in chunks, improving responsiveness but may reduce overall throughput."
+        },
+    )
+    enforce_eager: bool | None = field(
+        default=None,
+        metadata={
+            "help": "Force eager execution instead of CUDA graphs. Reduces performance but improves "
+            "compatibility. Useful for debugging. When None, auto-selects based on model and hardware."
+        },
+    )
+    disable_log_stats: bool | None = field(
+        default=None,
+        metadata={
+            "help": "Disable periodic performance statistics logging (throughput, latency). "
+            "Reduces log verbosity for production. When None, enables logging by default."
         },
     )
 
@@ -272,6 +357,8 @@ def main(script_args: ScriptArguments):
             if script_args.task_type == "classify"
             else None
         ),
+        enable_chunked_prefill=script_args.enable_chunked_prefill if script_args.task_type != "classify" else False,
+        enforce_eager=script_args.enforce_eager,
     )
 
     app = FastAPI()
@@ -395,6 +482,7 @@ def main(script_args: ScriptArguments):
             presence_penalty=request.presence_penalty,
             stop=request.stop,
             include_stop_str_in_output=True if request.stop else False,
+            seed=42,
         )
         all_outputs = llm.generate(request.prompts, sampling_params=sampling_params)
         # completion_ids = [
@@ -499,6 +587,7 @@ def main(script_args: ScriptArguments):
             presence_penalty=request.presence_penalty,
             stop=request.stop,
             include_stop_str_in_output=True if request.stop else False,
+            seed=42,
         )
 
         assert request.chat_template != "", "Mistaken chat template... Did not pass it correctly?"

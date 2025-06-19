@@ -139,6 +139,7 @@ class OptimizerSchedulerManager:
                     },  # Full LR for head
                 ],
                 weight_decay=config.weight_decay,
+                fused=True,
             )
             self.optimizers[phase] = optimizer
         else:  # 'provers'
@@ -146,71 +147,12 @@ class OptimizerSchedulerManager:
                 config = self.configs[key]
                 model = self.model_manager.get_model(key, prepared=False)
 
-                # ============================================================================
-                # CRITICAL DEBUGGING: OPTIMIZER CREATION
-                # ============================================================================
-                if self.accelerator_manager.get_state_property("is_main_process"):
-                    logger.info("=" * 80)
-                    logger.info(f"🔧 OPTIMIZER CREATION DEBUG FOR {key}")
-                    logger.info("=" * 80)
-
-                    logger.info(f"🏷️  Model for optimizer creation ID: {id(model)}")
-                    logger.info(f"🏷️  Model for optimizer creation type: {type(model)}")
-
-                    # Check model parameters
-                    model_param_ids = {id(p) for p in model.parameters()}
-                    model_params_list = list(model.parameters())
-
-                    logger.info(f"🔍 Model parameters count: {len(model_param_ids)}")
-                    logger.info("🔍 First 3 model parameter IDs for optimizer creation:")
-                    for i in range(min(3, len(model_params_list))):
-                        param = model_params_list[i]
-                        logger.info(
-                            f"🔍   Param {i}: ID {id(param)}, shape {param.shape}, requires_grad {param.requires_grad}"
-                        )
-
-                    # Check if model is in training mode
-                    logger.info(f"🏷️  Model training mode during optimizer creation: {model.training}")
-
                 optimizer = torch.optim.AdamW(
                     model.parameters(),
                     lr=config.learning_rate,
                     weight_decay=config.weight_decay,
+                    fused=True,
                 )
-
-                # ============================================================================
-                # CRITICAL DEBUGGING: POST-OPTIMIZER CREATION
-                # ============================================================================
-                if self.accelerator_manager.get_state_property("is_main_process"):
-                    logger.info("🔄 POST-OPTIMIZER CREATION ANALYSIS")
-                    logger.info("-" * 40)
-
-                    logger.info(f"🔧 Created optimizer ID: {id(optimizer)}")
-                    logger.info(f"🔧 Created optimizer type: {type(optimizer)}")
-
-                    # Check optimizer parameter IDs
-                    optimizer_param_ids = {id(p) for group in optimizer.param_groups for p in group["params"]}
-                    optimizer_params_list = [p for group in optimizer.param_groups for p in group["params"]]
-
-                    logger.info(f"🔍 Optimizer parameters count: {len(optimizer_param_ids)}")
-                    logger.info("🔍 First 3 optimizer parameter IDs:")
-                    for i in range(min(3, len(optimizer_params_list))):
-                        param = optimizer_params_list[i]
-                        logger.info(
-                            f"🔍   Param {i}: ID {id(param)}, shape {param.shape}, requires_grad {param.requires_grad}"
-                        )
-
-                    # Verify optimizer was created with the right parameters
-                    optimizer_model_match = model_param_ids == optimizer_param_ids
-                    logger.info(f"🔍 Optimizer parameters match model parameters? {optimizer_model_match}")
-
-                    if not optimizer_model_match:
-                        logger.error("💥 OPTIMIZER CREATION MISMATCH!")
-                        logger.error("💥 Optimizer was not created with the correct model parameters!")
-                    else:
-                        logger.info("✅ Optimizer created with correct model parameters")
-
-                    logger.info("=" * 80)
 
                 self.optimizers[key] = optimizer
 

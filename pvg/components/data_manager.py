@@ -62,7 +62,12 @@ class DataManager:
 
     def load_tokenizer(self) -> PreTrainedTokenizer:
         """Loads the tokenizer based on the dataset config."""
-        return AutoTokenizer.from_pretrained(self.dataset_config.tokenizer_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(self.dataset_config.tokenizer_name_or_path)
+        # Make sure that the tokenizer has a pad_token_id
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token_id = tokenizer.eos_token_id
+            logger.warning(f"Tokenizer {tokenizer} has no pad_token_id. Setting it to {tokenizer.eos_token_id}")
+        return tokenizer
 
     def load_datasets(self) -> None:
         # TODO: For now, we only have APPS dataset

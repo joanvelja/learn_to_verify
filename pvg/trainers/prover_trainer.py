@@ -3,10 +3,6 @@ import logging
 from typing import Literal
 
 import torch
-from deepspeed.utils import (
-    safe_get_full_fp32_param,
-    safe_get_full_grad,
-)
 from tqdm import tqdm
 
 from pvg.components.accelerator_manager import AcceleratorManager
@@ -183,61 +179,8 @@ class ProverTrainer:
                 loss = training_step_result.loss_result.loss
                 batch_metrics = training_step_result.batch_metrics
 
-                # 4. Compute gradients
-                p0 = safe_get_full_fp32_param(next(policy_model.parameters())).clone()
-
-                # ============================================================================
-                # PRE-BACKWARD DEBUG SECTION
-                # ============================================================================
-                if self.accelerator_manager.get_state_property("is_main_process"):
-                    logger.info("🔍 PRE-BACKWARD DEBUG")
-                    logger.info(f"🏷️  Loss value: {loss:.6f}")
-                    logger.info(f"🏷️  Loss requires_grad: {loss.requires_grad}")
-                    logger.info(f"🏷️  Loss grad_fn: {loss.grad_fn}")
-
-                    # Check parameter values before backward
-                    p0_norm = torch.norm(p0)
-                    logger.info(f"📊 Parameter p0 norm BEFORE backward: {p0_norm:.6f}")
-
                 self.accelerator_manager.backward(loss, key="sneaky_prover")
                 self.accelerator_manager.wait_for_everyone()
-
-                # ============================================================================
-                # POST-BACKWARD DEBUG SECTION
-                # ============================================================================
-                if self.accelerator_manager.get_state_property("is_main_process"):
-                    logger.info("🔄 POST-BACKWARD DEBUG")
-
-                    # Check if any gradients were computed
-                    grad_count = 0
-                    total_grad_norm = 0.0
-
-                    for name, param in policy_model.named_parameters():
-                        if param.grad is not None:
-                            grad_count += 1
-                            try:
-                                # Try to get gradient norm (may fail with ZeRO-3)
-                                full_grad = safe_get_full_grad(param)
-                                if full_grad is not None:
-                                    total_grad_norm += torch.norm(full_grad).item() ** 2
-                            except Exception as e:
-                                logger.warning(f"⚠️  Could not compute gradient norm: {e}")
-                                pass
-
-                    logger.info(f"📊 Parameters with gradients: {grad_count}")
-                    if total_grad_norm > 0:
-                        logger.info(f"📊 Total gradient norm: {total_grad_norm**0.5:.6f}")
-                    else:
-                        logger.info("📊 Could not compute gradient norms (expected with ZeRO-3)")
-
-                    # Check DeepSpeed engine state
-                    if hasattr(policy_model, "optimizer"):
-                        ds_optimizer = policy_model.optimizer
-                        logger.info(f"🚀 DeepSpeed optimizer learning rate: {ds_optimizer.param_groups[0]['lr']}")
-                        logger.info(f"🚀 DeepSpeed optimizer state_dict keys: {list(ds_optimizer.state_dict().keys())}")
-
-                    # Check if loss computation graph is intact
-                    logger.info(f"🔍 Loss computation graph exists: {loss.grad_fn is not None}")
 
                 # 5. Store metrics
                 self.metrics_logger.store_metric(
@@ -267,30 +210,8 @@ class ProverTrainer:
                     # DEEPSPEED OPTIMIZER STEP
                     # ============================================================================
                     if hasattr(policy_model, "step"):
-                        # DeepSpeed engine - use engine's step method
-                        if self.accelerator_manager.get_state_property("is_main_process"):
-                            logger.info("🚀 Using DeepSpeed engine step() method")
-
-                            # Additional debugging for DeepSpeed step
-                            if hasattr(policy_model, "optimizer"):
-                                ds_optimizer = policy_model.optimizer
-                                logger.info(
-                                    f"🚀 Pre-step: DeepSpeed optimizer step count: {getattr(ds_optimizer, '_step', 'unknown')}"
-                                )
-                                logger.info(f"🚀 Pre-step: Learning rate: {ds_optimizer.param_groups[0]['lr']}")
-
                         # DeepSpeed engine handles optimizer step internally
-                        step_result = policy_model.step()
-
-                        if self.accelerator_manager.get_state_property("is_main_process"):
-                            logger.info(f"🚀 DeepSpeed step result: {step_result}")
-
-                            # Check if step count increased
-                            if hasattr(policy_model, "optimizer"):
-                                ds_optimizer = policy_model.optimizer
-                                logger.info(
-                                    f"🚀 Post-step: DeepSpeed optimizer step count: {getattr(ds_optimizer, '_step', 'unknown')}"
-                                )
+                        policy_model.step()
 
                         # Get scheduler for learning rate updates
                         scheduler = self.optimizer_scheduler_manager.get_scheduler("sneaky_prover")
@@ -301,90 +222,10 @@ class ProverTrainer:
                         optimizer = self.optimizer_scheduler_manager.get_optimizer("sneaky_prover")
                         scheduler = self.optimizer_scheduler_manager.get_scheduler("sneaky_prover")
 
-                        if self.accelerator_manager.get_state_property("is_main_process"):
-                            logger.info("🚀 Using standard optimizer step() method")
-
                         optimizer.step()
                         if scheduler is not None:
                             scheduler.step()
                         optimizer.zero_grad()
-
-                    # ============================================================================
-                    # POST-OPTIMIZER-STEP DEBUG SECTION (ZeRO-3 COMPATIBLE)
-                    # ============================================================================
-                    if self.accelerator_manager.get_state_property("is_main_process"):
-                        logger.info("✅ POST-OPTIMIZER-STEP ANALYSIS")
-                        logger.info("-" * 40)
-
-                    # For ZeRO-3, we need a different approach to check parameter updates
-                    # Instead of comparing raw parameters, check optimizer state and step counts
-
-                    param_updated = False
-                    total_param_change = 0.0
-
-                    # Method 1: Try to get updated parameters safely
-                    try:
-                        p1 = safe_get_full_fp32_param(next(policy_model.parameters()))
-                        param_diff = torch.norm(p1 - p0)
-
-                        logger.info(f"📊 Parameter p0 norm: {torch.norm(p0):.6f}")
-                        logger.info(f"📊 Parameter p1 norm: {torch.norm(p1):.6f}")
-                        logger.info(f"📊 Parameter difference norm: {param_diff:.6f}")
-
-                        if param_diff > 1e-8:  # Use small threshold for floating point comparison
-                            param_updated = True
-                            total_param_change = param_diff.item()
-                            logger.info(f"✅ Parameters updated via direct comparison: {param_diff:.6f}")
-                        else:
-                            logger.warning(f"⚠️  Direct parameter comparison shows no change: {param_diff:.6f}")
-
-                    except Exception as e:
-                        logger.warning(f"⚠️  Could not directly compare parameters: {e}")
-
-                    # Method 2: Check DeepSpeed optimizer state
-                    if hasattr(policy_model, "optimizer"):
-                        ds_optimizer = policy_model.optimizer
-
-                        # Check if optimizer step count increased
-                        current_step = getattr(ds_optimizer, "_step", 0)
-                        logger.info(f"📊 DeepSpeed optimizer step count: {current_step}")
-
-                        # Check if optimizer has momentum buffers (indicates it's doing work)
-                        state_dict = ds_optimizer.state_dict()
-                        if "state" in state_dict and state_dict["state"]:
-                            logger.info(
-                                f"📊 Optimizer has state (momentum buffers): {len(state_dict['state'])} parameter groups"
-                            )
-                            param_updated = True
-                        else:
-                            logger.warning("⚠️  Optimizer state is empty - may indicate no updates")
-
-                    # Method 3: Check if gradients were consumed (cleared after step)
-                    grad_count_after_step = 0
-                    for param in policy_model.parameters():
-                        if param.grad is not None:
-                            grad_count_after_step += 1
-
-                    logger.info(f"📊 Parameters with gradients after step: {grad_count_after_step}")
-                    if grad_count_after_step == 0:
-                        logger.info("✅ Gradients were cleared after step (good sign)")
-                    else:
-                        logger.warning("⚠️  Some gradients remain after step")
-
-                    # Final assessment
-                    if param_updated or total_param_change > 0:
-                        logger.info("✅ PARAMETERS SUCCESSFULLY UPDATED!")
-                        logger.info(f"✅ Total parameter change: {total_param_change:.8f}")
-                    else:
-                        logger.error("💥 NO PARAMETER UPDATES DETECTED!")
-                        logger.error("💥 Possible issues:")
-                        logger.error("💥 1. Gradients not computed properly")
-                        logger.error("💥 2. Learning rate is zero")
-                        logger.error("💥 3. DeepSpeed engine not configured correctly")
-                        logger.error("💥 4. Gradient clipping removing all gradients")
-
-                        # Don't raise assertion error, just log the issue
-                        # raise AssertionError("Weights didn't move – optimizer stepping failed")
 
                     self.accelerator_manager.wait_for_everyone()
 

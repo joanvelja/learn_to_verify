@@ -175,9 +175,23 @@ class BatchProcessor:
         prompt_lengths = [len(ids) for ids in prompt_encodings["input_ids"]]
         seq_length = full_encoding.input_ids.shape[1]
 
-        # Extract completion ids and masks (slicing)
-        completion_ids = torch.stack([full_encoding.input_ids[i, prompt_lengths[i] :] for i in range(batch_size)])
-        completion_mask = torch.stack([full_encoding.attention_mask[i, prompt_lengths[i] :] for i in range(batch_size)])
+        # Extract completion ids as list of lists first (to handle variable lengths)
+        completion_ids_lists = []
+        completion_mask_lists = []
+        for i in range(batch_size):
+            completion_ids_lists.append(full_encoding.input_ids[i, prompt_lengths[i] :].tolist())
+            completion_mask_lists.append(full_encoding.attention_mask[i, prompt_lengths[i] :].tolist())
+
+        # Use formatter to properly pad the completions
+        completion_ids = self.formatter.tensorize_and_pad_completions(completion_ids_lists, device)
+
+        # Create completion mask tensor with same padding
+        completion_mask_tensors = [
+            torch.tensor(mask, device=device, dtype=torch.long) for mask in completion_mask_lists
+        ]
+        from torch.nn.utils.rnn import pad_sequence as pad
+
+        completion_mask = pad(completion_mask_tensors, padding_value=0, batch_first=True)
 
         logger.info(f"Batch size: {batch_size}")
         logger.info(f"Max sequence length: {seq_length}")

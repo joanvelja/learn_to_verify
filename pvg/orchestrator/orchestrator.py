@@ -154,6 +154,7 @@ class TrainingPhaseOrchestrator:
         logger.info(f"Resetting state for new phase: {current_phase}...")
 
         strategy.cleanup_previous_phase()
+        self.accelerator_manager.wait_for_everyone()
         strategy.prepare_phase_components()
 
         # Create and run trainer

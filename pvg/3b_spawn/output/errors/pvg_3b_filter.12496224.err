@@ -1,0 +1,430 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.23it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:02<00:00,  1.23s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:02<00:00,  1.17s/it]
+
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.28it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  3.28it/s]
+
+INFO:     Started server process [2300047]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:00<00:14,  2.33it/s]Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:00<00:13,  2.39it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:01<00:13,  2.43it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:01<00:12,  2.41it/s]Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:02<00:12,  2.42it/s]Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:02<00:11,  2.43it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:02<00:11,  2.34it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:03<00:11,  2.26it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:03<00:11,  2.32it/s]Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:04<00:10,  2.36it/s]Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:04<00:10,  2.31it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:05<00:11,  1.96it/s]Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:06<00:15,  1.44it/s]Capturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:16,  1.26it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:07<00:13,  1.48it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:08<00:11,  1.68it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:08<00:09,  1.85it/s]Capturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:09<00:08,  2.00it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:09<00:07,  2.12it/s]Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:09<00:06,  2.21it/s]Capturing CUDA graph shapes:  60%|██████    | 21/35 [00:10<00:06,  2.28it/s]Capturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:10<00:05,  2.33it/s]INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:11<00:05,  2.37it/s]Capturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:11<00:04,  2.40it/s]Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:11<00:04,  2.39it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:12<00:04,  2.11it/s]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:13<00:04,  1.70it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:14<00:04,  1.63it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:14<00:03,  1.74it/s]/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/utils/dataclasses.py:1259: UserWarning: DeepSpeed Zero3 Init flag is only applicable for ZeRO Stage 3. Setting it to False.
+  warnings.warn("DeepSpeed Zero3 Init flag is only applicable for ZeRO Stage 3. Setting it to False.")
+/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/utils/dataclasses.py:1259: UserWarning: DeepSpeed Zero3 Init flag is only applicable for ZeRO Stage 3. Setting it to False.
+  warnings.warn("DeepSpeed Zero3 Init flag is only applicable for ZeRO Stage 3. Setting it to False.")
+/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/utils/dataclasses.py:1259: UserWarning: DeepSpeed Zero3 Init flag is only applicable for ZeRO Stage 3. Setting it to False.
+  warnings.warn("DeepSpeed Zero3 Init flag is only applicable for ZeRO Stage 3. Setting it to False.")
+Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:15<00:02,  1.87it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:15<00:02,  1.96it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:15<00:01,  2.09it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:16<00:00,  2.20it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:16<00:00,  2.28it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:17<00:00,  2.30it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:17<00:00,  2.04it/s]
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AINFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.04s/ba][AINFO:     Started server process [2299544]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.05s/ba][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.03s/ba][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.42ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.33ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.40ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.31ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.43ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:01<00:00,  1.33ba/s]
+Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.00s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.02s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:01<00:01,  1.99s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.83ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.14ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.78ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.06ba/s]
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.83ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.15ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.42s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.51s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.38ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.36ba/s]
+Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.44s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.53s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.42s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:03<00:00,  1.50s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.04ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.02ba/s]
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.32ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  8.30ba/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.22it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.22it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.18it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.18it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.30it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  2.30it/s]
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank1]:[W619 13:31:57.577298472 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank2]:[W619 13:31:57.742561587 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank0]:[W619 13:31:57.795297995 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.20.1
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250619_133200-5ok8rv3a
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test_run_full_pipeline_12496224
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/5ok8rv3a
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank2]:     main()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank2]:     orchestrator.run_training_rounds()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank2]:     self._execute_training_phase()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 162, in _execute_training_phase
+[rank2]:     trainer.train(1)
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/trainers/verifier_regressor.py", line 266, in train
+[rank2]:     outputs = self.verifier_model(**model_inputs).logits
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/utils/nvtx.py", line 20, in wrapped_fn
+[rank2]:     ret_val = func(*args, **kwargs)
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/engine.py", line 2087, in forward
+[rank2]:     loss = self.module(*inputs, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+[rank2]:     return inner()
+[rank2]:            ^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+[rank2]:     result = forward_call(*args, **kwargs)
+[rank2]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+[rank2]:     output = func(self, *args, **kwargs)
+[rank2]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 785, in forward
+[rank2]:     transformer_outputs: BaseModelOutputWithPast = self.model(
+[rank2]:                                                    ^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+[rank2]:     output = func(self, *args, **kwargs)
+[rank2]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 405, in forward
+[rank2]:     inputs_embeds = self.embed_tokens(input_ids)
+[rank2]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/sparse.py", line 190, in forward
+[rank2]:     return F.embedding(
+[rank2]:            ^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/functional.py", line 2529, in embedding
+[rank2]:     assert padding_idx < weight.size(
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]: AssertionError: Padding_idx must be within num_embeddings
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank1]:     main()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank1]:     orchestrator.run_training_rounds()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank1]:     self._execute_training_phase()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 162, in _execute_training_phase
+[rank1]:     trainer.train(1)
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/trainers/verifier_regressor.py", line 266, in train
+[rank1]:     outputs = self.verifier_model(**model_inputs).logits
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/utils/nvtx.py", line 20, in wrapped_fn
+[rank1]:     ret_val = func(*args, **kwargs)
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/engine.py", line 2087, in forward
+[rank1]:     loss = self.module(*inputs, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+[rank1]:     return inner()
+[rank1]:            ^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+[rank1]:     output = func(self, *args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 785, in forward
+[rank1]:     transformer_outputs: BaseModelOutputWithPast = self.model(
+[rank1]:                                                    ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+[rank1]:     output = func(self, *args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 405, in forward
+[rank1]:     inputs_embeds = self.embed_tokens(input_ids)
+[rank1]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/sparse.py", line 190, in forward
+[rank1]:     return F.embedding(
+[rank1]:            ^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/functional.py", line 2529, in embedding
+[rank1]:     assert padding_idx < weight.size(
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: AssertionError: Padding_idx must be within num_embeddings
+Epoch 1/1:   0%|          | 0/131 [00:00<?, ?it/s]Epoch 1/1:   0%|          | 0/131 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+    main()
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+    orchestrator.run_training_rounds()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+    self._execute_training_phase()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 162, in _execute_training_phase
+    trainer.train(1)
+  File "/home/jvelja/learn_to_verify/pvg/trainers/verifier_regressor.py", line 266, in train
+    outputs = self.verifier_model(**model_inputs).logits
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/utils/nvtx.py", line 20, in wrapped_fn
+    ret_val = func(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/engine.py", line 2087, in forward
+    loss = self.module(*inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+    return inner()
+           ^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+    result = forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 785, in forward
+    transformer_outputs: BaseModelOutputWithPast = self.model(
+                                                   ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 405, in forward
+    inputs_embeds = self.embed_tokens(input_ids)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/sparse.py", line 190, in forward
+    return F.embedding(
+           ^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/functional.py", line 2529, in embedding
+    assert padding_idx < weight.size(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Padding_idx must be within num_embeddings
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank0]:     main()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank0]:     orchestrator.run_training_rounds()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 112, in run_training_rounds
+[rank0]:     self._execute_training_phase()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 162, in _execute_training_phase
+[rank0]:     trainer.train(1)
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/trainers/verifier_regressor.py", line 266, in train
+[rank0]:     outputs = self.verifier_model(**model_inputs).logits
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/utils/nvtx.py", line 20, in wrapped_fn
+[rank0]:     ret_val = func(*args, **kwargs)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/deepspeed/runtime/engine.py", line 2087, in forward
+[rank0]:     loss = self.module(*inputs, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
+[rank0]:     return inner()
+[rank0]:            ^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
+[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+[rank0]:     output = func(self, *args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 785, in forward
+[rank0]:     transformer_outputs: BaseModelOutputWithPast = self.model(
+[rank0]:                                                    ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/utils/generic.py", line 969, in wrapper
+[rank0]:     output = func(self, *args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/transformers/models/qwen2/modeling_qwen2.py", line 405, in forward
+[rank0]:     inputs_embeds = self.embed_tokens(input_ids)
+[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/sparse.py", line 190, in forward
+[rank0]:     return F.embedding(
+[rank0]:            ^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/functional.py", line 2529, in embedding
+[rank0]:     assert padding_idx < weight.size(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: AssertionError: Padding_idx must be within num_embeddings
+W0619 13:32:10.646000 2301630 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 2302539 closing signal SIGTERM
+W0619 13:32:10.649000 2301630 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 2302541 closing signal SIGTERM
+/home/jvelja/.local/share/uv/python/cpython-3.11.3-linux-x86_64-gnu/lib/python3.11/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+E0619 13:32:11.165000 2301630 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 2302540) of binary: /gpfs/home5/jvelja/learn_to_verify/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-19_13:32:10
+  host      : gcn100.local.snellius.surf.nl
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 2302540)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

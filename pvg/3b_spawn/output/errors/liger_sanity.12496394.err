@@ -1,0 +1,1513 @@
+Audited 1 package in 76ms
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.80s/it]
+Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.80s/it]
+
+INFO:     Started server process [2981266]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:03<00:03,  3.37s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:07<00:00,  3.55s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:07<00:00,  3.52s/it]
+
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+INFO:datasets:PyTorch version 2.6.0 available.
+Capturing CUDA graph shapes:   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graph shapes:   3%|▎         | 1/35 [00:01<00:43,  1.27s/it]INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+INFO:pvg.pvg.components.gpu_monitor:pynvml found. Enabling GPU monitoring.
+Capturing CUDA graph shapes:   6%|▌         | 2/35 [00:01<00:25,  1.28it/s]Capturing CUDA graph shapes:   9%|▊         | 3/35 [00:02<00:20,  1.58it/s]Capturing CUDA graph shapes:  11%|█▏        | 4/35 [00:02<00:17,  1.77it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  14%|█▍        | 5/35 [00:03<00:17,  1.67it/s]INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'train'...
+Capturing CUDA graph shapes:  17%|█▋        | 6/35 [00:03<00:15,  1.84it/s]Capturing CUDA graph shapes:  20%|██        | 7/35 [00:04<00:13,  2.00it/s]Capturing CUDA graph shapes:  23%|██▎       | 8/35 [00:04<00:12,  2.10it/s]Capturing CUDA graph shapes:  26%|██▌       | 9/35 [00:04<00:11,  2.19it/s]INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Using all 6345 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+Capturing CUDA graph shapes:  29%|██▊       | 10/35 [00:05<00:10,  2.28it/s]INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'train'. Size: 6345
+INFO:root:Loading raw dataset 'jvelja/apps_checkable_filtered' split 'test'...
+Capturing CUDA graph shapes:  31%|███▏      | 11/35 [00:05<00:10,  2.28it/s]Capturing CUDA graph shapes:  34%|███▍      | 12/35 [00:06<00:09,  2.34it/s]INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+Capturing CUDA graph shapes:  37%|███▋      | 13/35 [00:06<00:09,  2.37it/s]INFO:root:Using all 779 samples from the dataset.
+INFO:root:Attempting to load tokenized dataset from cache (if available)...
+INFO:root:Tokenized dataset loaded successfully (from cache or newly processed).
+INFO:root:Dataset initialization complete for split 'test'. Size: 779
+INFO:root:Created subset with 3172 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 389 samples from original dataset of 779 samples.
+Uploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]INFO:root:Created subset with 3173 samples from original dataset of 6345 samples.
+INFO:root:Created subset with 390 samples from original dataset of 779 samples.
+
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][ACapturing CUDA graph shapes:  40%|████      | 14/35 [00:07<00:09,  2.32it/s]Capturing CUDA graph shapes:  43%|████▎     | 15/35 [00:07<00:08,  2.36it/s]Capturing CUDA graph shapes:  46%|████▌     | 16/35 [00:07<00:07,  2.39it/s]Capturing CUDA graph shapes:  49%|████▊     | 17/35 [00:08<00:07,  2.36it/s]
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.54s/ba][A
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.74s/ba][ACreating parquet from Arrow format:  50%|█████     | 1/2 [00:01<00:01,  1.77s/ba][ACapturing CUDA graph shapes:  51%|█████▏    | 18/35 [00:08<00:07,  2.38it/s]Capturing CUDA graph shapes:  54%|█████▍    | 19/35 [00:09<00:06,  2.41it/s]
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.06s/ba][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.13s/ba]
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.16s/ba][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.25s/ba]Creating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.15s/ba]
+[ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:02<00:00,  1.24s/ba]
+Capturing CUDA graph shapes:  57%|█████▋    | 20/35 [00:09<00:06,  2.43it/s]Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.96s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][AUploading the dataset shards:  50%|█████     | 1/2 [00:03<00:03,  3.07s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][ACapturing CUDA graph shapes:  60%|██████    | 21/35 [00:09<00:05,  2.45it/s]Uploading the dataset shards:  50%|█████     | 1/2 [00:02<00:02,  2.94s/it]
+Creating parquet from Arrow format:   0%|          | 0/2 [00:00<?, ?ba/s][ACapturing CUDA graph shapes:  63%|██████▎   | 22/35 [00:10<00:05,  2.41it/s]
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.74ba/s][A
+
+Creating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.32ba/s][ACreating parquet from Arrow format:  50%|█████     | 1/2 [00:00<00:00,  1.46ba/s][A
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  3.29ba/s][A
+
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.90ba/s]
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.86ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.63ba/s][ACreating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.50ba/s]
+Creating parquet from Arrow format: 100%|██████████| 2/2 [00:00<00:00,  2.29ba/s]
+Capturing CUDA graph shapes:  66%|██████▌   | 23/35 [00:10<00:04,  2.42it/s]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  1.96s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.12s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  1.84s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.01s/it]
+
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][AUploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  1.98s/it]Uploading the dataset shards: 100%|██████████| 2/2 [00:04<00:00,  2.13s/it]
+Uploading the dataset shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Creating parquet from Arrow format:   0%|          | 0/1 [00:00<?, ?ba/s][ACapturing CUDA graph shapes:  69%|██████▊   | 24/35 [00:11<00:04,  2.44it/s]
+
+
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.14ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.09ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.14ba/s]
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.72ba/s][ACreating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.09ba/s]
+Creating parquet from Arrow format: 100%|██████████| 1/1 [00:00<00:00,  4.71ba/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.78it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.77it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.76it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.76it/s]
+Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.86it/s]Uploading the dataset shards: 100%|██████████| 1/1 [00:00<00:00,  1.86it/s]
+Capturing CUDA graph shapes:  71%|███████▏  | 25/35 [00:11<00:04,  2.43it/s]Capturing CUDA graph shapes:  74%|███████▍  | 26/35 [00:11<00:03,  2.45it/s]No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+[rank2]:[W619 13:36:42.090589920 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank1]:[W619 13:36:42.107115783 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+[rank0]:[W619 13:36:42.135252437 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+Capturing CUDA graph shapes:  77%|███████▋  | 27/35 [00:12<00:03,  2.43it/s]Capturing CUDA graph shapes:  80%|████████  | 28/35 [00:13<00:03,  2.10it/s]Capturing CUDA graph shapes:  83%|████████▎ | 29/35 [00:13<00:03,  1.73it/s]Capturing CUDA graph shapes:  86%|████████▌ | 30/35 [00:14<00:02,  1.82it/s]Capturing CUDA graph shapes:  89%|████████▊ | 31/35 [00:14<00:02,  1.98it/s]Capturing CUDA graph shapes:  91%|█████████▏| 32/35 [00:15<00:01,  2.11it/s]Capturing CUDA graph shapes:  94%|█████████▍| 33/35 [00:15<00:00,  2.20it/s]Capturing CUDA graph shapes:  97%|█████████▋| 34/35 [00:15<00:00,  2.26it/s]wandb: Currently logged in as: joanvelja22 (jvelja-private) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:16<00:00,  2.24it/s]Capturing CUDA graph shapes: 100%|██████████| 35/35 [00:16<00:00,  2.13it/s]
+wandb: Tracking run with wandb version 0.20.1
+wandb: Run data is saved locally in /gpfs/home5/jvelja/learn_to_verify/pvg/wandb/run-20250619_133646-mn2adp17
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test_run_full_pipeline_12496394
+wandb: ⭐️ View project at https://wandb.ai/jvelja-private/pvg
+wandb: 🚀 View run at https://wandb.ai/jvelja-private/pvg/runs/mn2adp17
+INFO:     Started server process [2980086]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+You are attempting to use Flash Attention 2.0 without specifying a torch dtype. This might lead to unexpected behaviour
+You are attempting to use Flash Attention 2.0 with a model not initialized on GPU. Make sure to move the model to GPU after initializing it on CPU with `model.to('cuda')`.
+Epoch 1/1:   0%|          | 0/131 [00:00<?, ?it/s]Epoch 1/1:   0%|          | 0/131 [00:01<?, ?it/s, acc=0.25000000, loss=0.90625000, lr=0.00000030, score_diff=-0.11767578, separation=-0.11718750]Epoch 1/1:   1%|          | 1/131 [00:01<03:22,  1.56s/it, acc=0.25000000, loss=0.90625000, lr=0.00000030, score_diff=-0.11767578, separation=-0.11718750]Epoch 1/1:   1%|          | 1/131 [00:03<03:22,  1.56s/it, acc=0.43750000, loss=0.84375000, lr=0.00000060, score_diff=0.04125977, separation=0.04687500]  Epoch 1/1:   2%|▏         | 2/131 [00:04<04:28,  2.08s/it, acc=0.43750000, loss=0.84375000, lr=0.00000060, score_diff=0.04125977, separation=0.04687500]Epoch 1/1:   2%|▏         | 2/131 [00:04<04:28,  2.08s/it, acc=0.50000000, loss=0.86718750, lr=0.00000090, score_diff=0.01660156, separation=0.01562500]Epoch 1/1:   2%|▏         | 3/131 [00:04<02:50,  1.33s/it, acc=0.50000000, loss=0.86718750, lr=0.00000090, score_diff=0.01660156, separation=0.01562500]Epoch 1/1:   2%|▏         | 3/131 [00:04<02:50,  1.33s/it, acc=0.46875000, loss=0.95703125, lr=0.00000120, score_diff=-0.13671875, separation=-0.14062500]Epoch 1/1:   3%|▎         | 4/131 [00:04<02:01,  1.04it/s, acc=0.46875000, loss=0.95703125, lr=0.00000120, score_diff=-0.13671875, separation=-0.14062500]Epoch 1/1:   3%|▎         | 4/131 [00:05<02:01,  1.04it/s, acc=0.45000000, loss=0.80859375, lr=0.00000150, score_diff=0.00805664, separation=0.00781250]  Epoch 1/1:   4%|▍         | 5/131 [00:05<01:40,  1.26it/s, acc=0.45000000, loss=0.80859375, lr=0.00000150, score_diff=0.00805664, separation=0.00781250]Epoch 1/1:   4%|▍         | 5/131 [00:05<01:40,  1.26it/s, acc=0.45833333, loss=0.89062500, lr=0.00000180, score_diff=0.01855469, separation=0.01562500]Epoch 1/1:   5%|▍         | 6/131 [00:05<01:20,  1.54it/s, acc=0.45833333, loss=0.89062500, lr=0.00000180, score_diff=0.01855469, separation=0.01562500]Epoch 1/1:   5%|▍         | 6/131 [00:06<01:20,  1.54it/s, acc=0.46428571, loss=0.81640625, lr=0.00000210, score_diff=-0.03271484, separation=-0.03906250]Epoch 1/1:   5%|▌         | 7/131 [00:06<01:08,  1.81it/s, acc=0.46428571, loss=0.81640625, lr=0.00000210, score_diff=-0.03271484, separation=-0.03906250]Epoch 1/1:   5%|▌         | 7/131 [00:06<01:08,  1.81it/s, acc=0.45312500, loss=0.77343750, lr=0.00000240, score_diff=0.00659180, separation=0.00781250]  Epoch 1/1:   6%|▌         | 8/131 [00:06<01:05,  1.89it/s, acc=0.45312500, loss=0.77343750, lr=0.00000240, score_diff=0.00659180, separation=0.00781250]Epoch 1/1:   6%|▌         | 8/131 [00:06<01:05,  1.89it/s, acc=0.47222222, loss=0.76171875, lr=0.00000270, score_diff=0.07128906, separation=0.07031250]Epoch 1/1:   7%|▋         | 9/131 [00:06<00:58,  2.08it/s, acc=0.47222222, loss=0.76171875, lr=0.00000270, score_diff=0.07128906, separation=0.07031250]Epoch 1/1:   7%|▋         | 9/131 [00:07<00:58,  2.08it/s, acc=0.50000000, loss=0.72656250, lr=0.00000300, score_diff=0.06933594, separation=0.07031250]Epoch 1/1:   8%|▊         | 10/131 [00:07<00:54,  2.23it/s, acc=0.50000000, loss=0.72656250, lr=0.00000300, score_diff=0.06933594, separation=0.07031250]Epoch 1/1:   8%|▊         | 10/131 [00:07<00:54,  2.23it/s, acc=0.48863636, loss=0.84765625, lr=0.00000330, score_diff=-0.05273438, separation=-0.05468750]Epoch 1/1:   8%|▊         | 11/131 [00:07<00:51,  2.31it/s, acc=0.48863636, loss=0.84765625, lr=0.00000330, score_diff=-0.05273438, separation=-0.05468750]Epoch 1/1:   8%|▊         | 11/131 [00:08<00:51,  2.31it/s, acc=0.46875000, loss=0.82812500, lr=0.00000360, score_diff=-0.09960938, separation=-0.09375000]Epoch 1/1:   9%|▉         | 12/131 [00:08<00:49,  2.42it/s, acc=0.46875000, loss=0.82812500, lr=0.00000360, score_diff=-0.09960938, separation=-0.09375000]Epoch 1/1:   9%|▉         | 12/131 [00:08<00:49,  2.42it/s, acc=0.49862637, loss=0.85156250, lr=0.00000390, score_diff=0.15625000, separation=0.14843750]  Epoch 1/1:  10%|▉         | 13/131 [00:08<00:46,  2.56it/s, acc=0.49862637, loss=0.85156250, lr=0.00000390, score_diff=0.15625000, separation=0.14843750]Epoch 1/1:  10%|▉         | 13/131 [00:08<00:46,  2.56it/s, acc=0.50765306, loss=0.85546875, lr=0.00000420, score_diff=0.28320312, separation=0.28906250]Epoch 1/1:  11%|█         | 14/131 [00:08<00:45,  2.59it/s, acc=0.50765306, loss=0.85546875, lr=0.00000420, score_diff=0.28320312, separation=0.28906250]Epoch 1/1:  11%|█         | 14/131 [00:09<00:45,  2.59it/s, acc=0.52380952, loss=0.89062500, lr=0.00000450, score_diff=0.26367188, separation=0.26562500]Epoch 1/1:  11%|█▏        | 15/131 [00:09<00:48,  2.40it/s, acc=0.52380952, loss=0.89062500, lr=0.00000450, score_diff=0.26367188, separation=0.26562500]Epoch 1/1:  11%|█▏        | 15/131 [00:09<00:48,  2.40it/s, acc=0.54575893, loss=0.93359375, lr=0.00000480, score_diff=0.42968750, separation=0.42187500]Epoch 1/1:  12%|█▏        | 16/131 [00:09<00:47,  2.42it/s, acc=0.54575893, loss=0.93359375, lr=0.00000480, score_diff=0.42968750, separation=0.42187500]Epoch 1/1:  12%|█▏        | 16/131 [00:10<00:47,  2.42it/s, acc=0.57247899, loss=0.70703125, lr=0.00000510, score_diff=0.26171875, separation=0.26562500]Epoch 1/1:  13%|█▎        | 17/131 [00:10<00:47,  2.42it/s, acc=0.57247899, loss=0.70703125, lr=0.00000510, score_diff=0.26171875, separation=0.26562500]Epoch 1/1:  13%|█▎        | 17/131 [00:10<00:47,  2.42it/s, acc=0.58234127, loss=0.69531250, lr=0.00000540, score_diff=0.21484375, separation=0.21484375]Epoch 1/1:  14%|█▎        | 18/131 [00:10<00:45,  2.46it/s, acc=0.58234127, loss=0.69531250, lr=0.00000540, score_diff=0.21484375, separation=0.21484375]Epoch 1/1:  14%|█▎        | 18/131 [00:10<00:45,  2.46it/s, acc=0.60432331, loss=0.67578125, lr=0.00000570, score_diff=0.27734375, separation=0.27734375]Epoch 1/1:  15%|█▍        | 19/131 [00:10<00:42,  2.61it/s, acc=0.60432331, loss=0.67578125, lr=0.00000570, score_diff=0.27734375, separation=0.27734375]Epoch 1/1:  15%|█▍        | 19/131 [00:11<00:42,  2.61it/s, acc=0.62410714, loss=0.60937500, lr=0.00000600, score_diff=0.33984375, separation=0.33984375]Epoch 1/1:  15%|█▌        | 20/131 [00:11<00:45,  2.45it/s, acc=0.62410714, loss=0.60937500, lr=0.00000600, score_diff=0.33984375, separation=0.33984375]Epoch 1/1:  15%|█▌        | 20/131 [00:11<00:45,  2.45it/s, acc=0.63605442, loss=0.67578125, lr=0.00000630, score_diff=0.22949219, separation=0.23437500]Epoch 1/1:  16%|█▌        | 21/131 [00:11<00:43,  2.50it/s, acc=0.63605442, loss=0.67578125, lr=0.00000630, score_diff=0.22949219, separation=0.23437500]Epoch 1/1:  16%|█▌        | 21/131 [00:12<00:43,  2.50it/s, acc=0.64123377, loss=0.60937500, lr=0.00000660, score_diff=0.45312500, separation=0.44921875]Epoch 1/1:  17%|█▋        | 22/131 [00:12<00:42,  2.56it/s, acc=0.64123377, loss=0.60937500, lr=0.00000660, score_diff=0.45312500, separation=0.44921875]Epoch 1/1:  17%|█▋        | 22/131 [00:12<00:42,  2.56it/s, acc=0.65139752, loss=0.51953125, lr=0.00000690, score_diff=0.71093750, separation=0.71093750]Epoch 1/1:  18%|█▊        | 23/131 [00:12<00:39,  2.72it/s, acc=0.65139752, loss=0.51953125, lr=0.00000690, score_diff=0.71093750, separation=0.71093750]Epoch 1/1:  18%|█▊        | 23/131 [00:12<00:39,  2.72it/s, acc=0.66071429, loss=0.58203125, lr=0.00000720, score_diff=0.43554688, separation=0.43750000]Epoch 1/1:  18%|█▊        | 24/131 [00:12<00:40,  2.66it/s, acc=0.66071429, loss=0.58203125, lr=0.00000720, score_diff=0.43554688, separation=0.43750000]Epoch 1/1:  18%|█▊        | 24/131 [00:13<00:40,  2.66it/s, acc=0.66928571, loss=0.57421875, lr=0.00000750, score_diff=1.78125000, separation=1.78125000]Epoch 1/1:  19%|█▉        | 25/131 [00:13<00:40,  2.60it/s, acc=0.66928571, loss=0.57421875, lr=0.00000750, score_diff=1.78125000, separation=1.78125000]Epoch 1/1:  19%|█▉        | 25/131 [00:13<00:40,  2.60it/s, acc=0.67719780, loss=0.56250000, lr=0.00000780, score_diff=1.10937500, separation=1.10937500]Epoch 1/1:  20%|█▉        | 26/131 [00:13<00:41,  2.54it/s, acc=0.67719780, loss=0.56250000, lr=0.00000780, score_diff=1.10937500, separation=1.10937500]Epoch 1/1:  20%|█▉        | 26/131 [00:13<00:41,  2.54it/s, acc=0.68915344, loss=0.61328125, lr=0.00000810, score_diff=1.11718750, separation=1.11718750]Epoch 1/1:  21%|██        | 27/131 [00:13<00:38,  2.69it/s, acc=0.68915344, loss=0.61328125, lr=0.00000810, score_diff=1.11718750, separation=1.11718750]Epoch 1/1:  21%|██        | 27/131 [00:14<00:38,  2.69it/s, acc=0.70025510, loss=0.53906250, lr=0.00000840, score_diff=1.50781250, separation=1.50781250]Epoch 1/1:  21%|██▏       | 28/131 [00:14<00:40,  2.54it/s, acc=0.70025510, loss=0.53906250, lr=0.00000840, score_diff=1.50781250, separation=1.50781250]Epoch 1/1:  21%|██▏       | 28/131 [00:14<00:40,  2.54it/s, acc=0.71059113, loss=0.49609375, lr=0.00000870, score_diff=0.74609375, separation=0.74609375]Epoch 1/1:  22%|██▏       | 29/131 [00:14<00:38,  2.65it/s, acc=0.71059113, loss=0.49609375, lr=0.00000870, score_diff=0.74609375, separation=0.74609375]Epoch 1/1:  22%|██▏       | 29/131 [00:14<00:38,  2.65it/s, acc=0.72023810, loss=0.40234375, lr=0.00000900, score_diff=1.17968750, separation=1.18750000]Epoch 1/1:  23%|██▎       | 30/131 [00:14<00:37,  2.70it/s, acc=0.72023810, loss=0.40234375, lr=0.00000900, score_diff=1.17968750, separation=1.18750000]Epoch 1/1:  23%|██▎       | 30/131 [00:15<00:37,  2.70it/s, acc=0.72926267, loss=0.35156250, lr=0.00000930, score_diff=1.39843750, separation=1.40625000]Epoch 1/1:  24%|██▎       | 31/131 [00:15<00:36,  2.76it/s, acc=0.72926267, loss=0.35156250, lr=0.00000930, score_diff=1.39843750, separation=1.40625000]Epoch 1/1:  24%|██▎       | 31/131 [00:15<00:36,  2.76it/s, acc=0.72991071, loss=0.71093750, lr=0.00000960, score_diff=0.80468750, separation=0.80468750]Epoch 1/1:  24%|██▍       | 32/131 [00:15<00:39,  2.54it/s, acc=0.72991071, loss=0.71093750, lr=0.00000960, score_diff=0.80468750, separation=0.80468750]Epoch 1/1:  24%|██▍       | 32/131 [00:16<00:39,  2.54it/s, acc=0.73809524, loss=0.55468750, lr=0.00000990, score_diff=1.67968750, separation=1.67968750]Epoch 1/1:  25%|██▌       | 33/131 [00:16<00:39,  2.47it/s, acc=0.73809524, loss=0.55468750, lr=0.00000990, score_diff=1.67968750, separation=1.67968750]Epoch 1/1:  25%|██▌       | 33/131 [00:16<00:39,  2.47it/s, acc=0.74579832, loss=0.58593750, lr=0.00001020, score_diff=0.91406250, separation=0.91406250]Epoch 1/1:  26%|██▌       | 34/131 [00:16<00:38,  2.54it/s, acc=0.74579832, loss=0.58593750, lr=0.00001020, score_diff=0.91406250, separation=0.91406250]Epoch 1/1:  26%|██▌       | 34/131 [00:16<00:38,  2.54it/s, acc=0.75306122, loss=0.39648438, lr=0.00001050, score_diff=1.04687500, separation=1.05468750]Epoch 1/1:  27%|██▋       | 35/131 [00:16<00:35,  2.67it/s, acc=0.75306122, loss=0.39648438, lr=0.00001050, score_diff=1.04687500, separation=1.05468750]Epoch 1/1:  27%|██▋       | 35/131 [00:17<00:35,  2.67it/s, acc=0.75644841, loss=0.45898438, lr=0.00001080, score_diff=1.01562500, separation=1.01562500]Epoch 1/1:  27%|██▋       | 36/131 [00:17<00:35,  2.71it/s, acc=0.75644841, loss=0.45898438, lr=0.00001080, score_diff=1.01562500, separation=1.01562500]Epoch 1/1:  27%|██▋       | 36/131 [00:17<00:35,  2.71it/s, acc=0.76303089, loss=0.37890625, lr=0.00001110, score_diff=1.76562500, separation=1.77343750]Epoch 1/1:  28%|██▊       | 37/131 [00:17<00:35,  2.66it/s, acc=0.76303089, loss=0.37890625, lr=0.00001110, score_diff=1.76562500, separation=1.77343750]Epoch 1/1:  28%|██▊       | 37/131 [00:18<00:35,  2.66it/s, acc=0.76926692, loss=0.53515625, lr=0.00001140, score_diff=0.85546875, separation=0.85546875]Epoch 1/1:  29%|██▉       | 38/131 [00:18<00:35,  2.59it/s, acc=0.76926692, loss=0.53515625, lr=0.00001140, score_diff=0.85546875, separation=0.85546875]Epoch 1/1:  29%|██▉       | 38/131 [00:18<00:35,  2.59it/s, acc=0.77518315, loss=0.50781250, lr=0.00001170, score_diff=1.15625000, separation=1.15625000]Epoch 1/1:  30%|██▉       | 39/131 [00:18<00:34,  2.66it/s, acc=0.77518315, loss=0.50781250, lr=0.00001170, score_diff=1.15625000, separation=1.15625000]Epoch 1/1:  30%|██▉       | 39/131 [00:18<00:34,  2.66it/s, acc=0.78080357, loss=0.55468750, lr=0.00001200, score_diff=1.17968750, separation=1.17187500]Epoch 1/1:  31%|███       | 40/131 [00:18<00:36,  2.50it/s, acc=0.78080357, loss=0.55468750, lr=0.00001200, score_diff=1.17968750, separation=1.17187500]Epoch 1/1:  31%|███       | 40/131 [00:19<00:36,  2.50it/s, acc=0.78614983, loss=0.44140625, lr=0.00001230, score_diff=2.32812500, separation=2.32812500]Epoch 1/1:  31%|███▏      | 41/131 [00:19<00:34,  2.57it/s, acc=0.78614983, loss=0.44140625, lr=0.00001230, score_diff=2.32812500, separation=2.32812500]Epoch 1/1:  31%|███▏      | 41/131 [00:19<00:34,  2.57it/s, acc=0.78826531, loss=0.48632812, lr=0.00001260, score_diff=1.32812500, separation=1.34375000]Epoch 1/1:  32%|███▏      | 42/131 [00:19<00:33,  2.63it/s, acc=0.78826531, loss=0.48632812, lr=0.00001260, score_diff=1.32812500, separation=1.34375000]Epoch 1/1:  32%|███▏      | 42/131 [00:20<00:33,  2.63it/s, acc=0.79318937, loss=0.33984375, lr=0.00001290, score_diff=2.01562500, separation=2.03125000]Epoch 1/1:  33%|███▎      | 43/131 [00:20<00:33,  2.60it/s, acc=0.79318937, loss=0.33984375, lr=0.00001290, score_diff=2.01562500, separation=2.03125000]Epoch 1/1:  33%|███▎      | 43/131 [00:20<00:33,  2.60it/s, acc=0.79788961, loss=0.46093750, lr=0.00001320, score_diff=1.40625000, separation=1.39843750]Epoch 1/1:  34%|███▎      | 44/131 [00:20<00:34,  2.53it/s, acc=0.79788961, loss=0.46093750, lr=0.00001320, score_diff=1.40625000, separation=1.39843750]Epoch 1/1:  34%|███▎      | 44/131 [00:20<00:34,  2.53it/s, acc=0.80238095, loss=0.40039062, lr=0.00001350, score_diff=1.78125000, separation=1.77343750]Epoch 1/1:  34%|███▍      | 45/131 [00:20<00:32,  2.68it/s, acc=0.80238095, loss=0.40039062, lr=0.00001350, score_diff=1.78125000, separation=1.77343750]Epoch 1/1:  34%|███▍      | 45/131 [00:21<00:32,  2.68it/s, acc=0.80667702, loss=0.37890625, lr=0.00001380, score_diff=1.86718750, separation=1.86718750]Epoch 1/1:  35%|███▌      | 46/131 [00:21<00:32,  2.60it/s, acc=0.80667702, loss=0.37890625, lr=0.00001380, score_diff=1.86718750, separation=1.86718750]Epoch 1/1:  35%|███▌      | 46/131 [00:21<00:32,  2.60it/s, acc=0.81079027, loss=0.45898438, lr=0.00001410, score_diff=1.08593750, separation=1.08593750]Epoch 1/1:  36%|███▌      | 47/131 [00:21<00:32,  2.61it/s, acc=0.81079027, loss=0.45898438, lr=0.00001410, score_diff=1.08593750, separation=1.08593750]Epoch 1/1:  36%|███▌      | 47/131 [00:21<00:32,  2.61it/s, acc=0.81473214, loss=0.33984375, lr=0.00001440, score_diff=1.98437500, separation=1.99218750]Epoch 1/1:  37%|███▋      | 48/131 [00:21<00:31,  2.66it/s, acc=0.81473214, loss=0.33984375, lr=0.00001440, score_diff=1.98437500, separation=1.99218750]Epoch 1/1:  37%|███▋      | 48/131 [00:22<00:31,  2.66it/s, acc=0.81851312, loss=0.25000000, lr=0.00001470, score_diff=2.00000000, separation=2.00000000]Epoch 1/1:  37%|███▋      | 49/131 [00:22<00:30,  2.65it/s, acc=0.81851312, loss=0.25000000, lr=0.00001470, score_diff=2.00000000, separation=2.00000000]Epoch 1/1:  37%|███▋      | 49/131 [00:22<00:30,  2.65it/s, acc=0.82214286, loss=0.41406250, lr=0.00001500, score_diff=1.39843750, separation=1.39843750]Epoch 1/1:  38%|███▊      | 50/131 [00:22<00:32,  2.47it/s, acc=0.82214286, loss=0.41406250, lr=0.00001500, score_diff=1.39843750, separation=1.39843750]Epoch 1/1:  38%|███▊      | 50/131 [00:23<00:32,  2.47it/s, acc=0.83714286, loss=0.31250000, lr=0.00001530, score_diff=2.00000000, separation=2.00000000]Epoch 1/1:  39%|███▉      | 51/131 [00:23<00:30,  2.61it/s, acc=0.83714286, loss=0.31250000, lr=0.00001530, score_diff=2.00000000, separation=2.00000000]Epoch 1/1:  39%|███▉      | 51/131 [00:23<00:30,  2.61it/s, acc=0.84464286, loss=0.48437500, lr=0.00001560, score_diff=2.10937500, separation=2.10937500]Epoch 1/1:  40%|███▉      | 52/131 [00:23<00:35,  2.22it/s, acc=0.84464286, loss=0.48437500, lr=0.00001560, score_diff=2.10937500, separation=2.10937500]Epoch 1/1:  40%|███▉      | 52/131 [00:24<00:35,  2.22it/s, acc=0.85214286, loss=0.30078125, lr=0.00001590, score_diff=2.14062500, separation=2.15625000]Epoch 1/1:  40%|████      | 53/131 [00:24<00:32,  2.41it/s, acc=0.85214286, loss=0.30078125, lr=0.00001590, score_diff=2.14062500, separation=2.15625000]Epoch 1/1:  40%|████      | 53/131 [00:24<00:32,  2.41it/s, acc=0.86464286, loss=0.25976562, lr=0.00001620, score_diff=2.59375000, separation=2.59375000]Epoch 1/1:  41%|████      | 54/131 [00:24<00:30,  2.52it/s, acc=0.86464286, loss=0.25976562, lr=0.00001620, score_diff=2.59375000, separation=2.59375000]Epoch 1/1:  41%|████      | 54/131 [00:24<00:30,  2.52it/s, acc=0.87714286, loss=0.36718750, lr=0.00001650, score_diff=1.54687500, separation=1.54687500]Epoch 1/1:  42%|████▏     | 55/131 [00:24<00:29,  2.62it/s, acc=0.87714286, loss=0.36718750, lr=0.00001650, score_diff=1.54687500, separation=1.54687500]Epoch 1/1:  42%|████▏     | 55/131 [00:25<00:29,  2.62it/s, acc=0.88464286, loss=0.38281250, lr=0.00001680, score_diff=1.97656250, separation=1.97656250]Epoch 1/1:  43%|████▎     | 56/131 [00:25<00:29,  2.54it/s, acc=0.88464286, loss=0.38281250, lr=0.00001680, score_diff=1.97656250, separation=1.97656250]Epoch 1/1:  43%|████▎     | 56/131 [00:25<00:29,  2.54it/s, acc=0.89464286, loss=0.40039062, lr=0.00001710, score_diff=1.09375000, separation=1.09375000]Epoch 1/1:  44%|████▎     | 57/131 [00:25<00:29,  2.51it/s, acc=0.89464286, loss=0.40039062, lr=0.00001710, score_diff=1.09375000, separation=1.09375000]Epoch 1/1:  44%|████▎     | 57/131 [00:25<00:29,  2.51it/s, acc=0.90714286, loss=0.29882812, lr=0.00001740, score_diff=1.71875000, separation=1.72656250]Epoch 1/1:  44%|████▍     | 58/131 [00:25<00:29,  2.50it/s, acc=0.90714286, loss=0.29882812, lr=0.00001740, score_diff=1.71875000, separation=1.72656250]Epoch 1/1:  44%|████▍     | 58/131 [00:26<00:29,  2.50it/s, acc=0.91464286, loss=0.31054688, lr=0.00001770, score_diff=1.56250000, separation=1.56250000]Epoch 1/1:  45%|████▌     | 59/131 [00:26<00:27,  2.57it/s, acc=0.91464286, loss=0.31054688, lr=0.00001770, score_diff=1.56250000, separation=1.56250000]Epoch 1/1:  45%|████▌     | 59/131 [00:26<00:27,  2.57it/s, acc=0.91964286, loss=0.36718750, lr=0.00001800, score_diff=1.26562500, separation=1.26562500]Epoch 1/1:  46%|████▌     | 60/131 [00:26<00:28,  2.51it/s, acc=0.91964286, loss=0.36718750, lr=0.00001800, score_diff=1.26562500, separation=1.26562500]Epoch 1/1:  46%|████▌     | 60/131 [00:27<00:28,  2.51it/s, acc=0.93214286, loss=0.34765625, lr=0.00001830, score_diff=2.39062500, separation=2.39062500]Epoch 1/1:  47%|████▋     | 61/131 [00:27<00:26,  2.60it/s, acc=0.93214286, loss=0.34765625, lr=0.00001830, score_diff=2.39062500, separation=2.39062500]Epoch 1/1:  47%|████▋     | 61/131 [00:27<00:26,  2.60it/s, acc=0.94714286, loss=0.32031250, lr=0.00001860, score_diff=1.73437500, separation=1.73437500]Epoch 1/1:  47%|████▋     | 62/131 [00:27<00:26,  2.64it/s, acc=0.94714286, loss=0.32031250, lr=0.00001860, score_diff=1.73437500, separation=1.73437500]Epoch 1/1:  47%|████▋     | 62/131 [00:27<00:26,  2.64it/s, acc=0.95000000, loss=0.31445312, lr=0.00001890, score_diff=2.45312500, separation=2.46875000]Epoch 1/1:  48%|████▊     | 63/131 [00:27<00:25,  2.66it/s, acc=0.95000000, loss=0.31445312, lr=0.00001890, score_diff=2.45312500, separation=2.46875000]Epoch 1/1:  48%|████▊     | 63/131 [00:28<00:25,  2.66it/s, acc=0.95750000, loss=0.36328125, lr=0.00001920, score_diff=1.87500000, separation=1.87500000]Epoch 1/1:  49%|████▉     | 64/131 [00:28<00:25,  2.66it/s, acc=0.95750000, loss=0.36328125, lr=0.00001920, score_diff=1.87500000, separation=1.87500000]Epoch 1/1:  49%|████▉     | 64/131 [00:28<00:25,  2.66it/s, acc=0.96250000, loss=0.19140625, lr=0.00001950, score_diff=2.89062500, separation=2.87500000]Epoch 1/1:  50%|████▉     | 65/131 [00:28<00:24,  2.67it/s, acc=0.96250000, loss=0.19140625, lr=0.00001950, score_diff=2.89062500, separation=2.87500000]Epoch 1/1:  50%|████▉     | 65/131 [00:28<00:24,  2.67it/s, acc=0.96500000, loss=0.20703125, lr=0.00001980, score_diff=2.60937500, separation=2.60937500]Epoch 1/1:  50%|█████     | 66/131 [00:28<00:24,  2.62it/s, acc=0.96500000, loss=0.20703125, lr=0.00001980, score_diff=2.60937500, separation=2.60937500]Epoch 1/1:  50%|█████     | 66/131 [00:29<00:24,  2.62it/s, acc=0.96500000, loss=0.26953125, lr=0.00002010, score_diff=2.26562500, separation=2.26562500]Epoch 1/1:  51%|█████     | 67/131 [00:29<00:23,  2.68it/s, acc=0.96500000, loss=0.26953125, lr=0.00002010, score_diff=2.26562500, separation=2.26562500]Epoch 1/1:  51%|█████     | 67/131 [00:29<00:23,  2.68it/s, acc=0.97000000, loss=0.37304688, lr=0.00002040, score_diff=1.71875000, separation=1.71093750]Epoch 1/1:  52%|█████▏    | 68/131 [00:29<00:24,  2.58it/s, acc=0.97000000, loss=0.37304688, lr=0.00002040, score_diff=1.71875000, separation=1.71093750]Epoch 1/1:  52%|█████▏    | 68/131 [00:30<00:24,  2.58it/s, acc=0.97000000, loss=0.37109375, lr=0.00002070, score_diff=1.10937500, separation=1.10937500]Epoch 1/1:  53%|█████▎    | 69/131 [00:30<00:23,  2.61it/s, acc=0.97000000, loss=0.37109375, lr=0.00002070, score_diff=1.10937500, separation=1.10937500]Epoch 1/1:  53%|█████▎    | 69/131 [00:30<00:23,  2.61it/s, acc=0.97000000, loss=0.26171875, lr=0.00002100, score_diff=1.95312500, separation=1.95312500]Epoch 1/1:  53%|█████▎    | 70/131 [00:30<00:23,  2.56it/s, acc=0.97000000, loss=0.26171875, lr=0.00002100, score_diff=1.95312500, separation=1.95312500]Epoch 1/1:  53%|█████▎    | 70/131 [00:30<00:23,  2.56it/s, acc=0.97250000, loss=0.33203125, lr=0.00002130, score_diff=1.59375000, separation=1.59375000]Epoch 1/1:  54%|█████▍    | 71/131 [00:30<00:22,  2.68it/s, acc=0.97250000, loss=0.33203125, lr=0.00002130, score_diff=1.59375000, separation=1.59375000]Epoch 1/1:  54%|█████▍    | 71/131 [00:31<00:22,  2.68it/s, acc=0.97750000, loss=0.39062500, lr=0.00002160, score_diff=1.28906250, separation=1.28906250]Epoch 1/1:  55%|█████▍    | 72/131 [00:31<00:21,  2.72it/s, acc=0.97750000, loss=0.39062500, lr=0.00002160, score_diff=1.28906250, separation=1.28906250]Epoch 1/1:  55%|█████▍    | 72/131 [00:31<00:21,  2.72it/s, acc=0.98000000, loss=0.20019531, lr=0.00002190, score_diff=2.62500000, separation=2.62500000]Epoch 1/1:  56%|█████▌    | 73/131 [00:31<00:21,  2.69it/s, acc=0.98000000, loss=0.20019531, lr=0.00002190, score_diff=2.62500000, separation=2.62500000]Epoch 1/1:  56%|█████▌    | 73/131 [00:31<00:21,  2.69it/s, acc=0.98250000, loss=0.27929688, lr=0.00002220, score_diff=1.99218750, separation=1.98437500]Epoch 1/1:  56%|█████▋    | 74/131 [00:31<00:21,  2.71it/s, acc=0.98250000, loss=0.27929688, lr=0.00002220, score_diff=1.99218750, separation=1.98437500]Epoch 1/1:  56%|█████▋    | 74/131 [00:32<00:21,  2.71it/s, acc=0.98500000, loss=0.21582031, lr=0.00002250, score_diff=3.26562500, separation=3.26562500]Epoch 1/1:  57%|█████▋    | 75/131 [00:32<00:21,  2.62it/s, acc=0.98500000, loss=0.21582031, lr=0.00002250, score_diff=3.26562500, separation=3.26562500]Epoch 1/1:  57%|█████▋    | 75/131 [00:32<00:21,  2.62it/s, acc=0.98750000, loss=0.29101562, lr=0.00002280, score_diff=2.67187500, separation=2.67187500]Epoch 1/1:  58%|█████▊    | 76/131 [00:32<00:21,  2.59it/s, acc=0.98750000, loss=0.29101562, lr=0.00002280, score_diff=2.67187500, separation=2.67187500]Epoch 1/1:  58%|█████▊    | 76/131 [00:33<00:21,  2.59it/s, acc=0.98750000, loss=0.23242188, lr=0.00002310, score_diff=3.00000000, separation=3.00000000]Epoch 1/1:  59%|█████▉    | 77/131 [00:33<00:19,  2.72it/s, acc=0.98750000, loss=0.23242188, lr=0.00002310, score_diff=3.00000000, separation=3.00000000]Epoch 1/1:  59%|█████▉    | 77/131 [00:33<00:19,  2.72it/s, acc=0.98750000, loss=0.22656250, lr=0.00002340, score_diff=2.76562500, separation=2.78125000]Epoch 1/1:  60%|█████▉    | 78/131 [00:33<00:21,  2.51it/s, acc=0.98750000, loss=0.22656250, lr=0.00002340, score_diff=2.76562500, separation=2.78125000]Epoch 1/1:  60%|█████▉    | 78/131 [00:33<00:21,  2.51it/s, acc=0.98750000, loss=0.39062500, lr=0.00002370, score_diff=1.57812500, separation=1.57812500]Epoch 1/1:  60%|██████    | 79/131 [00:33<00:20,  2.57it/s, acc=0.98750000, loss=0.39062500, lr=0.00002370, score_diff=1.57812500, separation=1.57812500]Epoch 1/1:  60%|██████    | 79/131 [00:34<00:20,  2.57it/s, acc=0.98750000, loss=0.22656250, lr=0.00002400, score_diff=2.09375000, separation=2.09375000]Epoch 1/1:  61%|██████    | 80/131 [00:34<00:20,  2.50it/s, acc=0.98750000, loss=0.22656250, lr=0.00002400, score_diff=2.09375000, separation=2.09375000]Epoch 1/1:  61%|██████    | 80/131 [00:34<00:20,  2.50it/s, acc=0.98750000, loss=0.34179688, lr=0.00002430, score_diff=1.59375000, separation=1.59375000]Epoch 1/1:  62%|██████▏   | 81/131 [00:34<00:19,  2.62it/s, acc=0.98750000, loss=0.34179688, lr=0.00002430, score_diff=1.59375000, separation=1.59375000]Epoch 1/1:  62%|██████▏   | 81/131 [00:35<00:19,  2.62it/s, acc=0.99000000, loss=0.38085938, lr=0.00002460, score_diff=1.35937500, separation=1.35937500]Epoch 1/1:  63%|██████▎   | 82/131 [00:35<00:19,  2.50it/s, acc=0.99000000, loss=0.38085938, lr=0.00002460, score_diff=1.35937500, separation=1.35937500]Epoch 1/1:  63%|██████▎   | 82/131 [00:35<00:19,  2.50it/s, acc=0.99000000, loss=0.23046875, lr=0.00002490, score_diff=1.74218750, separation=1.74218750]Epoch 1/1:  63%|██████▎   | 83/131 [00:35<00:19,  2.40it/s, acc=0.99000000, loss=0.23046875, lr=0.00002490, score_diff=1.74218750, separation=1.74218750]Epoch 1/1:  63%|██████▎   | 83/131 [00:36<00:19,  2.40it/s, acc=0.99000000, loss=0.22656250, lr=0.00002520, score_diff=1.82031250, separation=1.82812500]Epoch 1/1:  64%|██████▍   | 84/131 [00:36<00:19,  2.37it/s, acc=0.99000000, loss=0.22656250, lr=0.00002520, score_diff=1.82031250, separation=1.82812500]Epoch 1/1:  64%|██████▍   | 84/131 [00:36<00:19,  2.37it/s, acc=0.99000000, loss=0.26171875, lr=0.00002550, score_diff=2.60937500, separation=2.62500000]Epoch 1/1:  65%|██████▍   | 85/131 [00:36<00:18,  2.49it/s, acc=0.99000000, loss=0.26171875, lr=0.00002550, score_diff=2.60937500, separation=2.62500000]Epoch 1/1:  65%|██████▍   | 85/131 [00:36<00:18,  2.49it/s, acc=0.99250000, loss=0.26171875, lr=0.00002580, score_diff=3.09375000, separation=3.09375000]Epoch 1/1:  66%|██████▌   | 86/131 [00:36<00:17,  2.56it/s, acc=0.99250000, loss=0.26171875, lr=0.00002580, score_diff=3.09375000, separation=3.09375000]Epoch 1/1:  66%|██████▌   | 86/131 [00:37<00:17,  2.56it/s, acc=0.99250000, loss=0.28906250, lr=0.00002610, score_diff=2.59375000, separation=2.59375000]Epoch 1/1:  66%|██████▋   | 87/131 [00:37<00:16,  2.65it/s, acc=0.99250000, loss=0.28906250, lr=0.00002610, score_diff=2.59375000, separation=2.59375000]Epoch 1/1:  66%|██████▋   | 87/131 [00:37<00:16,  2.65it/s, acc=0.99250000, loss=0.21679688, lr=0.00002640, score_diff=3.85937500, separation=3.85937500]Epoch 1/1:  67%|██████▋   | 88/131 [00:37<00:16,  2.61it/s, acc=0.99250000, loss=0.21679688, lr=0.00002640, score_diff=3.85937500, separation=3.85937500]Epoch 1/1:  67%|██████▋   | 88/131 [00:37<00:16,  2.61it/s, acc=0.99250000, loss=0.23242188, lr=0.00002670, score_diff=2.60937500, separation=2.60937500]Epoch 1/1:  68%|██████▊   | 89/131 [00:37<00:15,  2.71it/s, acc=0.99250000, loss=0.23242188, lr=0.00002670, score_diff=2.60937500, separation=2.60937500]Epoch 1/1:  68%|██████▊   | 89/131 [00:38<00:15,  2.71it/s, acc=0.99250000, loss=0.22265625, lr=0.00002700, score_diff=2.53125000, separation=2.53125000]Epoch 1/1:  69%|██████▊   | 90/131 [00:38<00:16,  2.55it/s, acc=0.99250000, loss=0.22265625, lr=0.00002700, score_diff=2.53125000, separation=2.53125000]Epoch 1/1:  69%|██████▊   | 90/131 [00:38<00:16,  2.55it/s, acc=0.99250000, loss=0.25195312, lr=0.00002730, score_diff=1.76562500, separation=1.76562500]Epoch 1/1:  69%|██████▉   | 91/131 [00:38<00:15,  2.60it/s, acc=0.99250000, loss=0.25195312, lr=0.00002730, score_diff=1.76562500, separation=1.76562500]Epoch 1/1:  69%|██████▉   | 91/131 [00:38<00:15,  2.60it/s, acc=0.99500000, loss=0.33984375, lr=0.00002760, score_diff=1.38281250, separation=1.39062500]Epoch 1/1:  70%|███████   | 92/131 [00:38<00:14,  2.67it/s, acc=0.99500000, loss=0.33984375, lr=0.00002760, score_diff=1.38281250, separation=1.39062500]Epoch 1/1:  70%|███████   | 92/131 [00:39<00:14,  2.67it/s, acc=0.99250000, loss=0.40820312, lr=0.00002790, score_diff=0.90234375, separation=0.90625000]Epoch 1/1:  71%|███████   | 93/131 [00:39<00:13,  2.74it/s, acc=0.99250000, loss=0.40820312, lr=0.00002790, score_diff=0.90234375, separation=0.90625000]Epoch 1/1:  71%|███████   | 93/131 [00:39<00:13,  2.74it/s, acc=0.99250000, loss=0.37890625, lr=0.00002820, score_diff=0.98828125, separation=0.98828125]Epoch 1/1:  72%|███████▏  | 94/131 [00:39<00:13,  2.67it/s, acc=0.99250000, loss=0.37890625, lr=0.00002820, score_diff=0.98828125, separation=0.98828125]Epoch 1/1:  72%|███████▏  | 94/131 [00:40<00:13,  2.67it/s, acc=0.99250000, loss=0.33789062, lr=0.00002850, score_diff=1.10937500, separation=1.11718750]Epoch 1/1:  73%|███████▎  | 95/131 [00:40<00:13,  2.72it/s, acc=0.99250000, loss=0.33789062, lr=0.00002850, score_diff=1.10937500, separation=1.11718750]Epoch 1/1:  73%|███████▎  | 95/131 [00:40<00:13,  2.72it/s, acc=0.99250000, loss=0.40234375, lr=0.00002880, score_diff=0.81250000, separation=0.81250000]Epoch 1/1:  73%|███████▎  | 96/131 [00:40<00:13,  2.65it/s, acc=0.99250000, loss=0.40234375, lr=0.00002880, score_diff=0.81250000, separation=0.81250000]Epoch 1/1:  73%|███████▎  | 96/131 [00:40<00:13,  2.65it/s, acc=0.99250000, loss=0.30664062, lr=0.00002910, score_diff=1.63281250, separation=1.63281250]Epoch 1/1:  74%|███████▍  | 97/131 [00:40<00:12,  2.69it/s, acc=0.99250000, loss=0.30664062, lr=0.00002910, score_diff=1.63281250, separation=1.63281250]Epoch 1/1:  74%|███████▍  | 97/131 [00:41<00:12,  2.69it/s, acc=0.99250000, loss=0.18945312, lr=0.00002940, score_diff=2.06250000, separation=2.06250000]Epoch 1/1:  75%|███████▍  | 98/131 [00:41<00:12,  2.70it/s, acc=0.99250000, loss=0.18945312, lr=0.00002940, score_diff=2.06250000, separation=2.06250000]Epoch 1/1:  75%|███████▍  | 98/131 [00:41<00:12,  2.70it/s, acc=0.99250000, loss=0.27148438, lr=0.00002970, score_diff=2.71875000, separation=2.71875000]Epoch 1/1:  76%|███████▌  | 99/131 [00:41<00:11,  2.82it/s, acc=0.99250000, loss=0.27148438, lr=0.00002970, score_diff=2.71875000, separation=2.71875000]Epoch 1/1:  76%|███████▌  | 99/131 [00:41<00:11,  2.82it/s, acc=0.99250000, loss=0.23144531, lr=0.00000000, score_diff=2.32812500, separation=2.32812500]Epoch 1/1:  76%|███████▋  | 100/131 [00:42<00:13,  2.35it/s, acc=0.99250000, loss=0.23144531, lr=0.00000000, score_diff=2.32812500, separation=2.32812500]Epoch 1/1:  76%|███████▋  | 100/131 [00:42<00:13,  2.35it/s, acc=0.99250000, loss=0.33593750, lr=0.00000000, score_diff=3.73437500, separation=3.73437500]Epoch 1/1:  77%|███████▋  | 101/131 [00:42<00:13,  2.24it/s, acc=0.99250000, loss=0.33593750, lr=0.00000000, score_diff=3.73437500, separation=3.73437500]Epoch 1/1:  77%|███████▋  | 101/131 [00:42<00:13,  2.24it/s, acc=0.99250000, loss=0.26171875, lr=0.00000000, score_diff=4.18750000, separation=4.18750000]Epoch 1/1:  78%|███████▊  | 102/131 [00:42<00:12,  2.34it/s, acc=0.99250000, loss=0.26171875, lr=0.00000000, score_diff=4.18750000, separation=4.18750000]Epoch 1/1:  78%|███████▊  | 102/131 [00:43<00:12,  2.34it/s, acc=0.99000000, loss=0.29687500, lr=0.00000000, score_diff=2.79687500, separation=2.79687500]Epoch 1/1:  79%|███████▊  | 103/131 [00:43<00:11,  2.45it/s, acc=0.99000000, loss=0.29687500, lr=0.00000000, score_diff=2.79687500, separation=2.79687500]Epoch 1/1:  79%|███████▊  | 103/131 [00:43<00:11,  2.45it/s, acc=0.99000000, loss=0.28906250, lr=0.00000000, score_diff=2.76562500, separation=2.76562500]Epoch 1/1:  79%|███████▉  | 104/131 [00:43<00:11,  2.39it/s, acc=0.99000000, loss=0.28906250, lr=0.00000000, score_diff=2.76562500, separation=2.76562500]Epoch 1/1:  79%|███████▉  | 104/131 [00:44<00:11,  2.39it/s, acc=0.99000000, loss=0.24023438, lr=0.00000000, score_diff=2.79687500, separation=2.79687500]Epoch 1/1:  80%|████████  | 105/131 [00:44<00:10,  2.54it/s, acc=0.99000000, loss=0.24023438, lr=0.00000000, score_diff=2.79687500, separation=2.79687500]Epoch 1/1:  80%|████████  | 105/131 [00:44<00:10,  2.54it/s, acc=0.99250000, loss=0.33203125, lr=0.00000000, score_diff=2.84375000, separation=2.84375000]Epoch 1/1:  81%|████████  | 106/131 [00:44<00:09,  2.51it/s, acc=0.99250000, loss=0.33203125, lr=0.00000000, score_diff=2.84375000, separation=2.84375000]Epoch 1/1:  81%|████████  | 106/131 [00:44<00:09,  2.51it/s, acc=0.99250000, loss=0.28515625, lr=0.00000000, score_diff=3.20312500, separation=3.21875000]Epoch 1/1:  82%|████████▏ | 107/131 [00:44<00:09,  2.65it/s, acc=0.99250000, loss=0.28515625, lr=0.00000000, score_diff=3.20312500, separation=3.21875000]Epoch 1/1:  82%|████████▏ | 107/131 [00:45<00:09,  2.65it/s, acc=0.99250000, loss=0.26953125, lr=0.00000000, score_diff=3.65625000, separation=3.65625000]Epoch 1/1:  82%|████████▏ | 108/131 [00:45<00:09,  2.34it/s, acc=0.99250000, loss=0.26953125, lr=0.00000000, score_diff=3.65625000, separation=3.65625000]Epoch 1/1:  82%|████████▏ | 108/131 [00:45<00:09,  2.34it/s, acc=0.99250000, loss=0.24218750, lr=0.00000000, score_diff=3.53125000, separation=3.53125000]Epoch 1/1:  83%|████████▎ | 109/131 [00:45<00:08,  2.48it/s, acc=0.99250000, loss=0.24218750, lr=0.00000000, score_diff=3.53125000, separation=3.53125000]Epoch 1/1:  83%|████████▎ | 109/131 [00:46<00:08,  2.48it/s, acc=0.99250000, loss=0.30859375, lr=0.00000000, score_diff=3.37500000, separation=3.37500000]Epoch 1/1:  84%|████████▍ | 110/131 [00:46<00:09,  2.21it/s, acc=0.99250000, loss=0.30859375, lr=0.00000000, score_diff=3.37500000, separation=3.37500000]Epoch 1/1:  84%|████████▍ | 110/131 [00:46<00:09,  2.21it/s, acc=0.99250000, loss=0.28125000, lr=0.00000000, score_diff=3.04687500, separation=3.04687500]Epoch 1/1:  85%|████████▍ | 111/131 [00:46<00:09,  2.10it/s, acc=0.99250000, loss=0.28125000, lr=0.00000000, score_diff=3.04687500, separation=3.04687500]Epoch 1/1:  85%|████████▍ | 111/131 [00:47<00:09,  2.10it/s, acc=0.99250000, loss=0.25781250, lr=0.00000000, score_diff=3.59375000, separation=3.59375000]Epoch 1/1:  85%|████████▌ | 112/131 [00:47<00:08,  2.22it/s, acc=0.99250000, loss=0.25781250, lr=0.00000000, score_diff=3.59375000, separation=3.59375000]Epoch 1/1:  85%|████████▌ | 112/131 [00:47<00:08,  2.22it/s, acc=0.99250000, loss=0.24414062, lr=0.00000000, score_diff=3.39062500, separation=3.40625000]Epoch 1/1:  86%|████████▋ | 113/131 [00:47<00:07,  2.39it/s, acc=0.99250000, loss=0.24414062, lr=0.00000000, score_diff=3.39062500, separation=3.40625000]Epoch 1/1:  86%|████████▋ | 113/131 [00:48<00:07,  2.39it/s, acc=0.99250000, loss=0.21289062, lr=0.00000000, score_diff=3.29687500, separation=3.29687500]Epoch 1/1:  87%|████████▋ | 114/131 [00:48<00:07,  2.38it/s, acc=0.99250000, loss=0.21289062, lr=0.00000000, score_diff=3.29687500, separation=3.29687500]Epoch 1/1:  87%|████████▋ | 114/131 [00:48<00:07,  2.38it/s, acc=0.99250000, loss=0.27734375, lr=0.00000000, score_diff=3.57812500, separation=3.57812500]Epoch 1/1:  88%|████████▊ | 115/131 [00:48<00:06,  2.54it/s, acc=0.99250000, loss=0.27734375, lr=0.00000000, score_diff=3.57812500, separation=3.57812500]Epoch 1/1:  88%|████████▊ | 115/131 [00:48<00:06,  2.54it/s, acc=0.99000000, loss=0.29882812, lr=0.00000000, score_diff=2.40625000, separation=2.40625000]Epoch 1/1:  89%|████████▊ | 116/131 [00:48<00:06,  2.28it/s, acc=0.99000000, loss=0.29882812, lr=0.00000000, score_diff=2.40625000, separation=2.40625000]Epoch 1/1:  89%|████████▊ | 116/131 [00:49<00:06,  2.28it/s, acc=0.99000000, loss=0.25585938, lr=0.00000000, score_diff=3.35937500, separation=3.34375000]Epoch 1/1:  89%|████████▉ | 117/131 [00:49<00:05,  2.40it/s, acc=0.99000000, loss=0.25585938, lr=0.00000000, score_diff=3.35937500, separation=3.34375000]Epoch 1/1:  89%|████████▉ | 117/131 [00:49<00:05,  2.40it/s, acc=0.99000000, loss=0.26953125, lr=0.00000000, score_diff=3.06250000, separation=3.06250000]Epoch 1/1:  90%|█████████ | 118/131 [00:49<00:05,  2.20it/s, acc=0.99000000, loss=0.26953125, lr=0.00000000, score_diff=3.06250000, separation=3.06250000]Epoch 1/1:  90%|█████████ | 118/131 [00:50<00:05,  2.20it/s, acc=0.99000000, loss=0.28515625, lr=0.00000000, score_diff=3.40625000, separation=3.40625000]Epoch 1/1:  91%|█████████ | 119/131 [00:50<00:05,  2.38it/s, acc=0.99000000, loss=0.28515625, lr=0.00000000, score_diff=3.40625000, separation=3.40625000]Epoch 1/1:  91%|█████████ | 119/131 [00:50<00:05,  2.38it/s, acc=0.98750000, loss=0.32226562, lr=0.00000000, score_diff=3.10937500, separation=3.10937500]Epoch 1/1:  92%|█████████▏| 120/131 [00:50<00:04,  2.45it/s, acc=0.98750000, loss=0.32226562, lr=0.00000000, score_diff=3.10937500, separation=3.10937500]Epoch 1/1:  92%|█████████▏| 120/131 [00:50<00:04,  2.45it/s, acc=0.98750000, loss=0.24218750, lr=0.00000000, score_diff=4.12500000, separation=4.12500000]Epoch 1/1:  92%|█████████▏| 121/131 [00:50<00:03,  2.59it/s, acc=0.98750000, loss=0.24218750, lr=0.00000000, score_diff=4.12500000, separation=4.12500000]Epoch 1/1:  92%|█████████▏| 121/131 [00:51<00:03,  2.59it/s, acc=0.98750000, loss=0.20605469, lr=0.00000000, score_diff=3.00000000, separation=3.00000000]Epoch 1/1:  93%|█████████▎| 122/131 [00:51<00:03,  2.51it/s, acc=0.98750000, loss=0.20605469, lr=0.00000000, score_diff=3.00000000, separation=3.00000000]Epoch 1/1:  93%|█████████▎| 122/131 [00:51<00:03,  2.51it/s, acc=0.98750000, loss=0.24414062, lr=0.00000000, score_diff=2.35937500, separation=2.37500000]Epoch 1/1:  94%|█████████▍| 123/131 [00:51<00:03,  2.58it/s, acc=0.98750000, loss=0.24414062, lr=0.00000000, score_diff=2.35937500, separation=2.37500000]Epoch 1/1:  94%|█████████▍| 123/131 [00:52<00:03,  2.58it/s, acc=0.98750000, loss=0.29687500, lr=0.00000000, score_diff=2.60937500, separation=2.60937500]Epoch 1/1:  95%|█████████▍| 124/131 [00:52<00:02,  2.62it/s, acc=0.98750000, loss=0.29687500, lr=0.00000000, score_diff=2.60937500, separation=2.60937500]Epoch 1/1:  95%|█████████▍| 124/131 [00:52<00:02,  2.62it/s, acc=0.98750000, loss=0.26171875, lr=0.00000000, score_diff=3.14062500, separation=3.14062500]Epoch 1/1:  95%|█████████▌| 125/131 [00:52<00:02,  2.61it/s, acc=0.98750000, loss=0.26171875, lr=0.00000000, score_diff=3.14062500, separation=3.14062500]Epoch 1/1:  95%|█████████▌| 125/131 [00:52<00:02,  2.61it/s, acc=0.98750000, loss=0.26953125, lr=0.00000000, score_diff=2.79687500, separation=2.78125000]Epoch 1/1:  96%|█████████▌| 126/131 [00:52<00:01,  2.55it/s, acc=0.98750000, loss=0.26953125, lr=0.00000000, score_diff=2.79687500, separation=2.78125000]Epoch 1/1:  96%|█████████▌| 126/131 [00:53<00:01,  2.55it/s, acc=0.98750000, loss=0.28515625, lr=0.00000000, score_diff=3.26562500, separation=3.28125000]Epoch 1/1:  97%|█████████▋| 127/131 [00:53<00:01,  2.66it/s, acc=0.98750000, loss=0.28515625, lr=0.00000000, score_diff=3.26562500, separation=3.28125000]Epoch 1/1:  97%|█████████▋| 127/131 [00:53<00:01,  2.66it/s, acc=0.98750000, loss=0.25781250, lr=0.00000000, score_diff=2.73437500, separation=2.71875000]Epoch 1/1:  98%|█████████▊| 128/131 [00:53<00:01,  2.69it/s, acc=0.98750000, loss=0.25781250, lr=0.00000000, score_diff=2.73437500, separation=2.71875000]Epoch 1/1:  98%|█████████▊| 128/131 [00:54<00:01,  2.69it/s, acc=0.98750000, loss=0.31054688, lr=0.00000000, score_diff=3.67187500, separation=3.68750000]Epoch 1/1:  98%|█████████▊| 129/131 [00:54<00:00,  2.22it/s, acc=0.98750000, loss=0.31054688, lr=0.00000000, score_diff=3.67187500, separation=3.68750000]Epoch 1/1:  98%|█████████▊| 129/131 [00:54<00:00,  2.22it/s, acc=0.98750000, loss=0.28906250, lr=0.00000000, score_diff=2.59375000, separation=2.60937500]Epoch 1/1:  99%|█████████▉| 130/131 [00:54<00:00,  2.33it/s, acc=0.98750000, loss=0.28906250, lr=0.00000000, score_diff=2.59375000, separation=2.60937500]Epoch 1/1:  99%|█████████▉| 130/131 [00:54<00:00,  2.33it/s, acc=0.98750000, loss=0.25585938, lr=0.00000000, score_diff=2.70312500, separation=2.70312500]Epoch 1/1: 100%|██████████| 131/131 [00:54<00:00,  2.54it/s, acc=0.98750000, loss=0.25585938, lr=0.00000000, score_diff=2.70312500, separation=2.70312500]Epoch 1/1: 100%|██████████| 131/131 [00:54<00:00,  2.39it/s, acc=0.98750000, loss=0.25585938, lr=0.00000000, score_diff=2.70312500, separation=2.70312500]
+Evaluating:   0%|          | 0/17 [00:00<?, ?it/s]Evaluating:   0%|          | 0/17 [00:00<?, ?it/s, loss=0.159]Evaluating:   6%|▌         | 1/17 [00:00<00:02,  6.36it/s, loss=0.159]Evaluating:   6%|▌         | 1/17 [00:00<00:02,  6.36it/s, loss=0.0864]Evaluating:  12%|█▏        | 2/17 [00:00<00:02,  6.89it/s, loss=0.0864]Evaluating:  12%|█▏        | 2/17 [00:00<00:02,  6.89it/s, loss=0.0452]Evaluating:  18%|█▊        | 3/17 [00:00<00:02,  6.88it/s, loss=0.0452]Evaluating:  18%|█▊        | 3/17 [00:00<00:02,  6.88it/s, loss=0.101] Evaluating:  24%|██▎       | 4/17 [00:00<00:01,  6.67it/s, loss=0.101]Evaluating:  24%|██▎       | 4/17 [00:00<00:01,  6.67it/s, loss=0.183]Evaluating:  29%|██▉       | 5/17 [00:00<00:01,  6.99it/s, loss=0.183]Evaluating:  29%|██▉       | 5/17 [00:00<00:01,  6.99it/s, loss=0.243]Evaluating:  35%|███▌      | 6/17 [00:00<00:01,  7.15it/s, loss=0.243]Evaluating:  35%|███▌      | 6/17 [00:01<00:01,  7.15it/s, loss=0.104]Evaluating:  41%|████      | 7/17 [00:01<00:01,  7.15it/s, loss=0.104]Evaluating:  41%|████      | 7/17 [00:01<00:01,  7.15it/s, loss=0.145]Evaluating:  47%|████▋     | 8/17 [00:01<00:01,  7.26it/s, loss=0.145]Evaluating:  47%|████▋     | 8/17 [00:01<00:01,  7.26it/s, loss=0.024]Evaluating:  53%|█████▎    | 9/17 [00:01<00:01,  7.25it/s, loss=0.024]Evaluating:  53%|█████▎    | 9/17 [00:01<00:01,  7.25it/s, loss=0.205]Evaluating:  59%|█████▉    | 10/17 [00:01<00:00,  7.25it/s, loss=0.205]Evaluating:  59%|█████▉    | 10/17 [00:01<00:00,  7.25it/s, loss=0.26] Evaluating:  65%|██████▍   | 11/17 [00:01<00:00,  7.19it/s, loss=0.26]Evaluating:  65%|██████▍   | 11/17 [00:01<00:00,  7.19it/s, loss=0.0977]Evaluating:  71%|███████   | 12/17 [00:01<00:00,  7.19it/s, loss=0.0977]Evaluating:  71%|███████   | 12/17 [00:01<00:00,  7.19it/s, loss=0.0947]Evaluating:  76%|███████▋  | 13/17 [00:01<00:00,  7.31it/s, loss=0.0947]Evaluating:  76%|███████▋  | 13/17 [00:01<00:00,  7.31it/s, loss=0.113] Evaluating:  82%|████████▏ | 14/17 [00:01<00:00,  7.38it/s, loss=0.113]Evaluating:  82%|████████▏ | 14/17 [00:02<00:00,  7.38it/s, loss=0.0518]Evaluating:  88%|████████▊ | 15/17 [00:02<00:00,  7.32it/s, loss=0.0518]Evaluating:  88%|████████▊ | 15/17 [00:02<00:00,  7.32it/s, loss=0.21]  Evaluating:  94%|█████████▍| 16/17 [00:02<00:00,  7.33it/s, loss=0.21]Evaluating:  94%|█████████▍| 16/17 [00:02<00:00,  7.33it/s, loss=0.0737]Evaluating: 100%|██████████| 17/17 [00:02<00:00,  7.93it/s, loss=0.0737]Evaluating: 100%|██████████| 17/17 [00:02<00:00,  7.29it/s, loss=0.0737]
+model.safetensors:   0%|          | 0.00/988M [00:00<?, ?B/s]model.safetensors:   0%|          | 2.87M/988M [00:00<00:41, 23.9MB/s]model.safetensors:   1%|          | 5.26M/988M [00:00<01:07, 14.6MB/s]model.safetensors:   1%|          | 7.91M/988M [00:00<00:59, 16.6MB/s]model.safetensors:   2%|▏         | 15.9M/988M [00:00<00:29, 33.0MB/s]model.safetensors:   2%|▏         | 19.6M/988M [00:00<00:51, 19.0MB/s]model.safetensors:   3%|▎         | 32.0M/988M [00:01<00:35, 26.6MB/s]model.safetensors:   4%|▍         | 38.5M/988M [00:01<00:31, 30.4MB/s]model.safetensors:   4%|▍         | 42.0M/988M [00:01<00:36, 26.3MB/s]model.safetensors:   5%|▍         | 45.0M/988M [00:01<00:35, 26.3MB/s]model.safetensors:   5%|▍         | 48.0M/988M [00:02<01:00, 15.5MB/s]model.safetensors:   6%|▋         | 64.0M/988M [00:02<00:34, 27.2MB/s]model.safetensors:   8%|▊         | 80.0M/988M [00:03<00:28, 31.4MB/s]model.safetensors:   9%|▉         | 88.1M/988M [00:03<00:25, 35.4MB/s]model.safetensors:   9%|▉         | 92.1M/988M [00:03<00:31, 28.3MB/s]model.safetensors:  10%|▉         | 96.0M/988M [00:03<00:46, 19.3MB/s]model.safetensors:  11%|█         | 104M/988M [00:04<00:35, 24.8MB/s] model.safetensors:  11%|█         | 108M/988M [00:04<00:40, 21.6MB/s]model.safetensors:  11%|█▏        | 112M/988M [00:04<00:56, 15.5MB/s]model.safetensors:  13%|█▎        | 128M/988M [00:05<00:35, 24.3MB/s]model.safetensors:  15%|█▍        | 144M/988M [00:05<00:27, 31.1MB/s]model.safetensors:  16%|█▌        | 160M/988M [00:05<00:23, 35.9MB/s]model.safetensors:  18%|█▊        | 176M/988M [00:06<00:19, 41.6MB/s]model.safetensors:  19%|█▉        | 192M/988M [00:06<00:18, 42.5MB/s]model.safetensors:  21%|██        | 208M/988M [00:06<00:17, 45.2MB/s]model.safetensors:  23%|██▎       | 224M/988M [00:07<00:15, 48.0MB/s]model.safetensors:  24%|██▍       | 240M/988M [00:07<00:15, 48.5MB/s]model.safetensors:  26%|██▌       | 256M/988M [00:07<00:17, 42.7MB/s]model.safetensors:  27%|██▋       | 266M/988M [00:08<00:15, 46.1MB/s]model.safetensors:  27%|██▋       | 271M/988M [00:08<00:19, 37.0MB/s]model.safetensors:  28%|██▊       | 275M/988M [00:08<00:28, 25.1MB/s]model.safetensors:  29%|██▉       | 288M/988M [00:09<00:24, 28.6MB/s]model.safetensors:  31%|███       | 304M/988M [00:09<00:20, 33.9MB/s]model.safetensors:  32%|███▏      | 320M/988M [00:09<00:17, 39.1MB/s]model.safetensors:  34%|███▍      | 336M/988M [00:10<00:15, 40.8MB/s]model.safetensors:  36%|███▌      | 352M/988M [00:10<00:14, 42.8MB/s]model.safetensors:  37%|███▋      | 368M/988M [00:10<00:14, 43.9MB/s]model.safetensors:  39%|███▉      | 384M/988M [00:11<00:15, 37.8MB/s]model.safetensors:  40%|████      | 400M/988M [00:11<00:14, 39.4MB/s]model.safetensors:  42%|████▏     | 416M/988M [00:12<00:14, 40.5MB/s]model.safetensors:  44%|████▎     | 432M/988M [00:12<00:12, 43.0MB/s]model.safetensors:  45%|████▌     | 448M/988M [00:12<00:11, 45.0MB/s]model.safetensors:  47%|████▋     | 464M/988M [00:13<00:11, 45.9MB/s]model.safetensors:  49%|████▊     | 480M/988M [00:13<00:10, 46.2MB/s]model.safetensors:  50%|█████     | 496M/988M [00:13<00:10, 48.2MB/s]model.safetensors:  52%|█████▏    | 512M/988M [00:15<00:21, 22.0MB/s]model.safetensors:  53%|█████▎    | 528M/988M [00:15<00:17, 26.0MB/s]model.safetensors:  55%|█████▌    | 544M/988M [00:16<00:14, 29.8MB/s]model.safetensors:  57%|█████▋    | 560M/988M [00:16<00:12, 33.6MB/s]model.safetensors:  58%|█████▊    | 576M/988M [00:16<00:10, 38.0MB/s]model.safetensors:  60%|█████▉    | 592M/988M [00:17<00:09, 40.1MB/s]model.safetensors:  62%|██████▏   | 608M/988M [00:17<00:08, 42.3MB/s]model.safetensors:  63%|██████▎   | 624M/988M [00:17<00:08, 43.3MB/s]model.safetensors:  65%|██████▍   | 640M/988M [00:18<00:07, 44.7MB/s]model.safetensors:  66%|██████▋   | 656M/988M [00:18<00:09, 36.8MB/s]model.safetensors:  68%|██████▊   | 672M/988M [00:19<00:08, 36.9MB/s]model.safetensors:  70%|██████▉   | 688M/988M [00:19<00:07, 40.3MB/s]model.safetensors:  71%|███████   | 704M/988M [00:19<00:06, 43.3MB/s]model.safetensors:  73%|███████▎  | 720M/988M [00:20<00:06, 43.9MB/s]model.safetensors:  74%|███████▍  | 736M/988M [00:20<00:05, 46.6MB/s]model.safetensors:  75%|███████▌  | 746M/988M [00:20<00:04, 49.5MB/s]model.safetensors:  76%|███████▌  | 751M/988M [00:20<00:05, 39.6MB/s]model.safetensors:  76%|███████▋  | 755M/988M [00:21<00:08, 27.6MB/s]model.safetensors:  78%|███████▊  | 768M/988M [00:21<00:07, 30.5MB/s]model.safetensors:  79%|███████▉  | 784M/988M [00:22<00:06, 33.9MB/s]model.safetensors:  81%|████████  | 800M/988M [00:22<00:04, 39.1MB/s]model.safetensors:  83%|████████▎ | 816M/988M [00:22<00:04, 42.8MB/s]model.safetensors:  84%|████████▍ | 832M/988M [00:23<00:03, 46.1MB/s]model.safetensors:  86%|████████▌ | 848M/988M [00:28<00:17, 8.23MB/s]model.safetensors:  87%|████████▋ | 864M/988M [00:28<00:11, 11.1MB/s]model.safetensors:  89%|████████▉ | 880M/988M [00:29<00:07, 14.5MB/s]model.safetensors:  91%|█████████ | 896M/988M [00:29<00:04, 18.5MB/s]model.safetensors:  92%|█████████▏| 912M/988M [00:29<00:03, 23.0MB/s]model.safetensors:  94%|█████████▍| 928M/988M [00:30<00:02, 27.7MB/s]model.safetensors:  96%|█████████▌| 944M/988M [00:30<00:01, 32.1MB/s]model.safetensors:  97%|█████████▋| 960M/988M [00:30<00:00, 35.5MB/s]model.safetensors:  99%|█████████▉| 976M/988M [00:31<00:00, 38.2MB/s]model.safetensors: 100%|██████████| 988M/988M [00:31<00:00, 31.6MB/s]
+No files have been modified since last commit. Skipping to prevent empty commit.
+WARNING:huggingface_hub.hf_api:No files have been modified since last commit. Skipping to prevent empty commit.
+Syncing verifier:   0%|          | 0/291 [00:00<?, ?it/s]Syncing verifier:  14%|█▍        | 41/291 [00:00<00:00, 404.54it/s]Syncing verifier:  29%|██▊       | 83/291 [00:00<00:00, 412.89it/s]Syncing verifier:  44%|████▎     | 127/291 [00:00<00:00, 424.17it/s]Syncing verifier:  58%|█████▊    | 170/291 [00:00<00:00, 423.82it/s]Syncing verifier:  73%|███████▎  | 213/291 [00:00<00:00, 425.90it/s]Syncing verifier:  88%|████████▊ | 256/291 [00:00<00:00, 426.44it/s]                                                                    Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.99s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.99s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.10s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.54s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.54s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.61s/it]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.61s/it]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.57s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.65s/it]
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.97s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.97s/it]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.07s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.53s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.59s/it]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.53s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.59s/it]
+INFO:liger_kernel.transformers.monkey_patch:Applying Liger kernels to model instance with model type: qwen2 with kwargs: {}
+INFO:liger_kernel.transformers.monkey_patch:Applying Liger kernels to model instance with model type: qwen2 with kwargs: {}
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.55s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.63s/it]
+INFO:liger_kernel.transformers.monkey_patch:Applying Liger kernels to model instance with model type: qwen2 with kwargs: {}
+Prover Epoch 1:   0%|          | 0/1057 [00:00<?, ?it/s]Processed prompts:   0%|          | 0/48 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:   2%|▏         | 1/48 [00:00<00:10,  4.47it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 48/48 [00:00<00:00, 212.60it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]
+
+Evaluating code snippets:   0%|          | 0/8 [00:00<?, ?it/s][AEvaluating code snippets:   0%|          | 0/8 [00:00<?, ?it/s]Evaluating code snippets:   0%|          | 0/8 [00:00<?, ?it/s]
+Evaluating code snippets:  12%|█▎        | 1/8 [00:00<00:03,  2.01it/s][AEvaluating code snippets:  12%|█▎        | 1/8 [00:00<00:03,  2.01it/s]Evaluating code snippets:  25%|██▌       | 2/8 [00:00<00:01,  3.13it/s]
+Evaluating code snippets:  25%|██▌       | 2/8 [00:00<00:02,  2.94it/s][AEvaluating code snippets:  12%|█▎        | 1/8 [00:00<00:05,  1.30it/s]Evaluating code snippets:  38%|███▊      | 3/8 [00:00<00:01,  3.78it/s]
+Evaluating code snippets:  38%|███▊      | 3/8 [00:00<00:01,  3.49it/s][AEvaluating code snippets:  50%|█████     | 4/8 [00:01<00:00,  4.22it/s]
+Evaluating code snippets:  50%|█████     | 4/8 [00:01<00:01,  3.87it/s][AEvaluating code snippets:  25%|██▌       | 2/8 [00:01<00:03,  1.69it/s]Evaluating code snippets:  62%|██████▎   | 5/8 [00:01<00:00,  4.42it/s]
+Evaluating code snippets:  62%|██████▎   | 5/8 [00:01<00:00,  4.18it/s][AEvaluating code snippets:  75%|███████▌  | 6/8 [00:01<00:00,  4.66it/s]
+Evaluating code snippets:  75%|███████▌  | 6/8 [00:01<00:00,  4.35it/s][AEvaluating code snippets:  38%|███▊      | 3/8 [00:01<00:02,  1.97it/s]Evaluating code snippets:  88%|████████▊ | 7/8 [00:01<00:00,  4.77it/s]
+Evaluating code snippets:  88%|████████▊ | 7/8 [00:01<00:00,  4.51it/s][AEvaluating code snippets: 100%|██████████| 8/8 [00:01<00:00,  4.87it/s]Evaluating code snippets: 100%|██████████| 8/8 [00:01<00:00,  4.25it/s]
+Detecting backdoors:   0%|          | 0/8 [00:00<?, ?it/s]
+Evaluating code snippets: 100%|██████████| 8/8 [00:01<00:00,  4.70it/s][AEvaluating code snippets: 100%|██████████| 8/8 [00:01<00:00,  4.04it/s]
+
+Detecting backdoors:   0%|          | 0/8 [00:00<?, ?it/s][ADetecting backdoors:  12%|█▎        | 1/8 [00:00<00:01,  5.24it/s]Evaluating code snippets:  50%|█████     | 4/8 [00:02<00:01,  2.06it/s]
+Detecting backdoors:  12%|█▎        | 1/8 [00:00<00:01,  4.99it/s][ADetecting backdoors:  25%|██▌       | 2/8 [00:00<00:01,  5.08it/s]
+Detecting backdoors:  25%|██▌       | 2/8 [00:00<00:01,  5.02it/s][ADetecting backdoors:  38%|███▊      | 3/8 [00:00<00:00,  5.12it/s]Evaluating code snippets:  62%|██████▎   | 5/8 [00:02<00:01,  2.18it/s]
+Detecting backdoors:  38%|███▊      | 3/8 [00:00<00:01,  4.88it/s][ADetecting backdoors:  50%|█████     | 4/8 [00:00<00:00,  5.02it/s]
+Detecting backdoors:  50%|█████     | 4/8 [00:00<00:00,  4.91it/s][ADetecting backdoors:  62%|██████▎   | 5/8 [00:00<00:00,  5.11it/s]Evaluating code snippets:  75%|███████▌  | 6/8 [00:02<00:00,  2.24it/s]
+Detecting backdoors:  62%|██████▎   | 5/8 [00:01<00:00,  4.89it/s][ADetecting backdoors:  75%|███████▌  | 6/8 [00:01<00:00,  5.13it/s]Detecting backdoors:  88%|████████▊ | 7/8 [00:01<00:00,  5.16it/s]
+Detecting backdoors:  75%|███████▌  | 6/8 [00:01<00:00,  4.42it/s][ADetecting backdoors: 100%|██████████| 8/8 [00:01<00:00,  5.19it/s]Detecting backdoors: 100%|██████████| 8/8 [00:01<00:00,  5.14it/s]
+Evaluating code snippets:  88%|████████▊ | 7/8 [00:03<00:00,  2.11it/s]
+Detecting backdoors:  88%|████████▊ | 7/8 [00:01<00:00,  4.54it/s][A
+Detecting backdoors: 100%|██████████| 8/8 [00:01<00:00,  4.67it/s][ADetecting backdoors: 100%|██████████| 8/8 [00:01<00:00,  4.72it/s]
+Evaluating code snippets: 100%|██████████| 8/8 [00:03<00:00,  2.23it/s]Evaluating code snippets: 100%|██████████| 8/8 [00:03<00:00,  2.08it/s]
+Detecting backdoors:   0%|          | 0/8 [00:00<?, ?it/s]Detecting backdoors:  12%|█▎        | 1/8 [00:00<00:01,  3.86it/s]Detecting backdoors:  25%|██▌       | 2/8 [00:00<00:01,  3.59it/s]Detecting backdoors:  38%|███▊      | 3/8 [00:00<00:01,  3.38it/s]Detecting backdoors:  50%|█████     | 4/8 [00:01<00:01,  3.23it/s]Detecting backdoors:  62%|██████▎   | 5/8 [00:01<00:00,  3.10it/s]Detecting backdoors:  75%|███████▌  | 6/8 [00:01<00:00,  2.99it/s]Detecting backdoors:  88%|████████▊ | 7/8 [00:02<00:00,  3.12it/s]Detecting backdoors: 100%|██████████| 8/8 [00:02<00:00,  3.31it/s]Detecting backdoors: 100%|██████████| 8/8 [00:02<00:00,  3.26it/s]
+/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py:160: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  reward_result.sneaky_advantages = torch.tensor(local_sneaky_advantages)
+/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py:161: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  reward_result.honest_advantages = torch.tensor(local_honest_advantages)
+/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py:160: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  reward_result.sneaky_advantages = torch.tensor(local_sneaky_advantages)
+/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py:160: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  reward_result.sneaky_advantages = torch.tensor(local_sneaky_advantages)
+/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py:161: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  reward_result.honest_advantages = torch.tensor(local_honest_advantages)
+/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py:161: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  reward_result.honest_advantages = torch.tensor(local_honest_advantages)
+Prover Epoch 1:   0%|          | 0/1057 [00:17<?, ?it/s]
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+    main()
+  File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+    orchestrator.run_training_rounds()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 116, in run_training_rounds
+    self._execute_training_phase()
+  File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 164, in _execute_training_phase
+    trainer.train()
+  File "/home/jvelja/learn_to_verify/pvg/trainers/prover_trainer.py", line 181, in train
+    training_step_result = self.pipeline.compute_training_step(unwrapped_model, batch_inputs, mode="train")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py", line 269, in compute_training_step
+    loss_result = self.loss_strategy.compute_loss(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jvelja/learn_to_verify/pvg/strategies/implementations/loss_strategies.py", line 97, in compute_loss
+    loss, liger_metrics = self.model_manager.liger_grpo_loss(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 249, in forward
+    return LigerFusedLinearGRPOFunction.apply(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/autograd/function.py", line 575, in apply
+    return super().apply(*args, **kwargs)  # type: ignore[misc]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 142, in forward
+    return super().forward(
+           ^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 219, in forward
+    accumulate_chunk(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 132, in accumulate_chunk
+    (chunk_grad_input, chunk_grad_weight, *chunk_grad_bias), (chunk_loss, chunk_metrics) = fused_fwd_bwd(
+                                                                                           ^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/eval_frame.py", line 574, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1380, in __call__
+    return self._torchdynamo_orig_callable(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1164, in __call__
+    result = self._inner_convert(
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 547, in __call__
+    return _compile(
+           ^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 986, in _compile
+    guarded_code = compile_inner(code, one_graph, hooks, transform)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 715, in compile_inner
+    return _compile_inner(code, one_graph, hooks, transform)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_utils_internal.py", line 95, in wrapper_function
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 750, in _compile_inner
+    out_code = transform_code_object(code, transform)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/bytecode_transformation.py", line 1361, in transform_code_object
+    transformations(instructions, code_options)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 231, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 662, in transform
+    tracer.run()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2868, in run
+    super().run()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+    while self.step():
+          ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+    self.dispatch_table[inst.opcode](self, inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+    return inner_fn(self, inst)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+    self._call(inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+    self.call_function(fn, args, kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+    self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+    return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+    return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+    return cls.inline_call_(parent, func, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+    tracer.run()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+    while self.step():
+          ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+    self.dispatch_table[inst.opcode](self, inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+    return inner_fn(self, inst)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+    self._call(inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+    self.call_function(fn, args, kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+    self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+    return super().call_function(tx, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+    return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+    return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+    return cls.inline_call_(parent, func, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+    tracer.run()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+    while self.step():
+          ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+    self.dispatch_table[inst.opcode](self, inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+    return inner_fn(self, inst)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+    self.call_function(fn, argsvars.items, kwargsvars)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+    self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+    return super().call_function(tx, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+    return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+    return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+    return cls.inline_call_(parent, func, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+    tracer.run()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+    while self.step():
+          ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+    self.dispatch_table[inst.opcode](self, inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+    return inner_fn(self, inst)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+    self.call_function(fn, argsvars.items, kwargsvars)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+    self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 858, in call_function
+    return self.func.call_function(tx, merged_args, merged_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+    return super().call_function(tx, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+    return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+    return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+    return cls.inline_call_(parent, func, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+    tracer.run()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+    while self.step():
+          ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+    self.dispatch_table[inst.opcode](self, inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+    return inner_fn(self, inst)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+    self._call(inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+    self.call_function(fn, args, kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+    self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 1022, in call_function
+    return self.obj.call_method(tx, self.name, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 778, in call_method
+    .call_function(tx, args, kwargs)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+    return super().call_function(tx, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+    return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+    return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+    return cls.inline_call_(parent, func, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+    tracer.run()
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+    while self.step():
+          ^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+    self.dispatch_table[inst.opcode](self, inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+    return inner_fn(self, inst)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+    self._call(inst)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+    self.call_function(fn, args, kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+    self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/torch.py", line 953, in call_function
+    tensor_variable = wrap_fx_proxy(
+                      ^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2153, in wrap_fx_proxy
+    return wrap_fx_proxy_cls(target_cls=TensorVariable, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2219, in wrap_fx_proxy_cls
+    return _wrap_fx_proxy(
+           ^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2315, in _wrap_fx_proxy
+    example_value = get_fake_value(proxy.node, tx, allow_non_graph_fake=True)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2536, in get_fake_value
+    raise TorchRuntimeError(str(e)).with_traceback(e.__traceback__) from None
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2471, in get_fake_value
+    ret_val = wrap_fake_exception(
+              ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2017, in wrap_fake_exception
+    return fn()
+           ^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2472, in <lambda>
+    lambda: run_node(tx.output, node, args, kwargs, nnmodule)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2604, in run_node
+    raise RuntimeError(make_error_message(e)).with_traceback(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2586, in run_node
+    return node.target(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 289, in _fn
+    result = fn(*args, is_out=(out is not None), **kwargs)  # type: ignore[arg-type]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4444, in matmul
+    return torch.ops.aten._unsafe_view(t1_folded.mv(t2), output_shape)
+                                       ^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/utils/_stats.py", line 21, in wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1276, in __torch_dispatch__
+    return self.dispatch(func, types, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1816, in dispatch
+    return self._cached_dispatch_impl(func, types, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1377, in _cached_dispatch_impl
+    output = self._dispatch_impl(func, types, args, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 2290, in _dispatch_impl
+    decomposition_table[func](*args, **kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 291, in _fn
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 83, in inner
+    r = f(*tree_map(increase_prec, args), **tree_map(increase_prec, kwargs))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4336, in mv
+    torch._check(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1656, in _check
+    _check_with(RuntimeError, cond, message)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1638, in _check_with
+    raise error_type(message_evaluated)
+torch._dynamo.exc.TorchRuntimeError: Failed running call_function <built-in method matmul of type object at 0x14f7a1e95f00>(*(GradTrackingTensor(lvl=1, value=
+    FakeTensor(..., device='cuda:0', size=(1, s0, 2048), dtype=torch.bfloat16,
+               requires_grad=True)
+), GradTrackingTensor(lvl=1, value=
+    FakeTensor(..., device='cuda:0', size=(0,), dtype=torch.bfloat16,
+               requires_grad=True)
+)), **{}):
+size mismatch, got input (s0x2048), vec (0)
+
+from user code:
+   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 111, in fused_fwd_bwd
+    return torch.func.grad_and_value(compute_loss, argnums=argnums, has_aux=True)(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/apis.py", line 442, in wrapper
+    return eager_transforms.grad_and_value_impl(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/vmap.py", line 48, in fn
+    return f(*args, **kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/eager_transforms.py", line 1364, in grad_and_value_impl
+    output = func(*args, **kwargs)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 270, in _compute_chunk_loss
+    log_probs, _ = LigerFusedLinearPPOBase.chunk_forward(input_chunk, weight, bias=bias, temperature=temperature)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 303, in chunk_forward
+    logits = torch.matmul(input_chunk, weight.t())
+
+Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
+
+
+You can suppress this exception and fall back to eager by setting:
+    import torch._dynamo
+    torch._dynamo.config.suppress_errors = True
+
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank2]:     main()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank2]:     orchestrator.run_training_rounds()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 116, in run_training_rounds
+[rank2]:     self._execute_training_phase()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 164, in _execute_training_phase
+[rank2]:     trainer.train()
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/trainers/prover_trainer.py", line 181, in train
+[rank2]:     training_step_result = self.pipeline.compute_training_step(unwrapped_model, batch_inputs, mode="train")
+[rank2]:                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py", line 269, in compute_training_step
+[rank2]:     loss_result = self.loss_strategy.compute_loss(
+[rank2]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/home/jvelja/learn_to_verify/pvg/strategies/implementations/loss_strategies.py", line 97, in compute_loss
+[rank2]:     loss, liger_metrics = self.model_manager.liger_grpo_loss(
+[rank2]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 249, in forward
+[rank2]:     return LigerFusedLinearGRPOFunction.apply(
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/autograd/function.py", line 575, in apply
+[rank2]:     return super().apply(*args, **kwargs)  # type: ignore[misc]
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 142, in forward
+[rank2]:     return super().forward(
+[rank2]:            ^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 219, in forward
+[rank2]:     accumulate_chunk(
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 132, in accumulate_chunk
+[rank2]:     (chunk_grad_input, chunk_grad_weight, *chunk_grad_bias), (chunk_loss, chunk_metrics) = fused_fwd_bwd(
+[rank2]:                                                                                            ^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/eval_frame.py", line 574, in _fn
+[rank2]:     return fn(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1380, in __call__
+[rank2]:     return self._torchdynamo_orig_callable(
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1164, in __call__
+[rank2]:     result = self._inner_convert(
+[rank2]:              ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 547, in __call__
+[rank2]:     return _compile(
+[rank2]:            ^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 986, in _compile
+[rank2]:     guarded_code = compile_inner(code, one_graph, hooks, transform)
+[rank2]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 715, in compile_inner
+[rank2]:     return _compile_inner(code, one_graph, hooks, transform)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_utils_internal.py", line 95, in wrapper_function
+[rank2]:     return function(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 750, in _compile_inner
+[rank2]:     out_code = transform_code_object(code, transform)
+[rank2]:                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/bytecode_transformation.py", line 1361, in transform_code_object
+[rank2]:     transformations(instructions, code_options)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 231, in _fn
+[rank2]:     return fn(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 662, in transform
+[rank2]:     tracer.run()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2868, in run
+[rank2]:     super().run()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank2]:     while self.step():
+[rank2]:           ^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank2]:     self.dispatch_table[inst.opcode](self, inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank2]:     return inner_fn(self, inst)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank2]:     self._call(inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank2]:     self.call_function(fn, args, kwargs)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank2]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank2]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank2]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank2]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank2]:     tracer.run()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank2]:     while self.step():
+[rank2]:           ^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank2]:     self.dispatch_table[inst.opcode](self, inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank2]:     return inner_fn(self, inst)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank2]:     self._call(inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank2]:     self.call_function(fn, args, kwargs)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank2]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank2]:     return super().call_function(tx, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank2]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank2]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank2]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank2]:     tracer.run()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank2]:     while self.step():
+[rank2]:           ^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank2]:     self.dispatch_table[inst.opcode](self, inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank2]:     return inner_fn(self, inst)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+[rank2]:     self.call_function(fn, argsvars.items, kwargsvars)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank2]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank2]:     return super().call_function(tx, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank2]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank2]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank2]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank2]:     tracer.run()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank2]:     while self.step():
+[rank2]:           ^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank2]:     self.dispatch_table[inst.opcode](self, inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank2]:     return inner_fn(self, inst)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+[rank2]:     self.call_function(fn, argsvars.items, kwargsvars)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank2]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 858, in call_function
+[rank2]:     return self.func.call_function(tx, merged_args, merged_kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank2]:     return super().call_function(tx, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank2]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank2]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank2]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank2]:     tracer.run()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank2]:     while self.step():
+[rank2]:           ^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank2]:     self.dispatch_table[inst.opcode](self, inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank2]:     return inner_fn(self, inst)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank2]:     self._call(inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank2]:     self.call_function(fn, args, kwargs)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank2]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 1022, in call_function
+[rank2]:     return self.obj.call_method(tx, self.name, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 778, in call_method
+[rank2]:     .call_function(tx, args, kwargs)
+[rank2]:      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank2]:     return super().call_function(tx, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank2]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank2]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank2]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank2]:     tracer.run()
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank2]:     while self.step():
+[rank2]:           ^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank2]:     self.dispatch_table[inst.opcode](self, inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank2]:     return inner_fn(self, inst)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank2]:     self._call(inst)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank2]:     self.call_function(fn, args, kwargs)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank2]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/torch.py", line 953, in call_function
+[rank2]:     tensor_variable = wrap_fx_proxy(
+[rank2]:                       ^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2153, in wrap_fx_proxy
+[rank2]:     return wrap_fx_proxy_cls(target_cls=TensorVariable, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2219, in wrap_fx_proxy_cls
+[rank2]:     return _wrap_fx_proxy(
+[rank2]:            ^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2315, in _wrap_fx_proxy
+[rank2]:     example_value = get_fake_value(proxy.node, tx, allow_non_graph_fake=True)
+[rank2]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2536, in get_fake_value
+[rank2]:     raise TorchRuntimeError(str(e)).with_traceback(e.__traceback__) from None
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2471, in get_fake_value
+[rank2]:     ret_val = wrap_fake_exception(
+[rank2]:               ^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2017, in wrap_fake_exception
+[rank2]:     return fn()
+[rank2]:            ^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2472, in <lambda>
+[rank2]:     lambda: run_node(tx.output, node, args, kwargs, nnmodule)
+[rank2]:             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2604, in run_node
+[rank2]:     raise RuntimeError(make_error_message(e)).with_traceback(
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2586, in run_node
+[rank2]:     return node.target(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 289, in _fn
+[rank2]:     result = fn(*args, is_out=(out is not None), **kwargs)  # type: ignore[arg-type]
+[rank2]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4444, in matmul
+[rank2]:     return torch.ops.aten._unsafe_view(t1_folded.mv(t2), output_shape)
+[rank2]:                                        ^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/utils/_stats.py", line 21, in wrapper
+[rank2]:     return fn(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1276, in __torch_dispatch__
+[rank2]:     return self.dispatch(func, types, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1816, in dispatch
+[rank2]:     return self._cached_dispatch_impl(func, types, args, kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1377, in _cached_dispatch_impl
+[rank2]:     output = self._dispatch_impl(func, types, args, kwargs)
+[rank2]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 2290, in _dispatch_impl
+[rank2]:     decomposition_table[func](*args, **kwargs)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 291, in _fn
+[rank2]:     result = fn(*args, **kwargs)
+[rank2]:              ^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 83, in inner
+[rank2]:     r = f(*tree_map(increase_prec, args), **tree_map(increase_prec, kwargs))
+[rank2]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4336, in mv
+[rank2]:     torch._check(
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1656, in _check
+[rank2]:     _check_with(RuntimeError, cond, message)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1638, in _check_with
+[rank2]:     raise error_type(message_evaluated)
+[rank2]: torch._dynamo.exc.TorchRuntimeError: Failed running call_function <built-in method matmul of type object at 0x14717fcf2f00>(*(GradTrackingTensor(lvl=1, value=
+[rank2]:     FakeTensor(..., device='cuda:2', size=(1, s0, 2048), dtype=torch.bfloat16,
+[rank2]:                requires_grad=True)
+[rank2]: ), GradTrackingTensor(lvl=1, value=
+[rank2]:     FakeTensor(..., device='cuda:2', size=(0,), dtype=torch.bfloat16,
+[rank2]:                requires_grad=True)
+[rank2]: )), **{}):
+[rank2]: size mismatch, got input (s0x2048), vec (0)
+
+[rank2]: from user code:
+[rank2]:    File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 111, in fused_fwd_bwd
+[rank2]:     return torch.func.grad_and_value(compute_loss, argnums=argnums, has_aux=True)(
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/apis.py", line 442, in wrapper
+[rank2]:     return eager_transforms.grad_and_value_impl(
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/vmap.py", line 48, in fn
+[rank2]:     return f(*args, **kwargs)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/eager_transforms.py", line 1364, in grad_and_value_impl
+[rank2]:     output = func(*args, **kwargs)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 270, in _compute_chunk_loss
+[rank2]:     log_probs, _ = LigerFusedLinearPPOBase.chunk_forward(input_chunk, weight, bias=bias, temperature=temperature)
+[rank2]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 303, in chunk_forward
+[rank2]:     logits = torch.matmul(input_chunk, weight.t())
+
+[rank2]: Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
+
+
+[rank2]: You can suppress this exception and fall back to eager by setting:
+[rank2]:     import torch._dynamo
+[rank2]:     torch._dynamo.config.suppress_errors = True
+
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank1]:     main()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank1]:     orchestrator.run_training_rounds()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 116, in run_training_rounds
+[rank1]:     self._execute_training_phase()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 164, in _execute_training_phase
+[rank1]:     trainer.train()
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/trainers/prover_trainer.py", line 181, in train
+[rank1]:     training_step_result = self.pipeline.compute_training_step(unwrapped_model, batch_inputs, mode="train")
+[rank1]:                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py", line 269, in compute_training_step
+[rank1]:     loss_result = self.loss_strategy.compute_loss(
+[rank1]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/jvelja/learn_to_verify/pvg/strategies/implementations/loss_strategies.py", line 97, in compute_loss
+[rank1]:     loss, liger_metrics = self.model_manager.liger_grpo_loss(
+[rank1]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 249, in forward
+[rank1]:     return LigerFusedLinearGRPOFunction.apply(
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/autograd/function.py", line 575, in apply
+[rank1]:     return super().apply(*args, **kwargs)  # type: ignore[misc]
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 142, in forward
+[rank1]:     return super().forward(
+[rank1]:            ^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 219, in forward
+[rank1]:     accumulate_chunk(
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 132, in accumulate_chunk
+[rank1]:     (chunk_grad_input, chunk_grad_weight, *chunk_grad_bias), (chunk_loss, chunk_metrics) = fused_fwd_bwd(
+[rank1]:                                                                                            ^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/eval_frame.py", line 574, in _fn
+[rank1]:     return fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1380, in __call__
+[rank1]:     return self._torchdynamo_orig_callable(
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1164, in __call__
+[rank1]:     result = self._inner_convert(
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 547, in __call__
+[rank1]:     return _compile(
+[rank1]:            ^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 986, in _compile
+[rank1]:     guarded_code = compile_inner(code, one_graph, hooks, transform)
+[rank1]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 715, in compile_inner
+[rank1]:     return _compile_inner(code, one_graph, hooks, transform)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_utils_internal.py", line 95, in wrapper_function
+[rank1]:     return function(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 750, in _compile_inner
+[rank1]:     out_code = transform_code_object(code, transform)
+[rank1]:                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/bytecode_transformation.py", line 1361, in transform_code_object
+[rank1]:     transformations(instructions, code_options)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 231, in _fn
+[rank1]:     return fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 662, in transform
+[rank1]:     tracer.run()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2868, in run
+[rank1]:     super().run()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank1]:     while self.step():
+[rank1]:           ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank1]:     self.dispatch_table[inst.opcode](self, inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank1]:     return inner_fn(self, inst)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank1]:     self._call(inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank1]:     self.call_function(fn, args, kwargs)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank1]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank1]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank1]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank1]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank1]:     tracer.run()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank1]:     while self.step():
+[rank1]:           ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank1]:     self.dispatch_table[inst.opcode](self, inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank1]:     return inner_fn(self, inst)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank1]:     self._call(inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank1]:     self.call_function(fn, args, kwargs)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank1]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank1]:     return super().call_function(tx, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank1]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank1]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank1]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank1]:     tracer.run()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank1]:     while self.step():
+[rank1]:           ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank1]:     self.dispatch_table[inst.opcode](self, inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank1]:     return inner_fn(self, inst)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+[rank1]:     self.call_function(fn, argsvars.items, kwargsvars)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank1]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank1]:     return super().call_function(tx, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank1]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank1]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank1]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank1]:     tracer.run()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank1]:     while self.step():
+[rank1]:           ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank1]:     self.dispatch_table[inst.opcode](self, inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank1]:     return inner_fn(self, inst)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+[rank1]:     self.call_function(fn, argsvars.items, kwargsvars)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank1]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 858, in call_function
+[rank1]:     return self.func.call_function(tx, merged_args, merged_kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank1]:     return super().call_function(tx, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank1]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank1]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank1]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank1]:     tracer.run()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank1]:     while self.step():
+[rank1]:           ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank1]:     self.dispatch_table[inst.opcode](self, inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank1]:     return inner_fn(self, inst)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank1]:     self._call(inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank1]:     self.call_function(fn, args, kwargs)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank1]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 1022, in call_function
+[rank1]:     return self.obj.call_method(tx, self.name, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 778, in call_method
+[rank1]:     .call_function(tx, args, kwargs)
+[rank1]:      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank1]:     return super().call_function(tx, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank1]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank1]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank1]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank1]:     tracer.run()
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank1]:     while self.step():
+[rank1]:           ^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank1]:     self.dispatch_table[inst.opcode](self, inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank1]:     return inner_fn(self, inst)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank1]:     self._call(inst)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank1]:     self.call_function(fn, args, kwargs)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank1]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/torch.py", line 953, in call_function
+[rank1]:     tensor_variable = wrap_fx_proxy(
+[rank1]:                       ^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2153, in wrap_fx_proxy
+[rank1]:     return wrap_fx_proxy_cls(target_cls=TensorVariable, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2219, in wrap_fx_proxy_cls
+[rank1]:     return _wrap_fx_proxy(
+[rank1]:            ^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2315, in _wrap_fx_proxy
+[rank1]:     example_value = get_fake_value(proxy.node, tx, allow_non_graph_fake=True)
+[rank1]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2536, in get_fake_value
+[rank1]:     raise TorchRuntimeError(str(e)).with_traceback(e.__traceback__) from None
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2471, in get_fake_value
+[rank1]:     ret_val = wrap_fake_exception(
+[rank1]:               ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2017, in wrap_fake_exception
+[rank1]:     return fn()
+[rank1]:            ^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2472, in <lambda>
+[rank1]:     lambda: run_node(tx.output, node, args, kwargs, nnmodule)
+[rank1]:             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2604, in run_node
+[rank1]:     raise RuntimeError(make_error_message(e)).with_traceback(
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2586, in run_node
+[rank1]:     return node.target(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 289, in _fn
+[rank1]:     result = fn(*args, is_out=(out is not None), **kwargs)  # type: ignore[arg-type]
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4444, in matmul
+[rank1]:     return torch.ops.aten._unsafe_view(t1_folded.mv(t2), output_shape)
+[rank1]:                                        ^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/utils/_stats.py", line 21, in wrapper
+[rank1]:     return fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1276, in __torch_dispatch__
+[rank1]:     return self.dispatch(func, types, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1816, in dispatch
+[rank1]:     return self._cached_dispatch_impl(func, types, args, kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1377, in _cached_dispatch_impl
+[rank1]:     output = self._dispatch_impl(func, types, args, kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 2290, in _dispatch_impl
+[rank1]:     decomposition_table[func](*args, **kwargs)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 291, in _fn
+[rank1]:     result = fn(*args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 83, in inner
+[rank1]:     r = f(*tree_map(increase_prec, args), **tree_map(increase_prec, kwargs))
+[rank1]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4336, in mv
+[rank1]:     torch._check(
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1656, in _check
+[rank1]:     _check_with(RuntimeError, cond, message)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1638, in _check_with
+[rank1]:     raise error_type(message_evaluated)
+[rank1]: torch._dynamo.exc.TorchRuntimeError: Failed running call_function <built-in method matmul of type object at 0x148792bcbf00>(*(GradTrackingTensor(lvl=1, value=
+[rank1]:     FakeTensor(..., device='cuda:1', size=(1, s0, 2048), dtype=torch.bfloat16,
+[rank1]:                requires_grad=True)
+[rank1]: ), GradTrackingTensor(lvl=1, value=
+[rank1]:     FakeTensor(..., device='cuda:1', size=(0,), dtype=torch.bfloat16,
+[rank1]:                requires_grad=True)
+[rank1]: )), **{}):
+[rank1]: size mismatch, got input (s0x2048), vec (0)
+
+[rank1]: from user code:
+[rank1]:    File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 111, in fused_fwd_bwd
+[rank1]:     return torch.func.grad_and_value(compute_loss, argnums=argnums, has_aux=True)(
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/apis.py", line 442, in wrapper
+[rank1]:     return eager_transforms.grad_and_value_impl(
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/vmap.py", line 48, in fn
+[rank1]:     return f(*args, **kwargs)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/eager_transforms.py", line 1364, in grad_and_value_impl
+[rank1]:     output = func(*args, **kwargs)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 270, in _compute_chunk_loss
+[rank1]:     log_probs, _ = LigerFusedLinearPPOBase.chunk_forward(input_chunk, weight, bias=bias, temperature=temperature)
+[rank1]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 303, in chunk_forward
+[rank1]:     logits = torch.matmul(input_chunk, weight.t())
+
+[rank1]: Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
+
+
+[rank1]: You can suppress this exception and fall back to eager by setting:
+[rank1]:     import torch._dynamo
+[rank1]:     torch._dynamo.config.suppress_errors = True
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 238, in <module>
+[rank0]:     main()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/pvg/main.py", line 226, in main
+[rank0]:     orchestrator.run_training_rounds()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 116, in run_training_rounds
+[rank0]:     self._execute_training_phase()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/orchestrator/orchestrator.py", line 164, in _execute_training_phase
+[rank0]:     trainer.train()
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/trainers/prover_trainer.py", line 181, in train
+[rank0]:     training_step_result = self.pipeline.compute_training_step(unwrapped_model, batch_inputs, mode="train")
+[rank0]:                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/pipelines/prover_training_pipeline.py", line 269, in compute_training_step
+[rank0]:     loss_result = self.loss_strategy.compute_loss(
+[rank0]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/jvelja/learn_to_verify/pvg/strategies/implementations/loss_strategies.py", line 97, in compute_loss
+[rank0]:     loss, liger_metrics = self.model_manager.liger_grpo_loss(
+[rank0]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 249, in forward
+[rank0]:     return LigerFusedLinearGRPOFunction.apply(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/autograd/function.py", line 575, in apply
+[rank0]:     return super().apply(*args, **kwargs)  # type: ignore[misc]
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/grpo_loss.py", line 142, in forward
+[rank0]:     return super().forward(
+[rank0]:            ^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 219, in forward
+[rank0]:     accumulate_chunk(
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 132, in accumulate_chunk
+[rank0]:     (chunk_grad_input, chunk_grad_weight, *chunk_grad_bias), (chunk_loss, chunk_metrics) = fused_fwd_bwd(
+[rank0]:                                                                                            ^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/eval_frame.py", line 574, in _fn
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1380, in __call__
+[rank0]:     return self._torchdynamo_orig_callable(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 1164, in __call__
+[rank0]:     result = self._inner_convert(
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 547, in __call__
+[rank0]:     return _compile(
+[rank0]:            ^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 986, in _compile
+[rank0]:     guarded_code = compile_inner(code, one_graph, hooks, transform)
+[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 715, in compile_inner
+[rank0]:     return _compile_inner(code, one_graph, hooks, transform)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_utils_internal.py", line 95, in wrapper_function
+[rank0]:     return function(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 750, in _compile_inner
+[rank0]:     out_code = transform_code_object(code, transform)
+[rank0]:                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/bytecode_transformation.py", line 1361, in transform_code_object
+[rank0]:     transformations(instructions, code_options)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 231, in _fn
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 662, in transform
+[rank0]:     tracer.run()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2868, in run
+[rank0]:     super().run()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank0]:     while self.step():
+[rank0]:           ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank0]:     self.dispatch_table[inst.opcode](self, inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank0]:     return inner_fn(self, inst)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank0]:     self._call(inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank0]:     self.call_function(fn, args, kwargs)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank0]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank0]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank0]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank0]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank0]:     tracer.run()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank0]:     while self.step():
+[rank0]:           ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank0]:     self.dispatch_table[inst.opcode](self, inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank0]:     return inner_fn(self, inst)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank0]:     self._call(inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank0]:     self.call_function(fn, args, kwargs)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank0]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank0]:     return super().call_function(tx, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank0]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank0]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank0]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank0]:     tracer.run()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank0]:     while self.step():
+[rank0]:           ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank0]:     self.dispatch_table[inst.opcode](self, inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank0]:     return inner_fn(self, inst)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+[rank0]:     self.call_function(fn, argsvars.items, kwargsvars)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank0]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank0]:     return super().call_function(tx, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank0]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank0]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank0]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank0]:     tracer.run()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank0]:     while self.step():
+[rank0]:           ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank0]:     self.dispatch_table[inst.opcode](self, inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank0]:     return inner_fn(self, inst)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1736, in CALL_FUNCTION_EX
+[rank0]:     self.call_function(fn, argsvars.items, kwargsvars)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank0]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 858, in call_function
+[rank0]:     return self.func.call_function(tx, merged_args, merged_kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank0]:     return super().call_function(tx, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank0]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank0]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank0]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank0]:     tracer.run()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank0]:     while self.step():
+[rank0]:           ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank0]:     self.dispatch_table[inst.opcode](self, inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank0]:     return inner_fn(self, inst)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank0]:     self._call(inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank0]:     self.call_function(fn, args, kwargs)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank0]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 1022, in call_function
+[rank0]:     return self.obj.call_method(tx, self.name, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/misc.py", line 778, in call_method
+[rank0]:     .call_function(tx, args, kwargs)
+[rank0]:      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 317, in call_function
+[rank0]:     return super().call_function(tx, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/functions.py", line 118, in call_function
+[rank0]:     return tx.inline_user_function_return(self, [*self.self_args(), *args], kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 903, in inline_user_function_return
+[rank0]:     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3072, in inline_call
+[rank0]:     return cls.inline_call_(parent, func, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 3198, in inline_call_
+[rank0]:     tracer.run()
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 1052, in run
+[rank0]:     while self.step():
+[rank0]:           ^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 962, in step
+[rank0]:     self.dispatch_table[inst.opcode](self, inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 659, in wrapper
+[rank0]:     return inner_fn(self, inst)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2341, in CALL
+[rank0]:     self._call(inst)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 2335, in _call
+[rank0]:     self.call_function(fn, args, kwargs)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/symbolic_convert.py", line 897, in call_function
+[rank0]:     self.push(fn.call_function(self, args, kwargs))  # type: ignore[arg-type]
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/torch.py", line 953, in call_function
+[rank0]:     tensor_variable = wrap_fx_proxy(
+[rank0]:                       ^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2153, in wrap_fx_proxy
+[rank0]:     return wrap_fx_proxy_cls(target_cls=TensorVariable, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2219, in wrap_fx_proxy_cls
+[rank0]:     return _wrap_fx_proxy(
+[rank0]:            ^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/variables/builder.py", line 2315, in _wrap_fx_proxy
+[rank0]:     example_value = get_fake_value(proxy.node, tx, allow_non_graph_fake=True)
+[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2536, in get_fake_value
+[rank0]:     raise TorchRuntimeError(str(e)).with_traceback(e.__traceback__) from None
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2471, in get_fake_value
+[rank0]:     ret_val = wrap_fake_exception(
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2017, in wrap_fake_exception
+[rank0]:     return fn()
+[rank0]:            ^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2472, in <lambda>
+[rank0]:     lambda: run_node(tx.output, node, args, kwargs, nnmodule)
+[rank0]:             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2604, in run_node
+[rank0]:     raise RuntimeError(make_error_message(e)).with_traceback(
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 2586, in run_node
+[rank0]:     return node.target(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 289, in _fn
+[rank0]:     result = fn(*args, is_out=(out is not None), **kwargs)  # type: ignore[arg-type]
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4444, in matmul
+[rank0]:     return torch.ops.aten._unsafe_view(t1_folded.mv(t2), output_shape)
+[rank0]:                                        ^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/utils/_stats.py", line 21, in wrapper
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1276, in __torch_dispatch__
+[rank0]:     return self.dispatch(func, types, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1816, in dispatch
+[rank0]:     return self._cached_dispatch_impl(func, types, args, kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 1377, in _cached_dispatch_impl
+[rank0]:     output = self._dispatch_impl(func, types, args, kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_subclasses/fake_tensor.py", line 2290, in _dispatch_impl
+[rank0]:     decomposition_table[func](*args, **kwargs)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_prims_common/wrappers.py", line 291, in _fn
+[rank0]:     result = fn(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 83, in inner
+[rank0]:     r = f(*tree_map(increase_prec, args), **tree_map(increase_prec, kwargs))
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_decomp/decompositions.py", line 4336, in mv
+[rank0]:     torch._check(
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1656, in _check
+[rank0]:     _check_with(RuntimeError, cond, message)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/__init__.py", line 1638, in _check_with
+[rank0]:     raise error_type(message_evaluated)
+[rank0]: torch._dynamo.exc.TorchRuntimeError: Failed running call_function <built-in method matmul of type object at 0x14f7a1e95f00>(*(GradTrackingTensor(lvl=1, value=
+[rank0]:     FakeTensor(..., device='cuda:0', size=(1, s0, 2048), dtype=torch.bfloat16,
+[rank0]:                requires_grad=True)
+[rank0]: ), GradTrackingTensor(lvl=1, value=
+[rank0]:     FakeTensor(..., device='cuda:0', size=(0,), dtype=torch.bfloat16,
+[rank0]:                requires_grad=True)
+[rank0]: )), **{}):
+[rank0]: size mismatch, got input (s0x2048), vec (0)
+
+[rank0]: from user code:
+[rank0]:    File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 111, in fused_fwd_bwd
+[rank0]:     return torch.func.grad_and_value(compute_loss, argnums=argnums, has_aux=True)(
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/apis.py", line 442, in wrapper
+[rank0]:     return eager_transforms.grad_and_value_impl(
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/vmap.py", line 48, in fn
+[rank0]:     return f(*args, **kwargs)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/_functorch/eager_transforms.py", line 1364, in grad_and_value_impl
+[rank0]:     output = func(*args, **kwargs)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 270, in _compute_chunk_loss
+[rank0]:     log_probs, _ = LigerFusedLinearPPOBase.chunk_forward(input_chunk, weight, bias=bias, temperature=temperature)
+[rank0]:   File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/liger_kernel/chunked_loss/fused_linear_ppo.py", line 303, in chunk_forward
+[rank0]:     logits = torch.matmul(input_chunk, weight.t())
+
+[rank0]: Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
+
+
+[rank0]: You can suppress this exception and fall back to eager by setting:
+[rank0]:     import torch._dynamo
+[rank0]:     torch._dynamo.config.suppress_errors = True
+
+W0619 13:39:11.850000 2984298 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 2985325 closing signal SIGTERM
+W0619 13:39:11.853000 2984298 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 2985327 closing signal SIGTERM
+E0619 13:39:12.468000 2984298 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 2985326) of binary: /gpfs/home5/jvelja/learn_to_verify/.venv/bin/python3
+Traceback (most recent call last):
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/bin/accelerate", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 1183, in launch_command
+    deepspeed_launcher(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/accelerate/commands/launch.py", line 868, in deepspeed_launcher
+    distrib_run.run(args)
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/run.py", line 909, in run
+    elastic_launch(
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/jvelja/learn_to_verify/.venv/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+============================================================
+main.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-06-19_13:39:11
+  host      : gcn104.local.snellius.surf.nl
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 2985326)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
