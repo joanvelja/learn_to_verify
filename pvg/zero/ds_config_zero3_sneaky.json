@@ -13,6 +13,7 @@
         "stage3_param_persistence_threshold": 1e7,
         "stage3_max_live_parameters": 1.5e9,
         "stage3_max_reuse_distance": 1e9,
+        "stage3_gather_16bit_weights_on_model_save": true,
         "offload_param": { "device": "none" },
         "offload_optimizer": { "device": "none" },
         "memory_efficient_linear": false,

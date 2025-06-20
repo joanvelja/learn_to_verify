@@ -227,6 +227,14 @@ class AcceleratorManager:
         self.accelerators[key].state.select_deepspeed_plugin(key)
         self.accelerators[key].backward(loss)
 
+    def save(self, obj: Any, key: str = "sneaky_prover") -> None:
+        """Calls save on the specific accelerator."""
+        return self.accelerators[key].save(obj)
+
+    def get_state_dict(self, model: torch.nn.Module, key: str) -> dict[str, Any]:
+        """Gets the state dict from the specific accelerator."""
+        return self.accelerators[key].get_state_dict(model)
+
     def setup_wandb(self, config: dict[str, Any]) -> None:
         try:
             logger.info("Initializing WandB tracker via accelerator.init_trackers...")

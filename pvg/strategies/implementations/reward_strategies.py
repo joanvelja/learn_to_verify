@@ -80,6 +80,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         main_process = self.accelerator_manager.get_state_property("is_main_process")
 
         # 1. Initialize or update verifier bounds
+        logger.info(f"Step {self.state_tracker.step}, global_B={self.global_B}. Update? {self.state_tracker.step % 10 == 0 or self.global_B == 0.0}")
         if self.state_tracker.step % 10 == 0 or self.global_B == 0.0:
             self._update_verifier_bounds()
 
@@ -177,7 +178,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
             ),
         )
 
-        return torch.nan_to_num(honest_rewards, nan=-M_t)
+        return torch.nan_to_num(honest_rewards, nan=-M_t.item())
 
     def _calculate_sneaky_rewards(
         self,
@@ -219,7 +220,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
             ),
         )
 
-        return torch.nan_to_num(sneaky_rewards, nan=-M_t)
+        return torch.nan_to_num(sneaky_rewards, nan=-M_t.item())
 
     def _compute_behavioral_metrics(self, solution_data: SolutionData, phase: str | None) -> dict[str, float]:
         """Compute behavioral metrics for logging"""

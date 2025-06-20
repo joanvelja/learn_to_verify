@@ -76,6 +76,9 @@ export TORCH_NCCL_TRACE_BUFFER_SIZE=2097152
 export TOKENIZERS_PARALLELISM=false
 export VLLM_USE_V1=0
 
+# NCCL Debugging
+export NCCL_DEBUG=INFO
+
 # vLLM Server Ports
 VLLM_PORT_SNEAKY=8000
 VLLM_PORT_VERIFIER=8001 # New port for the Verifier server

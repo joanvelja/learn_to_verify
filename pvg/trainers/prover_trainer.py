@@ -1,12 +1,23 @@
 import gc
 import logging
+import os
+import shutil
+from contextlib import nullcontext
+from datetime import datetime
+from tempfile import TemporaryDirectory
 from typing import Literal
 
+import deepspeed
 import torch
 from deepspeed.utils import (
     safe_get_full_fp32_param,
     safe_get_full_grad,
 )
+from deepspeed.utils.zero_to_fp32 import (
+    convert_zero_checkpoint_to_fp32_state_dict,
+    get_fp32_state_dict_from_zero_checkpoint,
+)
+from huggingface_hub import HfApi, create_repo
 from tqdm import tqdm
 
 from pvg.components.accelerator_manager import AcceleratorManager
@@ -34,7 +45,7 @@ from pvg.strategies.implementations.loss_strategies import (
     StandardGRPOLossStrategy,
 )
 from pvg.strategies.implementations.model_forward_strategies import ModelForwardStrategy
-from pvg.strategies.implementations.reward_strategies import TierBasedRewardStrategy, SanityCheckRewardStrategy
+from pvg.strategies.implementations.reward_strategies import SanityCheckRewardStrategy, TierBasedRewardStrategy
 from pvg.strategies.implementations.verification_strategies import (
     create_verification_strategy,
 )
@@ -74,6 +85,12 @@ class ProverTrainer:
         self.gradient_accumulation_steps = args.gradient_accumulation_steps
         self.state_tracker = state_tracker
 
+        # Configuration parameters
+        self.config = {
+            "push_to_hub": getattr(args, "push_to_hub", True),
+            "checkpoint_interval": getattr(args, "checkpoint_interval", 1),
+        }
+
         if self.tokenizer.pad_token is None:
             logger.info("Setting tokenizer pad_token to eos_token")
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -93,20 +110,21 @@ class ProverTrainer:
             dataset_type=dataset_type,
         )
 
-        self.reward_strategy = SanityCheckRewardStrategy(
-            metrics_logger=metrics_logger,
-            accelerator_manager=accelerator_manager,
-            grpo=grpo,
-            metrics_processor=self.metrics_processor,
-        )
-
-        # self.reward_strategy = TierBasedRewardStrategy(
-        #     verifier_tracker=VerifierPerformanceTracker(),
+        # self.reward_strategy = SanityCheckRewardStrategy(
         #     metrics_logger=metrics_logger,
         #     accelerator_manager=accelerator_manager,
         #     grpo=grpo,
         #     metrics_processor=self.metrics_processor,
         # )
+
+        self.reward_strategy = TierBasedRewardStrategy(
+            verifier_tracker=VerifierPerformanceTracker(),
+            metrics_logger=metrics_logger,
+            accelerator_manager=accelerator_manager,
+            grpo=grpo,
+            metrics_processor=self.metrics_processor,
+            state_tracker=state_tracker,
+        )
 
         if args.training_sneaky_prover.apply_liger_kernel:
             self.loss_strategy = LigerLossStrategy(
@@ -400,10 +418,12 @@ class ProverTrainer:
                     # ============================================================================
                     # CHECKPOINTING TO HUB
                     # ============================================================================
-                    if optimizer_step > 0 and optimizer_step % 100 == 0:
+                    if optimizer_step > 0 and optimizer_step % self.config["checkpoint_interval"] == 0:
+                        self.accelerator_manager.wait_for_everyone()
                         if self.accelerator_manager.get_state_property("is_main_process"):
                             logger.info(f"🚀 Optimizer step {optimizer_step}, pushing checkpoint to hub.")
-                        self._push_model_to_hub(step=optimizer_step)
+                        
+                        self._push_checkpoint_to_hub(step=optimizer_step)
                         self.accelerator_manager.wait_for_everyone()
 
                     # Sync vllm weights -- Update means change vllm weights for inference as well
@@ -473,18 +493,8 @@ class ProverTrainer:
             self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
             self.accelerator_manager.wait_for_everyone()
 
-            logger.info("Attempting to push models to hub after training...")
-            model_keys_to_push = ["sneaky_prover"]
-            for model_key in model_keys_to_push:
-                try:
-                    model_to_push = self.model_manager.get_model(model_key, prepared=True)
-                    if model_to_push is not None:
-                        self._push_model_to_hub()
-                    else:
-                        logger.warning(f"Model with key '{model_key}' not found in ModelManager. Skipping push.")
-                except Exception as e:
-                    logger.error(f"An error occurred while preparing to push {model_key} to hub: {str(e)}")
-
+            logger.info("Pushing final model to hub after training...")
+            self._push_model_to_hub()
             self.accelerator_manager.wait_for_everyone()
 
             logger.info("Prover training finished.")
@@ -511,40 +521,144 @@ class ProverTrainer:
             model_key="sneaky_prover",
         )
 
-    def _push_model_to_hub(self, step: int | None = None) -> None:
-        """
-        Push the trained model to the Hugging Face model hub with proper error handling.
-        If a step is provided, it's a checkpoint push.
-        """
+    def _push_checkpoint_to_hub(self, *, step: int) -> None:
+        logger.info(f"[push_ckpt] Starting push_checkpoint_to_hub for step={step}")
 
-        # Only push from the main process
+        tag      = f"global_step{step}"
+        out_root = self.config.get("output_dir", "./checkpoints")
+        repo_id  = f"jvelja/sneaky_prover_round_{self.state_tracker.round}_step_{step}_ckpt"
+
+        logger.info(f"[push_ckpt] tag={tag}, out_root={out_root}, repo_id={repo_id}")
+
+        logger.info("[push_ckpt] Got model from model_manager")
+        engine = self.model_manager.get_model("sneaky_prover", prepared=True)
+        if not isinstance(engine, deepspeed.DeepSpeedEngine):
+            logger.error("Expected DeepSpeedEngine (ZeRO-3) but got %s", type(engine))
+            return
+        
+        logger.info(f"[push_ckpt] Unwrapped model, engine type: {type(engine)}")
+
+        # ------------------ 1️⃣  EVERY RANK: save ZeRO shards ------------------
+        ckpt_dir = os.path.join(out_root, tag)
+        logger.info(f"[push_ckpt] Checkpoint dir: {ckpt_dir}")
+        if isinstance(engine, deepspeed.DeepSpeedEngine):
+            logger.info("[push_ckpt] Engine is DeepSpeedEngine, saving checkpoint shards...")
+            engine.save_checkpoint(ckpt_dir, tag=tag)
+            logger.info("[push_ckpt] DeepSpeed checkpoint saved.")
+        else:
+            logger.info("[push_ckpt] Engine is not DeepSpeedEngine, skipping ZeRO shard save.")
+        logger.info("[push_ckpt] Waiting for everyone after ZeRO shard save...")
+        self.accelerator_manager.wait_for_everyone()
+        logger.info("[push_ckpt] wait_for_everyone complete.")
+
+        tmp_bf16 = os.path.join(out_root, f"_gather16_rank{engine.global_rank}")
+        ok_fast  = engine.save_16bit_model(str(tmp_bf16), save_filename="model.safetensors")
+
+        # barrier so rank-0 knows whether gather succeeded (if not, we’ll fall back)
+        self.accelerator_manager.wait_for_everyone()
+
+        # ------------------ 2️⃣  RANK-0: consolidate & push --------------------
         if not self.is_main:
-            logger.info("Not the main process, skipping push to hub")
+            logger.info("[push_ckpt] Not main process, returning.")
             return
 
+        logger.info("[push_ckpt] Main process proceeding to consolidation and push.")
+        with TemporaryDirectory() as tmpdir:
+            logger.info(f"[push_ckpt] Created TemporaryDirectory: {tmpdir}")
+            hf_dir = os.path.join(tmpdir, "hf_ckpt")
+            logger.info(f"[push_ckpt] HuggingFace checkpoint dir: {hf_dir}")
+
+            if isinstance(engine, deepspeed.DeepSpeedEngine):
+                logger.info(f"[push_ckpt] save_16bit_model returned: {ok_fast}")
+                #
+                # Requires `"stage3_gather_16bit_weights_on_model_save": true`
+                # in your deepspeed config. If that’s OFF, `ok` will be False.
+                #
+                if ok_fast:
+                    # rank-0 copies the already-gathered bf16 file
+                    os.rename(os.path.join(tmp_bf16, "model.safetensors"), os.path.join(hf_dir, "model.safetensors"))
+                    # remove per-rank dirs
+                    for p in os.listdir(out_root):
+                        if p.startswith("_gather16_rank"):
+                            shutil.rmtree(os.path.join(out_root, p), ignore_errors=True)
+
+                else:
+                    # fallback: stream fp32 → disk → cast to bf16
+                    fp32_file = os.path.join(tmp_bf16, "fp32.safetensors")
+                    convert_zero_checkpoint_to_fp32_state_dict(
+                        checkpoint_dir      = str(ckpt_dir),
+                        output_file         = str(fp32_file),
+                        tag                 = tag,
+                        safe_serialization  = True,
+                        max_shard_size      = "5GB",
+                    )
+                    from transformers import AutoConfig, AutoModelForCausalLM
+                    import torch
+                    cfg   = engine.module.config
+                    model = engine.module.__class__.from_config(cfg, torch_dtype=torch.bfloat16)
+                    model.load_state_dict(torch.load(fp32_file, map_location="cpu"), strict=False)
+                    model.save_pretrained(hf_dir, safe_serialization=True, max_shard_size="4GB")
+
+                # config + tokenizer
+                engine.module.config.to_json_file(os.path.join(hf_dir, "config.json"))
+                self.tokenizer.save_pretrained(hf_dir)
+
+                # Hub upload – keyword-only API
+                create_repo(repo_id, exist_ok=True, repo_type="model")
+                HfApi().upload_folder(
+                    repo_id        = repo_id,
+                    folder_path    = str(hf_dir),
+                    commit_message = f"ckpt {tag} (bf16, ZeRO-3)",
+                )
+
+            torch.cuda.empty_cache(); gc.collect()
+
+    def _push_model_to_hub(self) -> None:
+        """
+        Push the final trained model to the Hugging Face model hub.
+        Direct push using ZeRO-3 parameter gathering - no local saves.
+        """
+        # Only push from the main process
+        if not self.is_main:
+            return
+
+        # Check if push_to_hub is enabled
+        if not self.config["push_to_hub"]:
+            logger.info("push_to_hub is disabled, skipping")
+            return
+
+        repo_id = f"jvelja/sneaky_prover_round_{self.state_tracker.round}"
+        commit_message = f"End of training for round {self.state_tracker.round}"
+
+        # Get the model for saving
+        prepared_model = self.model_manager.get_model("sneaky_prover", prepared=True)
+        accelerator = self.accelerator_manager.get_accelerator(key="sneaky_prover")
+        unwrapped_model = accelerator.unwrap_model(prepared_model)
+
+        # Determine if we're using ZeRO-3
+        deepspeed_plugin = accelerator.state.deepspeed_plugin
+        zero_stage_3 = deepspeed_plugin is not None and deepspeed_plugin.zero_stage == 3
+        gather_if_zero3 = deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
+
         try:
-            repo_id = f"jvelja/sneaky_prover_round_{self.state_tracker.round}"
-            repo_id += f"_step_{step}" if step is not None else ""
-
-            if step is not None:
-                commit_message = f"Training checkpoint at optimizer step {step}"
+            # Push directly to hub using gathered parameters
+            if zero_stage_3:
+                # For ZeRO-3, gather all parameters at once and push
+                all_params = list(unwrapped_model.parameters())
+                with gather_if_zero3(all_params, modifier_rank=0):
+                    if self.is_main:
+                        unwrapped_model.push_to_hub(repo_id=repo_id, commit_message=commit_message)
+                        self.tokenizer.push_to_hub(repo_id=repo_id, commit_message=commit_message)
+                        logger.info(f"Final model pushed to hub as {repo_id}")
             else:
-                commit_message = f"End of training for round {self.state_tracker.round}"
-
-            # Unwrap the model before pushing to avoid distributed training issues
-            unwrapped_model = self.accelerator_manager.unwrap_model(
-                self.model_manager.get_model("sneaky_prover", prepared=True),
-                key="sneaky_prover",
-            )
-
-            # Push the unwrapped model
-            unwrapped_model.push_to_hub(repo_id=repo_id, commit_message=commit_message)
-            logger.info(f"Sneaky Prover model successfully pushed to the hub as {repo_id}. Commit: {commit_message}")
-
-            # Tokenizer should be pushed to the same repo
-            self.tokenizer.push_to_hub(repo_id=repo_id, commit_message=commit_message)
-            logger.info(f"Tokenizer successfully pushed to the hub as {repo_id}.")
-
+                # For non-ZeRO-3, just push directly
+                if self.is_main:
+                    unwrapped_model.push_to_hub(repo_id=repo_id, commit_message=commit_message)
+                    self.tokenizer.push_to_hub(repo_id=repo_id, commit_message=commit_message)
+                    logger.info(f"Final model pushed to hub as {repo_id}")
+            
+            self.accelerator_manager.wait_for_everyone()
+                
         except Exception as e:
-            logger.error(f"Failed to push model to hub: {str(e)}")
-            # Do not raise error to avoid interrupting training for a failed checkpoint push
+            logger.error(f"Failed to push final model to hub: {e}")
+            raise

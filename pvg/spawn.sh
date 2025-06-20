@@ -4,10 +4,10 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:30:00
-#SBATCH --job-name=pvg_3b_filter
-#SBATCH --output=3b_spawn/output/logs/pvg_3b_filter.%j.out
-#SBATCH --error=3b_spawn/output/errors/pvg_3b_filter.%j.err
+#SBATCH --time=14:00:00
+#SBATCH --job-name=pvg_full_pipeline
+#SBATCH --output=full_pipeline_spawn/output/logs/pvg_full_pipeline.%j.out
+#SBATCH --error=full_pipeline_spawn/output/errors/pvg_full_pipeline.%j.err
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -98,7 +98,7 @@ VLLM_PORT_VERIFIER=8001 # New port for the Verifier server
 VLLM_HOST="127.0.0.1"
 
 # Training Script Arguments & Paths
-OUTPUT_DIR="./output_disjoint_training_vllm_prover_verifier"
+OUTPUT_DIR="./output_full_pipeline_training_vllm_prover_verifier"
 DS_CONFIG_SNEAKY="zero/ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
 DS_CONFIG_VERIFIER="zero/ds_config_zero3_verifier.json" # Training DS config for Verifier
 TRAIN_SCRIPT="train.py"       # Main Python training script
@@ -124,8 +124,8 @@ NUM_TRAINING_GPUS=$(echo $TRAINING_GPUS | awk -F',' '{print NF}')
 # Other vLLM args - TODO: Would be nice to automate these with a script
 VLLM_DTYPE="bfloat16"
 # Memory utilization needs careful tuning for co-located servers on GPU 1
-VLLM_GPU_MEM_UTIL_SNEAKY=0.83  # Can use most of GPU 0
-VLLM_GPU_MEM_UTIL_VERIFIER=0.1 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
+VLLM_GPU_MEM_UTIL_SNEAKY=0.82  # Can use most of GPU 0
+VLLM_GPU_MEM_UTIL_VERIFIER=0.13 # Reduced for sharing GPU 1 (Example value, TUNE THIS!)
 # Ensure VLLM_GPU_MEM_UTIL_SNEAKY + VLLM_GPU_MEM_UTIL_VERIFIER <= ~0.9-1.0
 # Set TASK_TYPE based on VERIFIER_TRAINING_MODE
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then

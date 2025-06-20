@@ -12,11 +12,12 @@ import re
 import signal
 import time
 import traceback
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from multiprocessing import Queue, get_context
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from pvg.components.skeleton_parser import SkeletonParser
 
@@ -781,6 +782,17 @@ class CodeEvaluator:
                 stealth_maintained=False,
                 execution_time=execution_time,
             )
+        except TimeoutError as e:
+            execution_time = time.time() - start_time
+            logger.warning(f"Timeout evaluating sneaky {problem_id or 'unknown'}: {e}")
+            return SneakyEvaluationResult(
+                is_backdoored=False,
+                trigger_activates=False,
+                stealth_maintained=False,
+                error=str(e),
+                error_type="timeout",
+                execution_time=execution_time,
+            )
 
         except Exception as e:
             execution_time = time.time() - start_time
@@ -794,86 +806,105 @@ class CodeEvaluator:
                 execution_time=execution_time,
             )
 
-    def evaluate_batch(self, evaluations: List[Dict[str, Any]], show_progress: bool = True) -> List[EvaluationResult]:
+    def evaluate_batch(
+        self, evaluations: List[Dict[str, Any]], show_progress: bool = True, max_workers: Optional[int] = None, use_threads: bool = True
+    ) -> List[EvaluationResult]:
         """
-        Evaluate a batch of code snippets.
-
+        Evaluate a batch of code snippets in parallel.
         Args:
-            evaluations: List of evaluation specs, each containing:
-                - harness_code: str
-                - candidate_solution: Optional[str]
-                - skeleton: Optional[str]
-                - is_transformed: bool
-                - problem_id: Optional[str]
-            show_progress: Whether to show progress bar
-
+            evaluations: List of evaluation specs.
+            show_progress: Whether to show a progress bar.
+            max_workers: The maximum number of workers to use.
+            use_threads: If True, use ThreadPoolExecutor (faster startup, good for I/O bound). 
+                        If False, use ProcessPoolExecutor (true parallelism, but heavy startup).
         Returns:
-            List of EvaluationResult objects
+            List of EvaluationResult objects in the same order as the input.
         """
-        results = []
+        results: list[EvaluationResult | None] = [None] * len(evaluations)
+        
+        # Choose executor type based on use_threads parameter
+        executor_class = ThreadPoolExecutor if use_threads else ProcessPoolExecutor
+        
+        with executor_class(max_workers=max_workers) as executor:
+            future_to_index = {
+                executor.submit(self.evaluate_single, **eval_spec): i for i, eval_spec in enumerate(evaluations)
+            }
 
-        if show_progress:
-            try:
-                from tqdm.auto import tqdm
+            iterator = as_completed(future_to_index)
+            if show_progress:
+                try:
+                    from tqdm.auto import tqdm
 
-                iterator = tqdm(evaluations, desc="Evaluating code snippets")
-            except ImportError:
-                iterator = evaluations
-                logger.info(f"Processing {len(evaluations)} evaluations...")
-        else:
-            iterator = evaluations
+                    iterator = tqdm(iterator, total=len(evaluations), desc="Evaluating code snippets")
+                except ImportError:
+                    logger.info(f"Processing {len(evaluations)} evaluations...")
 
-        for i, eval_spec in enumerate(iterator):
-            result = self.evaluate_single(**eval_spec)
-            results.append(result)
-
-            if not show_progress and i % 100 == 0:
-                successes = sum(1 for r in results if r.success)
-                logger.info(f"Processed {i + 1}/{len(evaluations)}, Success rate: {successes / (i + 1):.1%}")
-
-        return results
+            for future in iterator:
+                index = future_to_index[future]
+                try:
+                    results[index] = future.result()
+                except Exception as e:
+                    problem_id = evaluations[index].get("problem_id", "unknown")
+                    logger.error(f"Evaluation {problem_id} (index {index}) failed in worker: {e}")
+                    results[index] = EvaluationResult(
+                        success=False,
+                        error=str(e),
+                        error_type="future_error",
+                        traceback_str=traceback.format_exc(),
+                    )
+        # We filter out None types, so the cast to List[EvaluationResult] is safe.
+        return cast(List[EvaluationResult], results)
 
     def evaluate_sneaky_batch(
-        self, evaluations: List[Dict[str, Any]], show_progress: bool = True
+        self, evaluations: List[Dict[str, Any]], show_progress: bool = True, max_workers: Optional[int] = None, use_threads: bool = True
     ) -> List[SneakyEvaluationResult]:
         """
-        Evaluate a batch of sneaky comparisons.
-
+        Evaluate a batch of sneaky comparisons in parallel.
         Args:
-            evaluations: List of sneaky evaluation specs, each containing:
-                - harness_code: str
-                - honest_solution: str
-                - sneaky_solution: str
-                - triggering_input: Any
-                - enable_fuzzing: bool (optional)
-                - problem_id: Optional[str]
-            show_progress: Whether to show progress bar
-
+            evaluations: List of sneaky evaluation specs.
+            show_progress: Whether to show a progress bar.
+            max_workers: The maximum number of workers to use.
+            use_threads: If True, use ThreadPoolExecutor (faster startup, good for I/O bound). 
+                        If False, use ProcessPoolExecutor (true parallelism, but heavy startup).
         Returns:
-            List of SneakyEvaluationResult objects
+            List of SneakyEvaluationResult objects in the same order as the input.
         """
-        results = []
+        results: list[SneakyEvaluationResult | None] = [None] * len(evaluations)
+        
+        # Choose executor type based on use_threads parameter
+        executor_class = ThreadPoolExecutor if use_threads else ProcessPoolExecutor
+        
+        with executor_class(max_workers=max_workers) as executor:
+            future_to_index = {
+                executor.submit(self.evaluate_sneaky_single, **eval_spec): i
+                for i, eval_spec in enumerate(evaluations)
+            }
 
-        if show_progress:
-            try:
-                from tqdm.auto import tqdm
+            iterator = as_completed(future_to_index)
+            if show_progress:
+                try:
+                    from tqdm.auto import tqdm
 
-                iterator = tqdm(evaluations, desc="Detecting backdoors")
-            except ImportError:
-                iterator = evaluations
-                logger.info(f"Processing {len(evaluations)} backdoor detections...")
-        else:
-            iterator = evaluations
+                    iterator = tqdm(iterator, total=len(evaluations), desc="Detecting backdoors")
+                except ImportError:
+                    logger.info(f"Processing {len(evaluations)} backdoor detections...")
 
-        for i, eval_spec in enumerate(iterator):
-            result = self.evaluate_sneaky_single(**eval_spec)
-            results.append(result)
-
-            if not show_progress and i % 10 == 0:
-                backdoors = sum(1 for r in results if r.is_backdoored)
-                logger.info(f"Processed {i + 1}/{len(evaluations)}, Backdoors detected: {backdoors}")
-
-        return results
+            for future in iterator:
+                index = future_to_index[future]
+                try:
+                    results[index] = future.result()
+                except Exception as e:
+                    problem_id = evaluations[index].get("problem_id", "unknown")
+                    logger.error(f"Sneaky evaluation {problem_id} (index {index}) failed in worker: {e}")
+                    results[index] = SneakyEvaluationResult(
+                        is_backdoored=False,
+                        trigger_activates=False,
+                        stealth_maintained=False,
+                        error=str(e),
+                        error_type="future_error",
+                    )
+        # We filter out None types, so the cast to List[SneakyEvaluationResult] is safe.
+        return cast(List[SneakyEvaluationResult], results)
 
     def _run_in_subprocess(
         self,
@@ -886,7 +917,7 @@ class CodeEvaluator:
         ctx = get_context(self.config.start_method)
         q = ctx.Queue()
 
-        p = ctx.Process(
+        p = ctx.Process(  # type: ignore
             target=self._harness_worker,
             args=(
                 harness_code,
@@ -922,7 +953,7 @@ class CodeEvaluator:
     def _harness_worker(
         code: str,
         num_cases: int,
-        q: Queue,
+        q: "Queue[tuple[str, Any]]",
         candidate_solution: str,
         is_transformed: bool,
         skeleton: str,
@@ -971,7 +1002,7 @@ class CodeEvaluator:
         ctx = get_context(self.config.start_method)
         q = ctx.Queue()
 
-        p = ctx.Process(
+        p = ctx.Process(  # type: ignore
             target=self._sneaky_worker,
             args=(
                 harness_code,
@@ -1013,21 +1044,23 @@ class CodeEvaluator:
         num_test_cases: int,
         enable_fuzzing: bool,
         skeleton: str,
-        q: Queue,
+        q: "Queue[tuple[str, Any]]",
         step_timeouts: Dict[str, int],
         trigger_only: bool = False,
     ) -> None:
         """Worker function for backdoor detection using harness test generation"""
         # Step 0: Clean solutions for backticks if present
-        honest_solution = _clean_solution(honest_solution)
-        sneaky_solution = _clean_solution(sneaky_solution)
+        cleaned_honest_solution = _clean_solution(honest_solution)
+        assert cleaned_honest_solution is not None, "Honest solution cannot be None"
+        cleaned_sneaky_solution = _clean_solution(sneaky_solution)
+        assert cleaned_sneaky_solution is not None, "Sneaky solution cannot be None"
 
         if trigger_only:  # Dedicated route for backdooring verification
             try:
                 with _timeout_step(step_timeouts["exec"], "solution_compilation"):
                     # Compile honest solution
                     honest_globals = _create_enriched_globals()
-                    exec(compile(honest_solution, "<honest>", "exec"), honest_globals)
+                    exec(compile(cleaned_honest_solution, "<honest>", "exec"), honest_globals)
 
                     honest_parser = SkeletonParser(honest_globals)
                     honest_func = honest_parser.get_function_callable(skeleton)
@@ -1036,7 +1069,7 @@ class CodeEvaluator:
 
                     # Compile sneaky solution
                     sneaky_globals = _create_enriched_globals()
-                    exec(compile(sneaky_solution, "<sneaky>", "exec"), sneaky_globals)
+                    exec(compile(cleaned_sneaky_solution, "<sneaky>", "exec"), sneaky_globals)
 
                     sneaky_parser = SkeletonParser(sneaky_globals)
                     sneaky_func = sneaky_parser.get_function_callable(skeleton)
@@ -1088,7 +1121,7 @@ class CodeEvaluator:
             with _timeout_step(step_timeouts["exec"], "solution_compilation"):
                 # Compile honest solution
                 honest_globals = _create_enriched_globals()
-                exec(compile(honest_solution, "<honest>", "exec"), honest_globals)
+                exec(compile(cleaned_honest_solution, "<honest>", "exec"), honest_globals)
 
                 honest_parser = SkeletonParser(honest_globals)
                 honest_func = honest_parser.get_function_callable(skeleton)
@@ -1097,7 +1130,7 @@ class CodeEvaluator:
 
                 # Compile sneaky solution
                 sneaky_globals = _create_enriched_globals()
-                exec(compile(sneaky_solution, "<sneaky>", "exec"), sneaky_globals)
+                exec(compile(cleaned_sneaky_solution, "<sneaky>", "exec"), sneaky_globals)
 
                 sneaky_parser = SkeletonParser(sneaky_globals)
                 sneaky_func = sneaky_parser.get_function_callable(skeleton)
@@ -1204,13 +1237,13 @@ def _timeout_step(seconds, step_name):
         signal.signal(signal.SIGALRM, old_handler)
 
 
-def _create_verification_call(globals_dict: dict, skeleton: str) -> Optional[str]:
+def _create_verification_call(globals_dict: Dict[str, Any], skeleton: str) -> Optional[str]:
     """Create verification call string"""
     parser = SkeletonParser(globals_dict)
     return parser.create_verification_call(skeleton, "verify_solution")
 
 
-def _verify_external_candidate(globals_dict: dict, skeleton: str, candidate_code: str) -> Optional[tuple]:
+def _verify_external_candidate(globals_dict: Dict[str, Any], skeleton: str, candidate_code: str) -> Optional[tuple[bool, Dict[str, int]]]:
     """Verify external candidate solution"""
     parser = SkeletonParser(globals_dict)
     return parser.verify_external_candidate(skeleton, candidate_code, "verify_solution")
@@ -1477,7 +1510,7 @@ def _fuzz_for_triggers(
     original_trigger: Any,
     skeleton: str,
     max_attempts: int = 50,
-) -> tuple[int, List[Dict]]:
+) -> tuple[int, List[Dict[str, Any]]]:
     """Simple fuzzing to find additional trigger inputs"""
 
     additional_triggers = 0
@@ -1546,7 +1579,7 @@ def _extract_test_input_robust(test_case: Any, skeleton: str) -> Any:
     return test_case
 
 
-def _call_function_with_input(func: Callable, test_input: Any) -> Any:
+def _call_function_with_input(func: Callable[..., Any], test_input: Any) -> Any:
     """Smart function calling that handles both single and multiple args"""
     if isinstance(test_input, (list, tuple)):
         try:
