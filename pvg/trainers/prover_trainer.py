@@ -1,24 +1,17 @@
 import gc
 import logging
 import os
-import shutil
-from contextlib import nullcontext
-from datetime import datetime
-from tempfile import TemporaryDirectory
+from pathlib import Path
 from typing import Literal
 
-import deepspeed
 import torch
 from deepspeed.utils import (
     safe_get_full_fp32_param,
     safe_get_full_grad,
 )
-from deepspeed.utils.zero_to_fp32 import (
-    convert_zero_checkpoint_to_fp32_state_dict,
-    get_fp32_state_dict_from_zero_checkpoint,
-)
-from huggingface_hub import HfApi, create_repo
+from huggingface_hub import HfApi, upload_folder
 from tqdm import tqdm
+from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
 
 from pvg.components.accelerator_manager import AcceleratorManager
 from pvg.components.code_evaluator import BatchEvaluator
@@ -45,7 +38,7 @@ from pvg.strategies.implementations.loss_strategies import (
     StandardGRPOLossStrategy,
 )
 from pvg.strategies.implementations.model_forward_strategies import ModelForwardStrategy
-from pvg.strategies.implementations.reward_strategies import SanityCheckRewardStrategy, TierBasedRewardStrategy
+from pvg.strategies.implementations.reward_strategies import TierBasedRewardStrategy
 from pvg.strategies.implementations.verification_strategies import (
     create_verification_strategy,
 )
@@ -89,6 +82,8 @@ class ProverTrainer:
         self.config = {
             "push_to_hub": getattr(args, "push_to_hub", True),
             "checkpoint_interval": getattr(args, "checkpoint_interval", 1),
+            "ckpt_output_dir": getattr(args.training_sneaky_prover, "ckpt_output_dir", "./sneaky_prover_ckpt"),
+            "repo_id": None,
         }
 
         if self.tokenizer.pad_token is None:
@@ -293,48 +288,17 @@ class ProverTrainer:
                     # ============================================================================
                     # DEEPSPEED OPTIMIZER STEP
                     # ============================================================================
-                    if False:  # TODO: Remove this once we have a working DeepSpeed engine
-                        # DeepSpeed engine - use engine's step method
-                        if self.accelerator_manager.get_state_property("is_main_process"):
-                            logger.info("🚀 Using DeepSpeed engine step() method")
+                    # Standard optimizer path (was previously prepared)
+                    optimizer = self.optimizer_scheduler_manager.get_optimizer("sneaky_prover")
+                    scheduler = self.optimizer_scheduler_manager.get_scheduler("sneaky_prover")
 
-                            # Additional debugging for DeepSpeed step
-                            if hasattr(policy_model, "optimizer"):
-                                ds_optimizer = policy_model.optimizer
-                                logger.info(
-                                    f"🚀 Pre-step: DeepSpeed optimizer step count: {getattr(ds_optimizer, '_step', 'unknown')}"
-                                )
-                                logger.info(f"🚀 Pre-step: Learning rate: {ds_optimizer.param_groups[0]['lr']}")
+                    if self.accelerator_manager.get_state_property("is_main_process"):
+                        logger.info("🚀 Using standard optimizer step() method")
 
-                        # DeepSpeed engine handles optimizer step internally
-                        step_result = policy_model.step()
-
-                        if self.accelerator_manager.get_state_property("is_main_process"):
-                            logger.info(f"🚀 DeepSpeed step result: {step_result}")
-
-                            # Check if step count increased
-                            if hasattr(policy_model, "optimizer"):
-                                ds_optimizer = policy_model.optimizer
-                                logger.info(
-                                    f"🚀 Post-step: DeepSpeed optimizer step count: {getattr(ds_optimizer, '_step', 'unknown')}"
-                                )
-
-                        # Get scheduler for learning rate updates
-                        scheduler = self.optimizer_scheduler_manager.get_scheduler("sneaky_prover")
-                        if scheduler is not None:
-                            scheduler.step()
-                    else:
-                        # Standard optimizer path (non-DeepSpeed)
-                        optimizer = self.optimizer_scheduler_manager.get_optimizer("sneaky_prover")
-                        scheduler = self.optimizer_scheduler_manager.get_scheduler("sneaky_prover")
-
-                        if self.accelerator_manager.get_state_property("is_main_process"):
-                            logger.info("🚀 Using standard optimizer step() method")
-
-                        optimizer.step()
-                        if scheduler is not None:
-                            scheduler.step()
-                        optimizer.zero_grad()
+                    optimizer.step()
+                    if scheduler is not None:
+                        scheduler.step()
+                    optimizer.zero_grad()
 
                     # ============================================================================
                     # POST-OPTIMIZER-STEP DEBUG SECTION (ZeRO-3 COMPATIBLE)
@@ -422,8 +386,11 @@ class ProverTrainer:
                         self.accelerator_manager.wait_for_everyone()
                         if self.accelerator_manager.get_state_property("is_main_process"):
                             logger.info(f"🚀 Optimizer step {optimizer_step}, pushing checkpoint to hub.")
-                        
-                        self._push_checkpoint_to_hub(step=optimizer_step)
+
+                        round = self.state_tracker.get_round()
+                        repo_id = f"jvelja/pvg-prover-sneaky-round-{round}_step-{optimizer_step}"
+                        self.config["repo_id"] = repo_id
+                        self._push_checkpoint_to_hub(round=round, step=optimizer_step)
                         self.accelerator_manager.wait_for_everyone()
 
                     # Sync vllm weights -- Update means change vllm weights for inference as well
@@ -521,144 +488,89 @@ class ProverTrainer:
             model_key="sneaky_prover",
         )
 
-    def _push_checkpoint_to_hub(self, *, step: int) -> None:
-        logger.info(f"[push_ckpt] Starting push_checkpoint_to_hub for step={step}")
+    def _save_one_model(
+        self,
+        model,
+        output_dir: str,
+        prefer_safe: bool = False,
+    ) -> Path:
+        """
+        Dump a full-weight file in `output_dir` and return its path.
 
-        tag      = f"global_step{step}"
-        out_root = self.config.get("output_dir", "./checkpoints")
-        repo_id  = f"jvelja/sneaky_prover_round_{self.state_tracker.round}_step_{step}_ckpt"
+        • Works for plain PyTorch, ZeRO-2 and ZeRO-3
+        • Requires DS config flag `stage3_gather_fp16_weights_on_model_save`
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        weight_name = SAFE_WEIGHTS_NAME if prefer_safe else WEIGHTS_NAME
+        weight_path = Path(output_dir) / weight_name
 
-        logger.info(f"[push_ckpt] tag={tag}, out_root={out_root}, repo_id={repo_id}")
+        # DeepSpeed path ────────────────────────────────────────────────
+        if hasattr(model, "save_fp16_model"):  # ZeRO-2/3 engine
+            model.save_fp16_model(str(output_dir), weight_name)
 
-        logger.info("[push_ckpt] Got model from model_manager")
-        engine = self.model_manager.get_model("sneaky_prover", prepared=True)
-        if not isinstance(engine, deepspeed.DeepSpeedEngine):
-            logger.error("Expected DeepSpeedEngine (ZeRO-3) but got %s", type(engine))
-            return
-        
-        logger.info(f"[push_ckpt] Unwrapped model, engine type: {type(engine)}")
-
-        # ------------------ 1️⃣  EVERY RANK: save ZeRO shards ------------------
-        ckpt_dir = os.path.join(out_root, tag)
-        logger.info(f"[push_ckpt] Checkpoint dir: {ckpt_dir}")
-        if isinstance(engine, deepspeed.DeepSpeedEngine):
-            logger.info("[push_ckpt] Engine is DeepSpeedEngine, saving checkpoint shards...")
-            engine.save_checkpoint(ckpt_dir, tag=tag)
-            logger.info("[push_ckpt] DeepSpeed checkpoint saved.")
+        # Accelerate unwrap → ordinary Module ───────────────────────────
         else:
-            logger.info("[push_ckpt] Engine is not DeepSpeedEngine, skipping ZeRO shard save.")
-        logger.info("[push_ckpt] Waiting for everyone after ZeRO shard save...")
+            torch.save(model.state_dict(), weight_path)
+
+        # save tokenizer & config only on rank-0
+        if self.is_main:
+            self.tokenizer.save_pretrained(output_dir, safe_serialization=prefer_safe)
+            model.config.to_json_file(Path(output_dir) / "config.json")
+
+        return weight_path
+
+    def _push_checkpoint_to_hub(self, step: int, round: int):
+        """Equivalent to HF-Trainer’s _push_from_checkpoint, but ZeRO-3-safe."""
+        # paths/tags
+        subdir = f"checkpoint-{step:08d} - round-{round:02d}"
+        local_ckpt = Path(self.config["ckpt_output_dir"]) / subdir
+        tag = f"global_step{step}"  # must be identical on all ranks
+
+        # -------------  A)  save *training* checkpoint  -------------
+        model = self.model_manager.get_model("sneaky_prover", prepared=True)
+        model.save_checkpoint(str(local_ckpt), tag=tag)  # <-- ALL RANKS
+
+        # -------------  B)  gather full fp16 weights  ---------------
+        self._save_one_model(model, str(local_ckpt))
+
+        # everybody reaches the same point
         self.accelerator_manager.wait_for_everyone()
-        logger.info("[push_ckpt] wait_for_everyone complete.")
 
-        tmp_bf16 = os.path.join(out_root, f"_gather16_rank{engine.global_rank}")
-        ok_fast  = engine.save_16bit_model(str(tmp_bf16), save_filename="model.safetensors")
+        # -------------  C)  only rank-0 pushes to the Hub -----------
+        if not (self.config["push_to_hub"] and self.is_main):
+            return
 
-        # barrier so rank-0 knows whether gather succeeded (if not, we’ll fall back)
+        (local_ckpt / ".gitignore").write_text("zero_*/*\nglobal_rank*/\n")
+
+        repo_id = self.config["repo_id"]
+        HfApi().create_repo(repo_id, repo_type="model", exist_ok=True)
+
+        upload_folder(
+            folder_path=str(local_ckpt),
+            path_in_repo=subdir,
+            repo_id=repo_id,
+            commit_message=subdir,
+            ignore_patterns=["zero_*", "global_rank*"],
+        )
+        logger.info(f"✅ pushed {subdir} to https://huggingface.co/{repo_id}")
+
+    def _push_model_to_hub(self):
+        """Matches HF-Trainer.push_to_hub() but won’t hang."""
+        final_dir = Path(self.config["ckpt_output_dir"]) / "final-model"
+        model = self.model_manager.get_model("sneaky_prover", prepared=True)
+        self._save_one_model(model, str(final_dir))  # all ranks, safe
+
         self.accelerator_manager.wait_for_everyone()
 
-        # ------------------ 2️⃣  RANK-0: consolidate & push --------------------
-        if not self.is_main:
-            logger.info("[push_ckpt] Not main process, returning.")
+        if not (self.config["push_to_hub"] and self.is_main):
             return
 
-        logger.info("[push_ckpt] Main process proceeding to consolidation and push.")
-        with TemporaryDirectory() as tmpdir:
-            logger.info(f"[push_ckpt] Created TemporaryDirectory: {tmpdir}")
-            hf_dir = os.path.join(tmpdir, "hf_ckpt")
-            logger.info(f"[push_ckpt] HuggingFace checkpoint dir: {hf_dir}")
-
-            if isinstance(engine, deepspeed.DeepSpeedEngine):
-                logger.info(f"[push_ckpt] save_16bit_model returned: {ok_fast}")
-                #
-                # Requires `"stage3_gather_16bit_weights_on_model_save": true`
-                # in your deepspeed config. If that’s OFF, `ok` will be False.
-                #
-                if ok_fast:
-                    # rank-0 copies the already-gathered bf16 file
-                    os.rename(os.path.join(tmp_bf16, "model.safetensors"), os.path.join(hf_dir, "model.safetensors"))
-                    # remove per-rank dirs
-                    for p in os.listdir(out_root):
-                        if p.startswith("_gather16_rank"):
-                            shutil.rmtree(os.path.join(out_root, p), ignore_errors=True)
-
-                else:
-                    # fallback: stream fp32 → disk → cast to bf16
-                    fp32_file = os.path.join(tmp_bf16, "fp32.safetensors")
-                    convert_zero_checkpoint_to_fp32_state_dict(
-                        checkpoint_dir      = str(ckpt_dir),
-                        output_file         = str(fp32_file),
-                        tag                 = tag,
-                        safe_serialization  = True,
-                        max_shard_size      = "5GB",
-                    )
-                    from transformers import AutoConfig, AutoModelForCausalLM
-                    import torch
-                    cfg   = engine.module.config
-                    model = engine.module.__class__.from_config(cfg, torch_dtype=torch.bfloat16)
-                    model.load_state_dict(torch.load(fp32_file, map_location="cpu"), strict=False)
-                    model.save_pretrained(hf_dir, safe_serialization=True, max_shard_size="4GB")
-
-                # config + tokenizer
-                engine.module.config.to_json_file(os.path.join(hf_dir, "config.json"))
-                self.tokenizer.save_pretrained(hf_dir)
-
-                # Hub upload – keyword-only API
-                create_repo(repo_id, exist_ok=True, repo_type="model")
-                HfApi().upload_folder(
-                    repo_id        = repo_id,
-                    folder_path    = str(hf_dir),
-                    commit_message = f"ckpt {tag} (bf16, ZeRO-3)",
-                )
-
-            torch.cuda.empty_cache(); gc.collect()
-
-    def _push_model_to_hub(self) -> None:
-        """
-        Push the final trained model to the Hugging Face model hub.
-        Direct push using ZeRO-3 parameter gathering - no local saves.
-        """
-        # Only push from the main process
-        if not self.is_main:
-            return
-
-        # Check if push_to_hub is enabled
-        if not self.config["push_to_hub"]:
-            logger.info("push_to_hub is disabled, skipping")
-            return
-
-        repo_id = f"jvelja/sneaky_prover_round_{self.state_tracker.round}"
-        commit_message = f"End of training for round {self.state_tracker.round}"
-
-        # Get the model for saving
-        prepared_model = self.model_manager.get_model("sneaky_prover", prepared=True)
-        accelerator = self.accelerator_manager.get_accelerator(key="sneaky_prover")
-        unwrapped_model = accelerator.unwrap_model(prepared_model)
-
-        # Determine if we're using ZeRO-3
-        deepspeed_plugin = accelerator.state.deepspeed_plugin
-        zero_stage_3 = deepspeed_plugin is not None and deepspeed_plugin.zero_stage == 3
-        gather_if_zero3 = deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
-
-        try:
-            # Push directly to hub using gathered parameters
-            if zero_stage_3:
-                # For ZeRO-3, gather all parameters at once and push
-                all_params = list(unwrapped_model.parameters())
-                with gather_if_zero3(all_params, modifier_rank=0):
-                    if self.is_main:
-                        unwrapped_model.push_to_hub(repo_id=repo_id, commit_message=commit_message)
-                        self.tokenizer.push_to_hub(repo_id=repo_id, commit_message=commit_message)
-                        logger.info(f"Final model pushed to hub as {repo_id}")
-            else:
-                # For non-ZeRO-3, just push directly
-                if self.is_main:
-                    unwrapped_model.push_to_hub(repo_id=repo_id, commit_message=commit_message)
-                    self.tokenizer.push_to_hub(repo_id=repo_id, commit_message=commit_message)
-                    logger.info(f"Final model pushed to hub as {repo_id}")
-            
-            self.accelerator_manager.wait_for_everyone()
-                
-        except Exception as e:
-            logger.error(f"Failed to push final model to hub: {e}")
-            raise
+        repo_id = self.config["repo_id"]
+        upload_folder(
+            folder_path=str(final_dir),
+            path_in_repo=".",  # overwrite top-level weights
+            repo_id=repo_id,
+            commit_message="🚀 End of training – full FP16 weights",
+            ignore_patterns=["zero_*", "global_rank*"],
+        )
+        logger.info(f"🏁 final model pushed to https://huggingface.co/{repo_id}")

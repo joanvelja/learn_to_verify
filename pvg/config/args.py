@@ -97,6 +97,7 @@ class TrainingArgs:
 
     temperature: float = field(default=1.0, metadata={"help": "Temperature for sampling."})
     batch_size: int | None = field(default=None, metadata={"help": "Batch size for the verifier."})
+    ckpt_output_dir: str | None = field(default=None, metadata={"help": "Path to output directory for checkpoints."})
     # Note: gradient_accumulation_steps, epochs, max_steps, lr_scheduler, warmup_steps,
     # logging_steps, save_steps, eval_steps, mixed_precision are handled by the top-level ExperimentArgs
     # or inferred, as they often need coordination between models or the overall loop.

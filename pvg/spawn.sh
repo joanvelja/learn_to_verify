@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=14:00:00
+#SBATCH --time=00:20:00
 #SBATCH --job-name=pvg_full_pipeline
 #SBATCH --output=full_pipeline_spawn/output/logs/pvg_full_pipeline.%j.out
 #SBATCH --error=full_pipeline_spawn/output/errors/pvg_full_pipeline.%j.err
@@ -98,7 +98,11 @@ VLLM_PORT_VERIFIER=8001 # New port for the Verifier server
 VLLM_HOST="127.0.0.1"
 
 # Training Script Arguments & Paths
+mkdir -p /scratch-shared/jvelja
+
+
 OUTPUT_DIR="./output_full_pipeline_training_vllm_prover_verifier"
+CKPT_OUTPUT_DIR="/scratch-shared/jvelja/sneaky_prover_ckpt"
 DS_CONFIG_SNEAKY="zero/ds_config_zero3_sneaky.json" # Training DS config for Sneaky Prover
 DS_CONFIG_VERIFIER="zero/ds_config_zero3_verifier.json" # Training DS config for Verifier
 TRAIN_SCRIPT="train.py"       # Main Python training script
@@ -233,6 +237,7 @@ uv run --env-file .env accelerate launch \
     --training_sneaky_prover.learning_rate 5e-6 \
     --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
     --training_sneaky_prover.num_warmup_steps 10 \
+    --training_sneaky_prover.ckpt_output_dir "$CKPT_OUTPUT_DIR" \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
     --training_verifier.apply_liger_kernel False \
