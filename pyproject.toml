@@ -1,0 +1,61 @@
+[project]
+name = "pvg"
+authors = [
+    {name = "Joan Velja", email = "joan.velja22@gmail.com"},
+]
+version = "0.1.0"
+description = "Provers and Verifiers for adversarial reinforcement learning with LLMs"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.6.0",
+    "setuptools",
+    "deepspeed>0.17.0",
+    "accelerate",
+    "wandb",
+    "rich",
+    "trl @ git+https://github.com/huggingface/trl.git",
+    "liger-kernel>=0.5.2",
+    "vllm==0.8.5.post1",
+    "triton>3.0",
+    "jsonargparse>=4.39.0",
+    "nvidia-ml-py>=12.570.86",
+    "torchvision>=0.21.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+extend-include = ["*.ipynb"]
+extend-exclude = ["submodules"]
+
+# Line length 120 to makes it easier to have multiple files open side-by-side.
+line-length = 120
+
+[tool.ruff.lint]
+# Check that imports are sorted
+extend-select = ["I"]
+
+
+[tool.ruff.lint.isort]
+# wandb is a package, but sometimes also a folder that gets created.
+# We tell ruff to treat it always as a third-party package to make import
+# sorting consistent.
+known-third-party = ["wandb"]
+
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''

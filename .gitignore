@@ -15,11 +15,18 @@ build/
 *.pyo
 *.pyd
 *.pyc
+*.log
+*.err
 
 # outputs
 wandb/
 outputs/
 logs/
+spawn_testing/
+pvg/output_disjoint_training_vllm_prover_verifier/
+pvg/spawn_testing/
+pvg/full_pipeline_testing/
+pvg/full_pipeline_spawn/
 
 # development
 .idea/
@@ -29,4 +36,18 @@ logs/
 
 
 # WIPs
-wip/
+wip/.env
+.ruff_cache
+.ruff_cache/0.9.5
+
+# misc
+pvg/inference/__pycache__
+pvg/trainers/__pycache__
+pvg/components/__pycache__
+pvg/utils/__pycache__
+pvg/config/__pycache__
+pvg/data/__pycache__
+pvg/wandb
+pvg/__pycache__
+__pycache__
+.git

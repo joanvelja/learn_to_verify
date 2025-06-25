@@ -1,0 +1,204 @@
+\documentclass[12pt]{report}
+
+\usepackage{graphicx, color}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage[authoryear,round]{natbib}
+\usepackage{amsthm}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+
+
+
+
+\newcommand{\red}[1]{{\color{red}{#1}}}
+
+
+
+\begin{document}
+
+
+
+
+
+\begin{titlepage}
+
+
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
+
+\center % Center everything on the page
+
+
+
+%----------------------------------------------------------------------------------------
+
+%	HEADING SECTIONS
+
+%----------------------------------------------------------------------------------------
+
+
+\textsc{\Large MSc Artificial Intelligence}\\[0.2cm]
+
+\textsc{\Large Master Thesis}\\[0.5cm]
+
+
+
+%----------------------------------------------------------------------------------------
+
+%	TITLE SECTION
+
+%----------------------------------------------------------------------------------------
+
+
+
+\HRule \\[0.4cm]
+
+{ \huge \bfseries \red{Your Title Here}}\\[0.4cm] % Title of your document
+
+\HRule \\[0.5cm]
+
+
+
+%----------------------------------------------------------------------------------------
+
+%	AUTHOR SECTION
+
+%----------------------------------------------------------------------------------------
+
+
+
+by\\[0.2cm]
+
+\textsc{\Large Joan Velja}\\[0.2cm] %you name
+
+14950480\\[1cm]
+
+
+
+
+
+%----------------------------------------------------------------------------------------
+
+%	DATE SECTION
+
+%----------------------------------------------------------------------------------------
+
+
+
+{\Large \today}\\[1cm] % Date, change the \today to a set date if you want to be precise
+
+
+
+\red{Number of Credits}\\ %
+
+\red{Period in which the research was carried out}\\[1cm]%
+
+
+
+%----------------------------------------------------------------------------------------
+
+%	COMMITTEE SECTION
+
+%----------------------------------------------------------------------------------------
+
+\begin{minipage}[t]{0.4\textwidth}
+
+\begin{flushleft} \large
+
+\emph{Supervisor:} \\
+
+\red{Dr A \textsc{Person} }% Supervisor's Name
+
+\end{flushleft}
+
+\end{minipage}
+
+~
+
+\begin{minipage}[t]{0.4\textwidth}
+
+\begin{flushright} \large
+
+\emph{Examiner:} \\
+
+\red{Dr A  \textsc{Person}}\\
+
+\vspace{0.5cm}
+
+\emph{Second reader:} \\
+
+\red{Dr A  \textsc{Person}}\\
+
+\end{flushright}
+
+\end{minipage}\\[2cm]
+
+
+
+%----------------------------------------------------------------------------------------
+
+%	LOGO SECTION
+
+%----------------------------------------------------------------------------------------
+
+
+
+
+\includegraphics[width=10cm]{uvalogo_regular_p_nl.eps}
+
+
+
+%----------------------------------------------------------------------------------------
+
+
+
+\vfill % Fill the rest of the page with whitespace
+
+\end{titlepage}
+
+\pagenumbering{roman}
+
+\tableofcontents
+
+\begin{abstract}
+\red{Provide a short overview and description of your thesis here.}
+\end{abstract}
+
+\pagenumbering{arabic}
+
+\chapter{Introduction}
+\input{chapters/introduction}
+
+\chapter{Related work}
+\input{chapters/related_work}
+
+
+
+\chapter{From Legibility to Control-Robust Prover-Verifier Games}
+\input{chapters/method}
+% \input{chapters/proof}
+
+
+\chapter{Experiments}
+
+
+
+\chapter{Conclusions}
+
+
+\appendix
+\chapter{Appendix}
+\input{chapters/appendix}
+
+\bibliographystyle{apalike}
+\bibliography{bibentries}
+
+\end{document}
+
