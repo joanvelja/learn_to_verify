@@ -322,33 +322,3 @@ class DataManager:
         Returns the prover dataloader for the given mode.
         """
         return self.dataloaders["provers"][mode]["train_dataloader"]
-
-
-# Initialization (__init__) Args:
-# dataset_config: DatasetArgs
-# honest_model_config: ModelArgs (to get default tokenizer path if needed)
-# train_batch_size: int (per device)
-# eval_batch_size: int (per device)
-# num_generations: int (for sampler)
-# num_iterations: int (for sampler)
-# seed: int (for sampler)
-# accelerator_manager: AcceleratorManager (needed for prepare and num_processes)
-# Internal State:
-# tokenizer: PreTrainedTokenizerBase
-# train_dataset: AppsDataset
-# eval_dataset: Optional[AppsDataset]
-# train_dataloader: Optional[DataLoader] (unprepared)
-# eval_dataloader: Optional[DataLoader] (unprepared)
-# prepared_train_dataloader: Optional[DataLoader]
-# prepared_eval_dataloader: Optional[DataLoader]
-# accelerator_manager
-# config: DatasetArgs
-# Key Methods:
-# load_tokenizer(): Loads tokenizer based on config. Called during init.
-# load_datasets(): Loads train/eval datasets using AppsDataset. Called during init.
-# create_dataloaders(): Creates train/eval dataloaders with appropriate samplers and collator. Called during init.
-# prepare_dataloaders(): Calls accelerator_manager.prepare_dataloader for train/eval dataloaders. Stores prepared dataloaders. Must be called after AcceleratorManager is fully initialized.
-# get_train_dataloader() -> DataLoader: Returns the prepared training dataloader.
-# get_eval_dataloader() -> Optional[DataLoader]: Returns the prepared evaluation dataloader.
-# get_tokenizer() -> PreTrainedTokenizerBase: Returns the tokenizer.
-# Dependencies: AcceleratorManager (at init).

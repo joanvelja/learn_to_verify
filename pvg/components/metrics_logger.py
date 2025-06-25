@@ -1,9 +1,11 @@
 # pvg/components/metrics_logger.py
+"""Robust, dead-lock-free metrics aggregator for multi–process training."""
+
 import logging
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable
 
 import torch
 from accelerate.utils import gather_object
@@ -15,15 +17,17 @@ logger = logging.getLogger("pvg.metrics_logger")
 
 @dataclass
 class _Metric:
+    """Metric class for storing value and step."""
+
     value: float
     step: int
 
 
 @dataclass
 class _RingBuffer:
-    """FIFO buffer keyed by (phase, mode) -> model -> metric_name -> List[_Metric]"""
+    """FIFO buffer keyed by (phase, mode) -> model -> metric_name -> list[_Metric]"""
 
-    store: Dict[Tuple[str, str], Dict[str, Dict[str, List[_Metric]]]] = field(
+    store: dict[tuple[str, str], dict[str, dict[str, list[_Metric]]]] = field(
         default_factory=lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     )
 
@@ -47,6 +51,9 @@ class MetricsLogger:
         accelerator_manager: AcceleratorManager,
         global_step: Callable[[], int],
     ) -> None:
+        """
+        Initialize the MetricsLogger.
+        """
         self.acc = accelerator_manager
         self._step_fn = global_step
         self._buf = _RingBuffer()
@@ -73,7 +80,7 @@ class MetricsLogger:
     # convenience wrappers so existing trainers compile unchanged
     store_metric = record
 
-    def store_metrics(self, *, phase: str, mode: str, model: str, metrics: Dict[str, Any]) -> None:
+    def store_metrics(self, *, phase: str, mode: str, model: str, metrics: dict[str, Any]) -> None:
         for k, v in metrics.items():
             self.record(phase=phase, mode=mode, model=model, name=k, value=v)
 
@@ -114,7 +121,7 @@ class MetricsLogger:
         - rank-0 merges → mean/std and logs via Accelerator.log().
         """
         # shape local metrics as list of tuples to avoid gather_object recursion issues
-        local_items: List[Tuple[str, List[float]]] = []
+        local_items: list[tuple[str, list[float]]] = []
         grouped = self._buf.pop_phase_mode(phase, mode)
         for model, m_dict in grouped.items():
             for name, points in m_dict.items():
@@ -124,13 +131,13 @@ class MetricsLogger:
 
         # guarantee *all* ranks call gather exactly once
         # gather_object with simple list of tuples - much more predictable
-        all_items: List[Tuple[str, List[float]]] = gather_object(local_items)
+        all_items: list[tuple[str, list[float]]] = gather_object(local_items)
 
         if not self.acc.get_state_property("is_main_process"):
             return  # non-main ranks are done
 
         # merge all gathered items
-        merged: Dict[str, List[float]] = defaultdict(list)
+        merged: dict[str, list[float]] = defaultdict(list)
         for key, values in all_items:
             merged[key].extend(values)
 
@@ -143,7 +150,7 @@ class MetricsLogger:
             )
             return
 
-        payload: Dict[str, float] = {}
+        payload: dict[str, float] = {}
         for k, vs in merged.items():
             payload[k] = statistics.mean(vs)
             if len(vs) > 1:

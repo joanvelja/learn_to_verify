@@ -1,14 +1,11 @@
 import gc
+import json
 import logging
 import os
 from pathlib import Path
 from typing import Literal
 
 import torch
-from deepspeed.utils import (
-    safe_get_full_fp32_param,
-    safe_get_full_grad,
-)
 from huggingface_hub import HfApi, upload_folder
 from tqdm import tqdm
 from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
@@ -81,7 +78,7 @@ class ProverTrainer:
         # Configuration parameters
         self.config = {
             "push_to_hub": getattr(args, "push_to_hub", True),
-            "checkpoint_interval": getattr(args, "checkpoint_interval", 1),
+            "checkpoint_interval": getattr(args, "checkpoint_interval", 150),
             "ckpt_output_dir": getattr(args.training_sneaky_prover, "ckpt_output_dir", "./sneaky_prover_ckpt"),
             "repo_id": None,
         }
@@ -137,6 +134,7 @@ class ProverTrainer:
 
         self.model_forward_strategy = ModelForwardStrategy(
             temperature=args.vllm_sneaky_prover.temperature,
+            ref_batch_size=2,  # Memory-efficient batch size for reference model computation
         )
 
         self.batch_processor = BatchProcessor(
@@ -187,7 +185,7 @@ class ProverTrainer:
 
             for batch_idx, raw_batch_data in enumerate(progress_bar):
                 logger.info(
-                    f"Metrics storage - StateTracker step: {self.state_tracker.step}, Training step: {training_step} - Optimizer step: {optimizer_step} - Batch index: {batch_idx}"
+                    f"Metrics storage - StateTracker step: {self.state_tracker.step + 1}, Training step: {training_step} - Optimizer step: {optimizer_step} - Batch index: {batch_idx}"
                 )
                 # 1. Process batch
                 batch_inputs = self.pipeline.process_batch(
@@ -206,60 +204,8 @@ class ProverTrainer:
                 batch_metrics = training_step_result.batch_metrics
 
                 # 4. Compute gradients
-                p0 = safe_get_full_fp32_param(next(policy_model.parameters())).clone()
-
-                # ============================================================================
-                # PRE-BACKWARD DEBUG SECTION
-                # ============================================================================
-                if self.accelerator_manager.get_state_property("is_main_process"):
-                    logger.info("🔍 PRE-BACKWARD DEBUG")
-                    logger.info(f"🏷️  Loss value: {loss:.6f}")
-                    logger.info(f"🏷️  Loss requires_grad: {loss.requires_grad}")
-                    logger.info(f"🏷️  Loss grad_fn: {loss.grad_fn}")
-
-                    # Check parameter values before backward
-                    p0_norm = torch.norm(p0)
-                    logger.info(f"📊 Parameter p0 norm BEFORE backward: {p0_norm:.6f}")
-
                 self.accelerator_manager.backward(loss, key="sneaky_prover")
                 self.accelerator_manager.wait_for_everyone()
-
-                # ============================================================================
-                # POST-BACKWARD DEBUG SECTION
-                # ============================================================================
-                if self.accelerator_manager.get_state_property("is_main_process"):
-                    logger.info("🔄 POST-BACKWARD DEBUG")
-
-                    # Check if any gradients were computed
-                    grad_count = 0
-                    total_grad_norm = 0.0
-
-                    for name, param in policy_model.named_parameters():
-                        if param.grad is not None:
-                            grad_count += 1
-                            try:
-                                # Try to get gradient norm (may fail with ZeRO-3)
-                                full_grad = safe_get_full_grad(param)
-                                if full_grad is not None:
-                                    total_grad_norm += torch.norm(full_grad).item() ** 2
-                            except Exception as e:
-                                logger.warning(f"⚠️  Could not compute gradient norm: {e}")
-                                pass
-
-                    logger.info(f"📊 Parameters with gradients: {grad_count}")
-                    if total_grad_norm > 0:
-                        logger.info(f"📊 Total gradient norm: {total_grad_norm**0.5:.6f}")
-                    else:
-                        logger.info("📊 Could not compute gradient norms (expected with ZeRO-3)")
-
-                    # Check DeepSpeed engine state
-                    if hasattr(policy_model, "optimizer"):
-                        ds_optimizer = policy_model.optimizer
-                        logger.info(f"🚀 DeepSpeed optimizer learning rate: {ds_optimizer.param_groups[0]['lr']}")
-                        logger.info(f"🚀 DeepSpeed optimizer state_dict keys: {list(ds_optimizer.state_dict().keys())}")
-
-                    # Check if loss computation graph is intact
-                    logger.info(f"🔍 Loss computation graph exists: {loss.grad_fn is not None}")
 
                 # 5. Store metrics
                 self.metrics_logger.store_metric(
@@ -269,6 +215,27 @@ class ProverTrainer:
                     value=loss * self.gradient_accumulation_steps,
                     phase=self.state_tracker.phase,  # Pass phase
                 )
+
+                # Store entropy if available
+                if training_step_result.loss_result.per_token_entropy is not None:
+                    self.metrics_logger.store_entropy(
+                        phase=self.state_tracker.phase,
+                        mode="train",
+                        model="sneaky_prover",
+                        per_token_entropy=training_step_result.loss_result.per_token_entropy,
+                    )
+
+                # Store loss result metrics (KL divergence, clip ratios, etc.)
+                if training_step_result.loss_result.metrics:
+                    for key, value in training_step_result.loss_result.metrics.items():
+                        self.metrics_logger.store_metric(
+                            mode="train",
+                            model="sneaky_prover",
+                            name=key,
+                            value=value,
+                            phase=self.state_tracker.phase,
+                        )
+
                 for key, value in batch_metrics.items():
                     self.metrics_logger.store_metric(
                         mode="train",
@@ -300,89 +267,20 @@ class ProverTrainer:
                         scheduler.step()
                     optimizer.zero_grad()
 
-                    # ============================================================================
-                    # POST-OPTIMIZER-STEP DEBUG SECTION (ZeRO-3 COMPATIBLE)
-                    # ============================================================================
-                    if self.accelerator_manager.get_state_property("is_main_process"):
-                        logger.info("✅ POST-OPTIMIZER-STEP ANALYSIS")
-                        logger.info("-" * 40)
-
-                    # For ZeRO-3, we need a different approach to check parameter updates
-                    # Instead of comparing raw parameters, check optimizer state and step counts
-
-                    param_updated = False
-                    total_param_change = 0.0
-
-                    # Method 1: Try to get updated parameters safely
-                    try:
-                        p1 = safe_get_full_fp32_param(next(policy_model.parameters()))
-                        param_diff = torch.norm(p1 - p0)
-
-                        logger.info(f"📊 Parameter p0 norm: {torch.norm(p0):.6f}")
-                        logger.info(f"📊 Parameter p1 norm: {torch.norm(p1):.6f}")
-                        logger.info(f"📊 Parameter difference norm: {param_diff:.6f}")
-
-                        if param_diff > 1e-8:  # Use small threshold for floating point comparison
-                            param_updated = True
-                            total_param_change = param_diff.item()
-                            logger.info(f"✅ Parameters updated via direct comparison: {param_diff:.6f}")
-                        else:
-                            logger.warning(f"⚠️  Direct parameter comparison shows no change: {param_diff:.6f}")
-
-                    except Exception as e:
-                        logger.warning(f"⚠️  Could not directly compare parameters: {e}")
-
-                    # Method 2: Check DeepSpeed optimizer state
-                    if hasattr(policy_model, "optimizer"):
-                        ds_optimizer = policy_model.optimizer
-
-                        # Check if optimizer step count increased
-                        current_step = getattr(ds_optimizer, "_step", 0)
-                        logger.info(f"📊 DeepSpeed optimizer step count: {current_step}")
-
-                        # Check if optimizer has momentum buffers (indicates it's doing work)
-                        state_dict = ds_optimizer.state_dict()
-                        if "state" in state_dict and state_dict["state"]:
-                            logger.info(
-                                f"📊 Optimizer has state (momentum buffers): {len(state_dict['state'])} parameter groups"
-                            )
-                            param_updated = True
-                        else:
-                            logger.warning("⚠️  Optimizer state is empty - may indicate no updates")
-
-                    # Method 3: Check if gradients were consumed (cleared after step)
-                    grad_count_after_step = 0
-                    for param in policy_model.parameters():
-                        if param.grad is not None:
-                            grad_count_after_step += 1
-
-                    logger.info(f"📊 Parameters with gradients after step: {grad_count_after_step}")
-                    if grad_count_after_step == 0:
-                        logger.info("✅ Gradients were cleared after step (good sign)")
-                    else:
-                        logger.warning("⚠️  Some gradients remain after step")
-
-                    # Final assessment
-                    if param_updated or total_param_change > 0:
-                        logger.info("✅ PARAMETERS SUCCESSFULLY UPDATED!")
-                        logger.info(f"✅ Total parameter change: {total_param_change:.8f}")
-                    else:
-                        logger.error("💥 NO PARAMETER UPDATES DETECTED!")
-                        logger.error("💥 Possible issues:")
-                        logger.error("💥 1. Gradients not computed properly")
-                        logger.error("💥 2. Learning rate is zero")
-                        logger.error("💥 3. DeepSpeed engine not configured correctly")
-                        logger.error("💥 4. Gradient clipping removing all gradients")
-
-                        # Don't raise assertion error, just log the issue
-                        # raise AssertionError("Weights didn't move – optimizer stepping failed")
+                    # Explicitly update the model in the manager after the optimizer step
+                    self.model_manager.models["sneaky_prover"] = policy_model
 
                     self.accelerator_manager.wait_for_everyone()
 
                     # ============================================================================
                     # CHECKPOINTING TO HUB
                     # ============================================================================
-                    if optimizer_step > 0 and optimizer_step % self.config["checkpoint_interval"] == 0:
+                    checkpoint_interval = self.config["checkpoint_interval"]
+                    if (
+                        isinstance(checkpoint_interval, int)
+                        and optimizer_step > 0
+                        and optimizer_step % checkpoint_interval == 0
+                    ):
                         self.accelerator_manager.wait_for_everyone()
                         if self.accelerator_manager.get_state_property("is_main_process"):
                             logger.info(f"🚀 Optimizer step {optimizer_step}, pushing checkpoint to hub.")
@@ -404,7 +302,7 @@ class ProverTrainer:
                     self.state_tracker.increment_step()
 
                     # Evaluate every 100 micro-batches (not optimizer steps)
-                    if training_step % 100 == 0:
+                    if (training_step + 1) % 100 == 0:
                         self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
                         self.accelerator_manager.wait_for_everyone()
                         _ = self.evaluate()
@@ -423,12 +321,13 @@ class ProverTrainer:
                             "verifier_accuracy",
                             phase=self.state_tracker.phase,  # Pass phase
                         )
-                        progress_metrics["loss"] = self.metrics_logger.get_latest_metric(
+                        loss_value = self.metrics_logger.get_latest_metric(
                             "train",
                             "sneaky_prover",
                             "loss",
                             phase=self.state_tracker.phase,  # Pass phase
                         )
+                        progress_metrics["loss"] = f"{loss_value:.4f}" if loss_value is not None else "N/A"
                         progress_metrics["v_acc"] = (
                             f"{latest_verifier_acc:.3f}" if latest_verifier_acc is not None else "N/A"
                         )
@@ -439,10 +338,10 @@ class ProverTrainer:
                     torch.cuda.empty_cache()
                     gc.collect()
 
-                    training_step += 1
+                    logger.info(f"Finished training step. Now at step = {training_step + 1}")
 
-                training_step += 1
                 self.state_tracker.increment_step()
+                training_step += 1
 
             # End of epoch
             if self.is_main:
@@ -492,8 +391,8 @@ class ProverTrainer:
         self,
         model,
         output_dir: str,
-        prefer_safe: bool = False,
-    ) -> Path:
+        prefer_safe: bool = True,
+    ) -> Path | None:
         """
         Dump a full-weight file in `output_dir` and return its path.
 
@@ -512,18 +411,51 @@ class ProverTrainer:
         else:
             torch.save(model.state_dict(), weight_path)
 
-        # save tokenizer & config only on rank-0
-        if self.is_main:
+        # ────────────────── 2. save meta only once  ──────────────
+        if not self.is_main:
+            return None  # other ranks are done
+
+        # a) tokenizer
+        if self.tokenizer is not None:
             self.tokenizer.save_pretrained(output_dir, safe_serialization=prefer_safe)
-            model.config.to_json_file(Path(output_dir) / "config.json")
+
+        # b) config (robust to anything JSON-ish)
+        base_model = getattr(model, "module", model)  # unwrap DS, DDP, etc.
+        cfg = getattr(base_model, "config", None)
+        cfg_path = Path(output_dir) / "config.json"
+
+        try:
+            if cfg is None:
+                raise ValueError("model has no .config attribute")
+
+            # Transformers PretrainedConfig
+            if hasattr(cfg, "to_json_file"):
+                cfg.to_json_file(cfg_path)
+
+            # plain dict
+            elif isinstance(cfg, dict):
+                with open(cfg_path, "w") as f:
+                    json.dump(cfg, f, indent=2)
+
+            # dataclass or anything else JSON-serialisable
+            else:
+                with open(cfg_path, "w") as f:
+                    json.dump(cfg.__dict__, f, indent=2)
+
+        except Exception as e:
+            logger.warning(f"⚠️  Could not save config ({type(cfg)}): {e}")
 
         return weight_path
 
     def _push_checkpoint_to_hub(self, step: int, round: int):
-        """Equivalent to HF-Trainer’s _push_from_checkpoint, but ZeRO-3-safe."""
+        """Equivalent to HF-Trainer's _push_from_checkpoint, but ZeRO-3-safe.
+
+        This version avoids pushing into a subdirectory in the Hugging Face repo,
+        instead always pushes to the repo root (overwriting previous checkpoint).
+        """
         # paths/tags
-        subdir = f"checkpoint-{step:08d} - round-{round:02d}"
-        local_ckpt = Path(self.config["ckpt_output_dir"]) / subdir
+        subdir = f"checkpoint-step-{step}-round-{round}"
+        local_ckpt = Path(str(self.config["ckpt_output_dir"])) / subdir
         tag = f"global_step{step}"  # must be identical on all ranks
 
         # -------------  A)  save *training* checkpoint  -------------
@@ -545,18 +477,19 @@ class ProverTrainer:
         repo_id = self.config["repo_id"]
         HfApi().create_repo(repo_id, repo_type="model", exist_ok=True)
 
+        # Always push to the root of the repo (path_in_repo=".")
         upload_folder(
             folder_path=str(local_ckpt),
-            path_in_repo=subdir,
+            path_in_repo=".",  # push to root, not a subdirectory
             repo_id=repo_id,
-            commit_message=subdir,
+            commit_message=f"Checkpoint: {subdir}",
             ignore_patterns=["zero_*", "global_rank*"],
         )
-        logger.info(f"✅ pushed {subdir} to https://huggingface.co/{repo_id}")
+        logger.info(f"✅ pushed checkpoint {subdir} to https://huggingface.co/{repo_id}")
 
     def _push_model_to_hub(self):
-        """Matches HF-Trainer.push_to_hub() but won’t hang."""
-        final_dir = Path(self.config["ckpt_output_dir"]) / "final-model"
+        """Matches HF-Trainer.push_to_hub() but won't hang."""
+        final_dir = Path(str(self.config["ckpt_output_dir"])) / "final-model"
         model = self.model_manager.get_model("sneaky_prover", prepared=True)
         self._save_one_model(model, str(final_dir))  # all ranks, safe
 

@@ -1,26 +1,18 @@
 # pvg/components/vllm_orchestrator.py
-
-# VLLMOrchestrator
-# Responsibility: Manages vLLM client connections (main process only), handles generation requests via vLLM, broadcasts results, and orchestrates weight synchronization between training models and vLLM servers.
-
-
-# __init__: Stores AcceleratorManager, vLLM configs, tokenizer, log dir, step callback. Calls _initialize_clients() on main process.
-# generate_and_broadcast(...): Performs generation on main process using the specified client_key's VLLMClient. Logs interaction using step callback. Broadcasts results via AcceleratorManager. Returns appropriate slice/full list based on client_key.
-# sync_prover_weights(model_manager): Calls _move_model_to_vllm for "sneaky_prover", using appropriate barriers/plugin selection via AcceleratorManager.
-# sync_verifier_weights(model_manager): Calls _move_model_to_vllm for "verifier".
-# _move_model_to_vllm(model_key, model): Internal helper for syncing one model. Uses AcceleratorManager for gather/barriers/rank checks. Calls vllm_client.update_named_param.
-# _initialize_clients(): Internal helper.
-# _log_llm_interaction(...): Internal helper.
+"""Manages vLLM client connections (main process only), handles generation requests via vLLM, broadcasts results, and orchestrates weight synchronization between training models and vLLM servers."""
 
 import datetime
+import gc
 import json
 import logging
 import os
+import time
 import uuid
 from contextlib import nullcontext
 from typing import Any, Callable, Literal
 
 import deepspeed
+import torch
 from accelerate.utils import broadcast_object_list
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer
@@ -68,7 +60,7 @@ class VLLMOrchestrator:
         }
         self.tokenizer = tokenizer_callback()  # Yields the tokenizer
         self.llm_interaction_log_dir = llm_interaction_log_dir
-        self.global_step_callback = global_step_callback  # I love callbacks now.
+        self.global_step_callback = global_step_callback
 
         self.vllm_clients: dict[str, VLLMClient] = {}
         self.base_group_port = 51216
@@ -342,10 +334,22 @@ class VLLMOrchestrator:
         """
         Orchestrates the full sync process. Conditional on phase, alls _move_model_to_vllm for the appropriate models with appropriate barriers and plugin selection.
         """
+        # Pre-sync cleanup to prevent state issues between consecutive syncs
+        logger.info(f"Starting weight sync for phase: {phase}")
+        torch.cuda.empty_cache()
+        gc.collect()
+        self.accelerator_manager.wait_for_everyone()
+
         if phase == "verifier":
             self.move_verifier_to_vllm(model_manager)
         elif phase == "provers":
             self.move_provers_to_vllm(model_manager)
+
+        # Post-sync cleanup
+        torch.cuda.empty_cache()
+        gc.collect()
+        self.accelerator_manager.wait_for_everyone()
+        logger.info(f"Completed weight sync for phase: {phase}")
 
     def move_verifier_to_vllm(self, model_manager: ModelManager) -> None:
         """
@@ -417,39 +421,53 @@ class VLLMOrchestrator:
         deepspeed_plugin = accelerator.state.deepspeed_plugin
         zero_stage_3 = deepspeed_plugin is not None and deepspeed_plugin.zero_stage == 3
         gather_if_zero3 = deepspeed.zero.GatheredParameters if zero_stage_3 else nullcontext
+        gather_kwargs = {"enabled": True, "modifier_rank": 0} if zero_stage_3 else {}
         unwrapped_model = accelerator.unwrap_model(model)
         named_params = list(unwrapped_model.named_parameters())
+        # engine = accelerator.state.deepspeed_plugin.deepspeed_engine
         num_params = len(named_params)
         logger.info(
             f"[Process {accelerator.process_index} / {model_key}] Starting parameter sync loop ({num_params} params)..."
         )
 
-        param_iterator = named_params
-        if accelerator.is_main_process:
-            param_iterator = tqdm(named_params, desc=f"Syncing {model_key}", leave=False, disable=False)
+        # PRE-SYNC CLEANUP: Force garbage collection and synchronization to clear any dangling references
+        if zero_stage_3:
+            logger.info(f"[Process {accelerator.process_index} / {model_key}] Pre-sync cleanup for ZeRO-3...")
+            torch.cuda.empty_cache()
+            gc.collect()
+            accelerator.wait_for_everyone()  # Ensure all processes are ready
+            time.sleep(0.1)  # Small delay to let cleanup complete
 
-        for name, param in param_iterator:
-            if not param.requires_grad:
-                continue
-            try:
-                # Collective operation happens here
-                kwargs = {"modifier_rank": 0} if zero_stage_3 else {}
-                with gather_if_zero3([param], **kwargs):
-                    if can_sync_to_client:
-                        try:
+        # CRITICAL: Ensure all processes are synchronized before parameter gathering
+        logger.info(f"[Process {accelerator.process_index} / {model_key}] Pre-sync barrier for ZeRO-3...")
+        accelerator.wait_for_everyone()
+        torch.cuda.synchronize()
+
+        with torch.no_grad():
+            for name, param in tqdm(
+                unwrapped_model.named_parameters(),
+                desc=f"Syncing {model_key} (ZeRO-3)",
+                disable=not self.accelerator_manager.get_state_property("is_main_process"),
+            ):
+                self.accelerator_manager.wait_for_everyone()
+                # Gather each parameter individually on rank 0
+                with gather_if_zero3([param], **gather_kwargs):
+                    if self.accelerator_manager.get_state_property("is_main_process"):
+                        if vllm_client:
+                            # The parameter is now fully available on the main process
                             vllm_client.update_named_param(name, param.data)
-                        except Exception as e:
-                            logger.error(
-                                f"Failed to update param {name} for {model_key} via vLLM: {e}",
-                                exc_info=True,
-                            )
-                            break
-            except Exception as e:
-                logger.error(
-                    f"Error during GatheredParameters for {name} in {model_key}: {e}",
-                    exc_info=True,
-                )
-                break
+
+                self.accelerator_manager.wait_for_everyone()
+
+        # 2. Wait for every rank to finish the gather context
+        accelerator.wait_for_everyone()
+        torch.cuda.synchronize()
+
+        # POST-SYNC CLEANUP: Additional cleanup for ZeRO-3
+        if zero_stage_3:
+            logger.info(f"[Process {accelerator.process_index} / {model_key}] Post-sync cleanup for ZeRO-3...")
+            torch.cuda.empty_cache()
+            gc.collect()
 
         # --- Barrier AFTER loop ---
         # Ensures all processes finish the loop before proceeding to cache reset
@@ -462,7 +480,13 @@ class VLLMOrchestrator:
         # --- Reset Cache (Main Process Only) ---
         if can_sync_to_client:
             logger.info(f"[Process {accelerator.process_index} / {model_key}] Resetting vLLM prefix cache...")
-            # ... (try-except block for reset) ...
+            try:
+                vllm_client.reset_prefix_cache()
+                logger.info(f"[Process {accelerator.process_index} / {model_key}] Successfully reset vLLM prefix cache")
+            except Exception as e:
+                logger.warning(
+                    f"[Process {accelerator.process_index} / {model_key}] Failed to reset vLLM prefix cache: {e}"
+                )
 
         # --- Final Barrier for this function ---
         logger.info(
@@ -473,6 +497,3 @@ class VLLMOrchestrator:
 
     def get_vllm_client(self, model_key: str) -> VLLMClient:
         return self.vllm_clients[model_key]
-
-
-# Dependencies: AcceleratorManager (at init), ModelManager (passed to sync_weights).

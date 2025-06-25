@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:20:00
+#SBATCH --time=00:30:00
 #SBATCH --job-name=pvg_full_pipeline
 #SBATCH --output=full_pipeline_spawn/output/logs/pvg_full_pipeline.%j.out
 #SBATCH --error=full_pipeline_spawn/output/errors/pvg_full_pipeline.%j.err
@@ -26,6 +26,7 @@ cd /home/jvelja/learn_to_verify
 
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
+uv pip install 'deepspeed==0.17.1'
 
 # module load 2023
 module load CUDA/12.4.0
@@ -252,7 +253,7 @@ uv run --env-file .env accelerate launch \
     \
     --rl.num_generations 8 \
     --rl.num_iterations 1 \
-    --rl.beta 0.01 \
+    --rl.beta 0.05 \
     --rl.scale_rewards True \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \

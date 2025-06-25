@@ -1,4 +1,5 @@
 # pvg/components/formatter.py
+"""Formatter for generating prompts and extracting solutions from completions."""
 
 import logging
 import re

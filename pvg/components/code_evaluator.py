@@ -1,9 +1,4 @@
-"""
-Code Evaluation Component
-
-A reusable component for evaluating candidate code snippets against test harnesses.
-Can be dropped into any evaluation environment that needs to grade programming solutions.
-"""
+"""A reusable component for evaluating candidate code snippets against test harnesses. Can be dropped into any evaluation environment that needs to grade programming solutions."""
 
 import json
 import logging
@@ -807,7 +802,11 @@ class CodeEvaluator:
             )
 
     def evaluate_batch(
-        self, evaluations: List[Dict[str, Any]], show_progress: bool = True, max_workers: Optional[int] = None, use_threads: bool = True
+        self,
+        evaluations: List[Dict[str, Any]],
+        show_progress: bool = True,
+        max_workers: Optional[int] = None,
+        use_threads: bool = True,
     ) -> List[EvaluationResult]:
         """
         Evaluate a batch of code snippets in parallel.
@@ -815,16 +814,16 @@ class CodeEvaluator:
             evaluations: List of evaluation specs.
             show_progress: Whether to show a progress bar.
             max_workers: The maximum number of workers to use.
-            use_threads: If True, use ThreadPoolExecutor (faster startup, good for I/O bound). 
+            use_threads: If True, use ThreadPoolExecutor (faster startup, good for I/O bound).
                         If False, use ProcessPoolExecutor (true parallelism, but heavy startup).
         Returns:
             List of EvaluationResult objects in the same order as the input.
         """
         results: list[EvaluationResult | None] = [None] * len(evaluations)
-        
+
         # Choose executor type based on use_threads parameter
         executor_class = ThreadPoolExecutor if use_threads else ProcessPoolExecutor
-        
+
         with executor_class(max_workers=max_workers) as executor:
             future_to_index = {
                 executor.submit(self.evaluate_single, **eval_spec): i for i, eval_spec in enumerate(evaluations)
@@ -856,7 +855,11 @@ class CodeEvaluator:
         return cast(List[EvaluationResult], results)
 
     def evaluate_sneaky_batch(
-        self, evaluations: List[Dict[str, Any]], show_progress: bool = True, max_workers: Optional[int] = None, use_threads: bool = True
+        self,
+        evaluations: List[Dict[str, Any]],
+        show_progress: bool = True,
+        max_workers: Optional[int] = None,
+        use_threads: bool = True,
     ) -> List[SneakyEvaluationResult]:
         """
         Evaluate a batch of sneaky comparisons in parallel.
@@ -864,20 +867,19 @@ class CodeEvaluator:
             evaluations: List of sneaky evaluation specs.
             show_progress: Whether to show a progress bar.
             max_workers: The maximum number of workers to use.
-            use_threads: If True, use ThreadPoolExecutor (faster startup, good for I/O bound). 
+            use_threads: If True, use ThreadPoolExecutor (faster startup, good for I/O bound).
                         If False, use ProcessPoolExecutor (true parallelism, but heavy startup).
         Returns:
             List of SneakyEvaluationResult objects in the same order as the input.
         """
         results: list[SneakyEvaluationResult | None] = [None] * len(evaluations)
-        
+
         # Choose executor type based on use_threads parameter
         executor_class = ThreadPoolExecutor if use_threads else ProcessPoolExecutor
-        
+
         with executor_class(max_workers=max_workers) as executor:
             future_to_index = {
-                executor.submit(self.evaluate_sneaky_single, **eval_spec): i
-                for i, eval_spec in enumerate(evaluations)
+                executor.submit(self.evaluate_sneaky_single, **eval_spec): i for i, eval_spec in enumerate(evaluations)
             }
 
             iterator = as_completed(future_to_index)
@@ -1243,7 +1245,9 @@ def _create_verification_call(globals_dict: Dict[str, Any], skeleton: str) -> Op
     return parser.create_verification_call(skeleton, "verify_solution")
 
 
-def _verify_external_candidate(globals_dict: Dict[str, Any], skeleton: str, candidate_code: str) -> Optional[tuple[bool, Dict[str, int]]]:
+def _verify_external_candidate(
+    globals_dict: Dict[str, Any], skeleton: str, candidate_code: str
+) -> Optional[tuple[bool, Dict[str, int]]]:
     """Verify external candidate solution"""
     parser = SkeletonParser(globals_dict)
     return parser.verify_external_candidate(skeleton, candidate_code, "verify_solution")
@@ -1588,32 +1592,3 @@ def _call_function_with_input(func: Callable[..., Any], test_input: Any) -> Any:
             return func(test_input)  # Fallback to single argument
     else:
         return func(test_input)
-
-
-if __name__ == "__main__":
-    # Example usage
-    config = EvaluationConfig(
-        step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
-        total_timeout=35,
-        success_threshold=0.85,
-    )
-
-    evaluator = CodeEvaluator(config)
-
-    # Example evaluation (you would replace with actual harness and solution)
-    result = evaluator.evaluate_single(
-        harness_code="""
-        def generate_test_cases(num_cases=5, include_examples=True):
-            return []
-
-        def verify_solution(func):
-            # Dummy verification
-            return True, {"passed": 3, "failed": 1}
-        """,
-        candidate_solution="def example_func(): return 42",
-        skeleton="def example_func():",
-        is_transformed=False,
-        problem_id="example_1",
-    )
-
-    print(f"Evaluation result: {result}")

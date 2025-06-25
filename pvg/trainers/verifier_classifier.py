@@ -354,8 +354,21 @@ class VerifierClassifierTrainer(VerifierTrainerBase):
                             "verifier_accuracy": batch_accuracy,
                             "verifier_avg_score_diff": score_differences.mean().item(),
                             "verifier_identical_ratio": are_identical.float().mean().item(),
+                            # Add missing score bounds metrics for VerifierPerformanceTracker
+                            "verifier_score_min": torch.cat([honest_scores, injected_scores]).min().item(),
+                            "verifier_score_max": torch.cat([honest_scores, injected_scores]).max().item(),
                         }
                         rolling_metrics = self.verifier_performance_tracker.update(batch_metrics)
+
+                        # Store the batch metrics including score bounds to metrics logger
+                        for metric_name, metric_value in batch_metrics.items():
+                            self.metrics_logger.store_metric(
+                                phase=self.state_tracker.phase,
+                                mode="train",
+                                model="verifier",
+                                name=metric_name,
+                                value=metric_value,
+                            )
 
                     # Backpropagation
                     self.accelerator_manager.backward(total_loss, "verifier")

@@ -18,7 +18,10 @@ from pvg.data_models.training_data import RewardResult, SolutionData
 from pvg.processors.metrics_processor import MetricsProcessor
 from pvg.rl import GRPO
 from pvg.strategies.abstractions import RewardCalculationStrategy
-from pvg.utils.verifier_performance import VerifierPerformanceTracker
+from pvg.utils.verifier_performance import (
+    VerifierPerformanceTracker,
+    calculate_verifier_performance_metrics,
+)
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -80,9 +83,11 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         main_process = self.accelerator_manager.get_state_property("is_main_process")
 
         # 1. Initialize or update verifier bounds
-        logger.info(f"Step {self.state_tracker.step}, global_B={self.global_B}. Update? {self.state_tracker.step % 10 == 0 or self.global_B == 0.0}")
+        logger.info(
+            f"Step {self.state_tracker.step}, global_B={self.global_B}. Update? {self.state_tracker.step % 10 == 0 or self.global_B == 0.0}"
+        )
         if self.state_tracker.step % 10 == 0 or self.global_B == 0.0:
-            self._update_verifier_bounds()
+            self._update_verifier_bounds(current_verifier_scores=verifier_scores)
 
         # 2. Calculate tier-based rewards
         B = self.global_B  # scalar float
@@ -93,12 +98,16 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         if main_process:
             logger.info(f"🎯 Coefficient-free reward bounds: B={B:.4f}, M={M:.4f}")
 
-        # 3. Scale verifier scores
-        cur_min, cur_max = self.verifier_tracker.get_current_score_bounds()
-        v_mid = (cur_max + cur_min) / 2.0
+        # 3. Scale verifier scores (use current scores for accurate centering)
+        current_min = verifier_scores.min().item()
+        current_max = verifier_scores.max().item()
+        v_mid = (current_max + current_min) / 2.0
 
         v_honest = verifier_scores[::2] - v_mid  # Even indices: honest
         v_sneaky = verifier_scores[1::2] - v_mid  # Odd indices: sneaky
+
+        if main_process:
+            logger.info(f"📊 Current score bounds: [min={current_min:.4f}, max={current_max:.4f}], center={v_mid:.4f}")
 
         # 3. Calculate honest rewards (tier-based)
         honest_rewards = self._calculate_honest_rewards(
@@ -119,16 +128,23 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         honest_advantages = self.grpo.calculate_advantages(global_rewards=honest_rewards)
         sneaky_advantages = self.grpo.calculate_advantages(global_rewards=sneaky_rewards)
 
-        # 6. Compute behavioral metrics
+        # 6. Calculate and store verifier performance metrics
+        self._calculate_and_store_verifier_metrics(
+            verifier_scores=verifier_scores,
+            solution_data=solution_data,
+            phase=phase,
+        )
+
+        # 7. Compute behavioral metrics
         behavioral_metrics = self._compute_behavioral_metrics(
             solution_data=solution_data,
             phase=phase,
         )
 
-        # 7. Compute reward statistics
+        # 8. Compute reward statistics
         reward_statistics = self._compute_reward_statistics(honest_rewards, sneaky_rewards)
 
-        # 8. Log comprehensive debug info
+        # 9. Log comprehensive debug info
         if main_process:
             self._log_reward_debug_info(
                 honest_rewards=honest_rewards,
@@ -148,11 +164,27 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
             reward_statistics=reward_statistics,
         )
 
-    def _update_verifier_bounds(self) -> None:
-        """Update global verifier bounds"""
-        init_min, init_max = self.verifier_tracker.get_current_score_bounds()
-        self.global_B = max(abs(init_min), abs(init_max), 1.0)
-        logger.info(f"🔒 Freezing verifier bound B = {self.global_B:.4f}")
+    def _update_verifier_bounds(self, current_verifier_scores: torch.Tensor | None = None) -> None:
+        """Update global verifier bounds
+
+        Args:
+            current_verifier_scores: Current batch verifier scores to include in bound calculation
+        """
+        if current_verifier_scores is not None:
+            # Use current scores for immediate bound calculation
+            current_min = current_verifier_scores.min().item()
+            current_max = current_verifier_scores.max().item()
+            self.global_B = max(abs(current_min), abs(current_max), 1.0)
+            logger.info(
+                f"🔒 Updating verifier bound B = {self.global_B:.4f} from current scores [min={current_min:.4f}, max={current_max:.4f}]"
+            )
+        else:
+            # Fallback to tracker bounds (may be stale)
+            init_min, init_max = self.verifier_tracker.get_current_score_bounds()
+            self.global_B = max(abs(init_min), abs(init_max), 1.0)
+            logger.info(
+                f"🔒 Freezing verifier bound B = {self.global_B:.4f} from tracker bounds [min={init_min:.4f}, max={init_max:.4f}]"
+            )
 
     def _calculate_honest_rewards(
         self, solution_data: SolutionData, v_honest: torch.Tensor, M_t: torch.Tensor
@@ -221,6 +253,49 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         )
 
         return torch.nan_to_num(sneaky_rewards, nan=-M_t.item())
+
+    def _calculate_and_store_verifier_metrics(
+        self,
+        verifier_scores: torch.Tensor,
+        solution_data: SolutionData,
+        phase: str | None,
+    ) -> None:
+        """Calculate verifier performance metrics and store them in metrics logger"""
+        # Extract honest and sneaky scores (interleaved pattern: [honest_1, sneaky_1, honest_2, sneaky_2, ...])
+        honest_scores = verifier_scores[::2]  # Even indices: honest
+        sneaky_scores = verifier_scores[1::2]  # Odd indices: sneaky
+
+        # Get is_same_as_honest flags from solution data
+        is_same_as_honest = solution_data.is_same_as_honest
+
+        # Calculate comprehensive verifier performance metrics
+        verifier_metrics = calculate_verifier_performance_metrics(
+            honest_scores=honest_scores,
+            sneaky_scores=sneaky_scores,
+            is_same_as_honest=is_same_as_honest,
+            gather_across_processes=True,  # Handle distributed training
+            include_bounds=True,  # Include score bounds
+        )
+
+        # Store all verifier metrics in the metrics logger
+        current_mode = "train"  # TODO: Get from context if needed
+        phase = phase or self.state_tracker.phase or "unknown"
+
+        for metric_name, metric_value in verifier_metrics.items():
+            self.metrics_logger.store_metric(
+                mode=current_mode,
+                model="verifier",
+                name=metric_name,
+                value=metric_value,
+                phase=phase,
+            )
+
+        # Log key metrics for debugging
+        main_process = self.accelerator_manager.get_state_property("is_main_process")
+        if main_process:
+            logger.info(f"🎯 Verifier Accuracy: {verifier_metrics['verifier_accuracy']:.4f}")
+            logger.info(f"🎯 Score Difference: {verifier_metrics['verifier_avg_score_diff']:.4f}")
+            logger.info(f"🎯 Identical Pairs: {verifier_metrics['verifier_identical_ratio']:.4f}")
 
     def _compute_behavioral_metrics(self, solution_data: SolutionData, phase: str | None) -> dict[str, float]:
         """Compute behavioral metrics for logging"""
@@ -357,7 +432,14 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
         honest_advantages = self.grpo.calculate_advantages(global_rewards=honest_rewards)
         sneaky_advantages = self.grpo.calculate_advantages(global_rewards=sneaky_rewards)
 
-        # 4. Compute metrics
+        # 4. Calculate and store verifier performance metrics
+        self._calculate_and_store_verifier_metrics(
+            verifier_scores=verifier_scores,
+            solution_data=solution_data,
+            phase=phase,
+        )
+
+        # 5. Compute metrics
         behavioral_metrics = self._compute_behavioral_metrics(solution_data, phase)
         reward_statistics = self._compute_reward_statistics(honest_rewards, sneaky_rewards)
 
@@ -426,6 +508,48 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
         )
 
         return sneaky_rewards
+
+    def _calculate_and_store_verifier_metrics(
+        self,
+        verifier_scores: torch.Tensor,
+        solution_data: SolutionData,
+        phase: str | None,
+    ) -> None:
+        """Calculate verifier performance metrics and store them in metrics logger"""
+        # Extract honest and sneaky scores (interleaved pattern: [honest_1, sneaky_1, honest_2, sneaky_2, ...])
+        honest_scores = verifier_scores[::2]  # Even indices: honest
+        sneaky_scores = verifier_scores[1::2]  # Odd indices: sneaky
+
+        # Get is_same_as_honest flags from solution data
+        is_same_as_honest = solution_data.is_same_as_honest
+
+        # Calculate comprehensive verifier performance metrics
+        verifier_metrics = calculate_verifier_performance_metrics(
+            honest_scores=honest_scores,
+            sneaky_scores=sneaky_scores,
+            is_same_as_honest=is_same_as_honest,
+            gather_across_processes=True,  # Handle distributed training
+            include_bounds=True,  # Include score bounds
+        )
+
+        # Store all verifier metrics in the metrics logger
+        current_mode = "train"  # TODO: Get from context if needed
+        phase = phase or "unknown"
+
+        for metric_name, metric_value in verifier_metrics.items():
+            self.metrics_logger.store_metric(
+                mode=current_mode,
+                model="verifier",
+                name=metric_name,
+                value=metric_value,
+                phase=phase,
+            )
+
+        # Log key metrics for debugging
+        main_process = self.accelerator_manager.get_state_property("is_main_process")
+        if main_process:
+            logger.info(f"🎯 [SANITY] Verifier Accuracy: {verifier_metrics['verifier_accuracy']:.4f}")
+            logger.info(f"🎯 [SANITY] Score Difference: {verifier_metrics['verifier_avg_score_diff']:.4f}")
 
     def _compute_behavioral_metrics(self, solution_data: SolutionData, phase: str | None) -> dict[str, float]:
         """Compute behavioral metrics for sanity check"""

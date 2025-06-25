@@ -235,7 +235,9 @@ class CompactGenerator:
         # Make sure that the tokenizer has a pad_token_id
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-            logger.warning(f"Tokenizer {self.tokenizer} has no pad_token_id. Setting it to {self.tokenizer.eos_token_id}")
+            logger.warning(
+                f"Tokenizer {self.tokenizer} has no pad_token_id. Setting it to {self.tokenizer.eos_token_id}"
+            )
         self.formatter = Formatter(tokenizer=self.tokenizer)
 
         # Create pipeline configuration using factory pattern

@@ -631,6 +631,7 @@ def main(script_args: ScriptArguments):
         # And with background_tasks.add_task we need to call it this way:
         # background_tasks.add_task(llm.collective_rpc, "update_named_param", args=("name", torch.float32, (10, 10)))
         dtype = torch.__getattribute__(request.dtype.split(".")[-1])
+
         background_tasks.add_task(
             llm.collective_rpc,
             "update_named_param",

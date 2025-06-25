@@ -37,5 +37,17 @@ def prepare_deepspeed(model, accelerator):
         config_kwargs["zero_optimization"]["stage"] = 0
 
     model, *_ = deepspeed.initialize(model=model, config=config_kwargs)
+
+    # Properly prepare reference model for efficient inference
     model.eval()
+
+    # Disable gradient checkpointing for reference models to save memory
+    if hasattr(model, "gradient_checkpointing_disable"):
+        model.gradient_checkpointing_disable()
+
+    # Set use_cache to True for reference models (improves inference speed)
+    if hasattr(model.config, "use_cache"):
+        model.config.use_cache = True
+
+    logger.info(f"Reference model prepared with eval mode and optimized for inference (stage={stage})")
     return model

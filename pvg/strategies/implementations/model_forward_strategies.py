@@ -42,13 +42,15 @@ class ModelForwardStrategy(ModelForwardAbstraction):
     ```
     """
 
-    def __init__(self, temperature: float = 1.0):
+    def __init__(self, temperature: float = 1.0, ref_batch_size: int = 1):
         """Initialize the standard model forward strategy
 
         Args:
             temperature: Sampling temperature for logit scaling
+            ref_batch_size: Batch size for reference model computation (memory optimization)
         """
         self.temperature = temperature
+        self.ref_batch_size = ref_batch_size
 
     def compute_per_token_logps(
         self,
@@ -113,7 +115,12 @@ class ModelForwardStrategy(ModelForwardAbstraction):
         )
 
         # Scale logits by temperature for proper probability distribution
-        scaled_logits = logits / self.temperature
+        # Use in-place division to save memory when possible
+        if logits.requires_grad:
+            scaled_logits = logits / self.temperature
+        else:
+            # For reference models (no_grad), use in-place operation to save memory
+            scaled_logits = logits.div_(self.temperature)
 
         # Compute per-token log probabilities using selective log softmax
         # This efficiently computes log(softmax(logits))[target_tokens] for each position
@@ -127,7 +134,16 @@ class ModelForwardStrategy(ModelForwardAbstraction):
                 # Compute entropy efficiently from the same logits (no extra forward pass!)
                 per_token_entropy = compute_entropy(scaled_logits, reduce=False)  # [B, logits_to_keep]
                 logger.debug(f"Computed entropy shape: {per_token_entropy.shape}")
+
+                # Clear intermediate tensors to free memory immediately
+                del scaled_logits, logits
+                torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
             return per_token_logps, per_token_entropy
+
+        # Clear intermediate tensors to free memory immediately
+        del scaled_logits, logits
+        torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
         return per_token_logps
 
@@ -338,8 +354,13 @@ class ModelForwardStrategy(ModelForwardAbstraction):
             logger.debug("Computing old model logps")
             with torch.no_grad():
                 # Use the efficient logps-only method since we already have current model outputs
-                old_per_token_logps = self.compute_per_token_logps(
-                    unwrapped_model, input_ids, attention_mask, logits_to_keep, return_entropy=False
+                old_per_token_logps = self.compute_per_token_logps_batched(
+                    unwrapped_model,
+                    input_ids,
+                    attention_mask,
+                    logits_to_keep,
+                    batch_size=self.ref_batch_size,
+                    return_entropy=False,
                 )
 
         # 3. Compute reference model logps if needed (beta > 0)
@@ -348,11 +369,23 @@ class ModelForwardStrategy(ModelForwardAbstraction):
             if ref_model is None:
                 raise ValueError("Reference model required but not loaded (beta > 0).")
             logger.debug("Computing reference model logps")
+
+            # Ensure reference model is properly prepared for inference
             ref_model.eval()
-            with torch.no_grad():
-                # Use the efficient logps-only method
-                ref_per_token_logps = self.compute_per_token_logps(
-                    ref_model, input_ids, attention_mask, logits_to_keep, return_entropy=False
+            # Clear any cached activations from training mode
+            if hasattr(ref_model, "gradient_checkpointing_disable"):
+                ref_model.gradient_checkpointing_disable()
+
+            # Use torch.inference_mode for maximum memory efficiency during reference computation
+            with torch.inference_mode():
+                # Use the efficient batched method for reference model to prevent OOM
+                ref_per_token_logps = self.compute_per_token_logps_batched(
+                    ref_model,
+                    input_ids,
+                    attention_mask,
+                    logits_to_keep,
+                    batch_size=self.ref_batch_size,
+                    return_entropy=False,
                 )
 
         logger.debug("Unified forward pass completed")

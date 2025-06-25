@@ -1,7 +1,5 @@
 # pvg/components/state_tracker.py
-
-# StateTracker
-# Responsibility: Tracks the state of the training loop.
+"""Tracks the state of the training loop."""
 
 from typing import Literal
 
@@ -15,6 +13,9 @@ class StateTracker:
         self,
         verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],
     ) -> None:
+        """
+        Initialize the StateTracker.
+        """
         self.round: int = 0
         self.phase: Literal["verifier", "provers"] = "verifier"
         self.step: int = 0

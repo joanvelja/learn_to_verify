@@ -57,7 +57,6 @@ class GPUMonitor:
         memory_growth_window=10,  # Keep last N memory readings
         auto_start=False,
     ):
-
         # Initialize parameters
         self.log_dir = Path(log_dir)
         self.log_file = self.log_dir / log_file
