@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:30:00
+#SBATCH --time=10:00:00
 #SBATCH --job-name=pvg_full_pipeline
 #SBATCH --output=full_pipeline_spawn/output/logs/pvg_full_pipeline.%j.out
 #SBATCH --error=full_pipeline_spawn/output/errors/pvg_full_pipeline.%j.err
@@ -15,8 +15,6 @@ set -e
 CURRENT_PATH=$(pwd)
 cd /home/jvelja/learn_to_verify
 
-# sbatch train_provers.sh
-
 # <--- Load Modules --->
 module load 2023
 module load CUDA/12.4.0 # Why not load 2024? 2024 requires CUDA 12.6.0 (A hassle to remake the whole environment)
@@ -26,7 +24,6 @@ cd /home/jvelja/learn_to_verify
 
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
-uv pip install 'deepspeed==0.17.1'
 
 # module load 2023
 module load CUDA/12.4.0

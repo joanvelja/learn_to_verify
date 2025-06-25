@@ -377,7 +377,9 @@ class ProverTrainer:
         logger.info("Starting strategy-based evaluation...")
 
         # Get the model to evaluate
-        policy_model = self.model_manager.get_model("sneaky_prover", prepared=True)
+        policy_model = self.accelerator_manager.unwrap_model(
+            self.model_manager.get_model("sneaky_prover", prepared=True), key="sneaky_prover"
+        )
 
         # Delegate to evaluation strategy
         return self.evaluation_strategy.evaluate(

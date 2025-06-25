@@ -7,6 +7,7 @@ with a clean, modular pipeline.
 """
 
 import logging
+from contextlib import nullcontext
 from typing import Any, Literal
 
 import torch
@@ -258,35 +259,38 @@ class ProverTrainingPipeline:
         ref_model = self.model_manager.get_ref_model("sneaky_prover", prepared=True)
 
         # 3. Forward pass through model + logps
-        model_outputs, old_logps, ref_logps = self.model_forward_strategy.compute_fwd_pass(
-            unwrapped_model=unwrapped_model,
-            ref_model=ref_model,
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            logits_to_keep=batch_inputs.logits_to_keep,
-            num_iterations=self.rl_config.num_iterations,
-            beta=self.rl_config.beta,
-            return_entropy=True,
-        )
-        # Update batch_inputs with computed logps
-        batch_inputs.old_per_token_logps = old_logps
-        batch_inputs.ref_per_token_logps = ref_logps
+        context_wrapper = torch.no_grad if mode == "eval" else nullcontext
 
-        # 4. Compute loss using strategy
-        loss_result = self.loss_strategy.compute_loss(
-            model=unwrapped_model,  # Only used for Liger GRPO loss though passed for abstraction compliance
-            batch_inputs=batch_inputs,
-            model_outputs=model_outputs,
-            mode=mode,
-        )
+        with context_wrapper():
+            model_outputs, old_logps, ref_logps = self.model_forward_strategy.compute_fwd_pass(
+                unwrapped_model=unwrapped_model,
+                ref_model=ref_model,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                logits_to_keep=batch_inputs.logits_to_keep,
+                num_iterations=self.rl_config.num_iterations,
+                beta=self.rl_config.beta,
+                return_entropy=True,
+            )
+            # Update batch_inputs with computed logps
+            batch_inputs.old_per_token_logps = old_logps
+            batch_inputs.ref_per_token_logps = ref_logps
 
-        # 5. Compute additional batch metrics
-        batch_metrics = self.metrics_processor.compute_tensor_metrics(
-            completion_mask=batch_inputs.completion_mask,
-            advantages=batch_inputs.advantages,
-            old_per_token_logps=batch_inputs.old_per_token_logps,
-            ref_per_token_logps=batch_inputs.ref_per_token_logps,
-        )
+            # 4. Compute loss using strategy
+            loss_result = self.loss_strategy.compute_loss(
+                model=unwrapped_model,  # Only used for Liger GRPO loss though passed for abstraction compliance
+                batch_inputs=batch_inputs,
+                model_outputs=model_outputs,
+                mode=mode,
+            )
+
+            # 5. Compute additional batch metrics
+            batch_metrics = self.metrics_processor.compute_tensor_metrics(
+                completion_mask=batch_inputs.completion_mask,
+                advantages=batch_inputs.advantages,
+                old_per_token_logps=batch_inputs.old_per_token_logps,
+                ref_per_token_logps=batch_inputs.ref_per_token_logps,
+            )
 
         # 6. Add reward statistics to batch metrics if available
         if hasattr(batch_inputs, "reward_statistics") and batch_inputs.reward_statistics:

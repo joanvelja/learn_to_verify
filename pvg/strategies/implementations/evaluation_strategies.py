@@ -190,7 +190,7 @@ class StandardEvaluationStrategy(EvaluationStrategy):
 
                     # Compute loss and metrics
                     training_step_result = pipeline.compute_training_step(
-                        model=model, batch_inputs=batch_inputs, mode="eval"
+                        unwrapped_model=model, batch_inputs=batch_inputs, mode="eval"
                     )
 
                     # Extract results
