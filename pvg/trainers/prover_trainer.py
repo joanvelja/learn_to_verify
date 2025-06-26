@@ -7,6 +7,7 @@ from typing import Literal
 
 import torch
 from huggingface_hub import HfApi, upload_folder
+from safetensors.torch import save_file
 from tqdm import tqdm
 from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
 
@@ -78,7 +79,7 @@ class ProverTrainer:
         # Configuration parameters
         self.config = {
             "push_to_hub": getattr(args, "push_to_hub", True),
-            "checkpoint_interval": getattr(args, "checkpoint_interval", 150),
+            "checkpoint_interval": getattr(args, "save_steps", 2),
             "ckpt_output_dir": getattr(args.training_sneaky_prover, "ckpt_output_dir", "./sneaky_prover_ckpt"),
             "repo_id": None,
         }
@@ -101,13 +102,6 @@ class ProverTrainer:
             accelerator_manager=accelerator_manager,
             dataset_type=dataset_type,
         )
-
-        # self.reward_strategy = SanityCheckRewardStrategy(
-        #     metrics_logger=metrics_logger,
-        #     accelerator_manager=accelerator_manager,
-        #     grpo=grpo,
-        #     metrics_processor=self.metrics_processor,
-        # )
 
         self.reward_strategy = TierBasedRewardStrategy(
             verifier_tracker=VerifierPerformanceTracker(),
@@ -302,7 +296,8 @@ class ProverTrainer:
                     self.state_tracker.increment_step()
 
                     # Evaluate every 100 micro-batches (not optimizer steps)
-                    if (training_step + 1) % 100 == 0:
+                    # if (training_step + 1) % 100 == 0:
+                    if False:  # Takes too long to eval... just go with it and hope for the best
                         self.vllm_orchestrator.sync_weights(phase="provers", model_manager=self.model_manager)
                         self.accelerator_manager.wait_for_everyone()
                         _ = self.evaluate()
@@ -377,17 +372,23 @@ class ProverTrainer:
         logger.info("Starting strategy-based evaluation...")
 
         # Get the model to evaluate
-        policy_model = self.accelerator_manager.unwrap_model(
+        unwrapped_model = self.accelerator_manager.unwrap_model(
             self.model_manager.get_model("sneaky_prover", prepared=True), key="sneaky_prover"
         )
 
         # Delegate to evaluation strategy
-        return self.evaluation_strategy.evaluate(
+        result = self.evaluation_strategy.evaluate(
             pipeline=self.pipeline,
-            model=policy_model,
+            model=unwrapped_model,
             eval_dataloader=self.eval_dataloader,
             model_key="sneaky_prover",
         )
+
+        # Flush evaluation metrics at the same cadence as training metrics
+        # This ensures proper timing alignment and distributed aggregation
+        self.metrics_logger.flush(phase=self.state_tracker.phase, mode="eval")
+
+        return result
 
     def _save_one_model(
         self,
@@ -396,81 +397,96 @@ class ProverTrainer:
         prefer_safe: bool = True,
     ) -> Path | None:
         """
-        Dump a full-weight file in `output_dir` and return its path.
+        Gather the **full 16-bit weights** (BF16 or FP16) and dump them to
+        `output_dir`, returning the path of the written file.
 
-        • Works for plain PyTorch, ZeRO-2 and ZeRO-3
-        • Requires DS config flag `stage3_gather_fp16_weights_on_model_save`
+        • Works for plain PyTorch, DDP, ZeRO-2 and ZeRO-3
+        • Requires the DS JSON flag `stage3_gather_16bit_weights_on_model_save`
         """
         os.makedirs(output_dir, exist_ok=True)
         weight_name = SAFE_WEIGHTS_NAME if prefer_safe else WEIGHTS_NAME
         weight_path = Path(output_dir) / weight_name
 
-        # DeepSpeed path ────────────────────────────────────────────────
-        if hasattr(model, "save_fp16_model"):  # ZeRO-2/3 engine
-            model.save_fp16_model(str(output_dir), weight_name)
+        # ───────────────────── ZeRO-2 / ZeRO-3 path ──────────────────────
+        if hasattr(model, "save_16bit_model"):  # DeepSpeed engine
+            tmp_bin = Path(output_dir) / "pytorch_model.bin"
+            # call on *all* ranks; only rank-0 actually writes
+            model.save_16bit_model(str(output_dir), tmp_bin.name)
 
-        # Accelerate unwrap → ordinary Module ───────────────────────────
+            if prefer_safe and self.is_main:
+                # convert the temporary .bin → .safetensors
+                state = torch.load(tmp_bin, map_location="cpu")
+                save_file(
+                    state,
+                    weight_path,
+                    metadata={
+                        "format": "pt_checkpoint",
+                        "dtype": str(next(state.values()).dtype).replace("torch.", "").upper(),
+                    },
+                )
+                tmp_bin.unlink(missing_ok=True)
+
+        # ───────────────────── Non-DeepSpeed path ────────────────────────
         else:
-            torch.save(model.state_dict(), weight_path)
+            state = model.state_dict()
+            if prefer_safe and self.is_main:
+                save_file(
+                    state,
+                    weight_path,
+                    metadata={
+                        "format": "pt_checkpoint",
+                        "dtype": str(next(state.values()).dtype).replace("torch.", "").upper(),
+                    },
+                )
+            elif self.is_main:
+                torch.save(state, weight_path)
 
-        # ────────────────── 2. save meta only once  ──────────────
+        # ─────────────── meta-data is saved only on rank-0 ───────────────
         if not self.is_main:
-            return None  # other ranks are done
+            return None
 
         # a) tokenizer
         if self.tokenizer is not None:
             self.tokenizer.save_pretrained(output_dir, safe_serialization=prefer_safe)
 
         # b) config (robust to anything JSON-ish)
-        base_model = getattr(model, "module", model)  # unwrap DS, DDP, etc.
+        base_model = getattr(model, "module", model)
         cfg = getattr(base_model, "config", None)
         cfg_path = Path(output_dir) / "config.json"
 
         try:
             if cfg is None:
                 raise ValueError("model has no .config attribute")
-
-            # Transformers PretrainedConfig
-            if hasattr(cfg, "to_json_file"):
+            if hasattr(cfg, "to_json_file"):  # Transformers Config
                 cfg.to_json_file(cfg_path)
-
-            # plain dict
-            elif isinstance(cfg, dict):
+            elif isinstance(cfg, dict):  # plain dict
                 with open(cfg_path, "w") as f:
                     json.dump(cfg, f, indent=2)
-
-            # dataclass or anything else JSON-serialisable
-            else:
+            else:  # dataclass / other
                 with open(cfg_path, "w") as f:
                     json.dump(cfg.__dict__, f, indent=2)
-
         except Exception as e:
             logger.warning(f"⚠️  Could not save config ({type(cfg)}): {e}")
 
         return weight_path
 
     def _push_checkpoint_to_hub(self, step: int, round: int):
-        """Equivalent to HF-Trainer's _push_from_checkpoint, but ZeRO-3-safe.
-
-        This version avoids pushing into a subdirectory in the Hugging Face repo,
-        instead always pushes to the repo root (overwriting previous checkpoint).
-        """
+        """ZeRO-3-safe equivalent to HF-Trainer._push_from_checkpoint()."""
         # paths/tags
-        subdir = f"checkpoint-step-{step}-round-{round}"
+        subdir = f"test-checkpoint-step-{step}-round-{round}"
         local_ckpt = Path(str(self.config["ckpt_output_dir"])) / subdir
-        tag = f"global_step{step}"  # must be identical on all ranks
+        tag = f"global_step{step}"
 
-        # -------------  A)  save *training* checkpoint  -------------
+        # A) full training checkpoint (optimizer shards, RNG, …)
         model = self.model_manager.get_model("sneaky_prover", prepared=True)
-        model.save_checkpoint(str(local_ckpt), tag=tag)  # <-- ALL RANKS
+        model.save_checkpoint(str(local_ckpt), tag=tag)  # all ranks
 
-        # -------------  B)  gather full fp16 weights  ---------------
-        self._save_one_model(model, str(local_ckpt))
+        # B) gather and write **16-bit** weights (BF16/FP16)
+        self._save_one_model(model, str(local_ckpt), prefer_safe=True)
 
-        # everybody reaches the same point
         self.accelerator_manager.wait_for_everyone()
 
-        # -------------  C)  only rank-0 pushes to the Hub -----------
+        # C) push only once
         if not (self.config["push_to_hub"] and self.is_main):
             return
 
@@ -479,10 +495,9 @@ class ProverTrainer:
         repo_id = self.config["repo_id"]
         HfApi().create_repo(repo_id, repo_type="model", exist_ok=True)
 
-        # Always push to the root of the repo (path_in_repo=".")
         upload_folder(
             folder_path=str(local_ckpt),
-            path_in_repo=".",  # push to root, not a subdirectory
+            path_in_repo=".",  # push to repo root
             repo_id=repo_id,
             commit_message=f"Checkpoint: {subdir}",
             ignore_patterns=["zero_*", "global_rank*"],

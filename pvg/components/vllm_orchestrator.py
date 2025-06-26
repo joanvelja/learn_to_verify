@@ -150,7 +150,6 @@ class VLLMOrchestrator:
                 raise ValueError(f"vLLM client '{client_key}' is not initialized.")
 
             prompts_to_generate = prompts[::n_generations]  # Take every n_generations-th item
-            logger.info(f"[DEBUG]: prompts_to_generate - length: {len(prompts_to_generate)}")
 
             # Generate kwargs
             generate_kwargs = {

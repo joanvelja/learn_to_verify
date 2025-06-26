@@ -248,8 +248,10 @@ class StandardEvaluationStrategy(EvaluationStrategy):
                 phase=self.state_tracker.phase,
             )
 
-        # Flush metrics
-        self.metrics_logger.flush(phase=self.state_tracker.phase, mode="eval")
+        # NOTE: Metrics are stored but not flushed here.
+        # The caller (trainer) should flush eval metrics at the same cadence as training metrics
+        # to ensure proper timing alignment and distributed aggregation.
+        # Training metrics are flushed at optimizer step boundaries, eval should follow the same pattern.
 
     def _cleanup_resources(self) -> None:
         """Clean up GPU memory and garbage collect"""

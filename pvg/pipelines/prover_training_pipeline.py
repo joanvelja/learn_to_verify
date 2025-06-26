@@ -136,15 +136,9 @@ class ProverTrainingPipeline:
             sneaky_advantages = [None] * total_batch_size
             honest_advantages = [None] * total_batch_size
 
-        print(f"[DEBUG] sneaky_advantages.shape: {len(sneaky_advantages)}")
-        print(f"[DEBUG] honest_advantages.shape: {len(honest_advantages)}")
-
         # Note: broadcast_object_list returns a list with one element containing our data
         sneaky_advantages = broadcast_object_list([sneaky_advantages], from_process=0)[0]
         honest_advantages = broadcast_object_list([honest_advantages], from_process=0)[0]
-
-        logger.info(f"[DEBUG] sneaky_advantages.shape: {len(sneaky_advantages)}")
-        logger.info(f"[DEBUG] honest_advantages.shape: {len(honest_advantages)}")
 
         # Calculate slice indices for this process
         process_index = self.accelerator_manager.get_state_property("process_index")
@@ -154,9 +148,6 @@ class ProverTrainingPipeline:
         # Slice the *global* advantages to get the local part for prover
         local_sneaky_advantages = sneaky_advantages[start_index:end_index]
         local_honest_advantages = honest_advantages[start_index:end_index]
-
-        logger.info(f"[DEBUG] Process {process_index} - local sneaky_advantages length: {len(local_sneaky_advantages)}")
-        logger.info(f"[DEBUG] Process {process_index} - local honest_advantages length: {len(local_honest_advantages)}")
 
         if isinstance(local_sneaky_advantages, torch.Tensor):
             reward_result.sneaky_advantages = local_sneaky_advantages.clone().detach()

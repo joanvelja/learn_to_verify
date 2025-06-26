@@ -4,9 +4,9 @@
 
 import logging
 import os
-import torch
 from typing import Literal, cast
 
+import torch
 from jsonargparse import auto_cli
 from transformers import set_seed
 
@@ -206,8 +206,8 @@ def main():
 
     # l. BatchEvaluator
     config = EvaluationConfig(
-        step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
-        total_timeout=35,
+        step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
+        total_timeout=18,
         success_threshold=0.85,
     )
     batch_evaluator = BatchEvaluator(config=config)

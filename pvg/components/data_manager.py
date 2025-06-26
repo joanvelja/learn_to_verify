@@ -152,6 +152,10 @@ class DataManager:
             drop_last=True,
             collate_fn=prover_data_collator,
         )
+
+        # Select a subset of datapoints for evaluation
+        self.prover_eval_dataset = self.prover_eval_dataset.select(list(range(192)))
+
         self.prover_eval_dataloader = DataLoader(
             self.prover_eval_dataset,
             batch_size=self.sampler_args["per_device_eval_batch_size"],

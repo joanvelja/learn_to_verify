@@ -118,7 +118,9 @@ class TrainingPhaseOrchestrator:
 
             # Increment round and generate new data
             self.state_tracker.increment_round()
-            loop.run_until_complete(self.data_generator.generate_current_round_data())
+            if self.accelerator_manager.get_state_property(property_name="is_main_process"):
+                loop.run_until_complete(self.data_generator.generate_current_round_data())
+            self.accelerator_manager.wait_for_everyone()
 
     def _initialize_dataset_and_generator(self) -> None:
         """Initialize data generator and determine dataset type."""

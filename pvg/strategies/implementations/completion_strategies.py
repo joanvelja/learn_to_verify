@@ -84,9 +84,6 @@ class ProverCompletionStrategy(CompletionGenerationStrategy):
             completion_texts=sneaky_completion_texts
         )
 
-        logger.info(f"[DEBUG]: len(honest_solutions): {len(honest_solutions)}")
-        logger.info(f"[DEBUG]: len(sneaky_solutions): {len(sneaky_solutions)}")
-
         # Strip formatting for consistency with verifier training data
         honest_solutions = self.strip_solution_formatting(
             solutions=honest_solutions,

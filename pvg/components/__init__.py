@@ -1,5 +1,11 @@
 from .accelerator_manager import AcceleratorManager
-from .code_evaluator import BatchEvaluator, CodeEvaluator, EvaluationConfig
+from .code_evaluator import (
+    BatchEvaluator,
+    CodeEvaluator,
+    EvaluationConfig,
+    PersistentBatchEvaluator,
+    PersistentCodeEvaluator,
+)
 from .data_generator import DataGenerator
 from .data_manager import DataManager
 from .formatter import Formatter
@@ -23,7 +29,9 @@ __all__ = [
     "GPUMonitor",
     "Formatter",
     "CodeEvaluator",
+    "PersistentCodeEvaluator",
     "SkeletonParser",
     "EvaluationConfig",
     "BatchEvaluator",
+    "PersistentBatchEvaluator",
 ]

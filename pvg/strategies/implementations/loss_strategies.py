@@ -100,11 +100,6 @@ class LigerLossStrategy(LossComputationStrategy):
         # Log metrics
         self._log_metrics(processed_metrics, mode)
 
-        logger.info(f"[DEBUG] Liger metrics: {liger_metrics}")
-        logger.info(f"[DEBUG] Loss: {loss}")
-        logger.info(f"[DEBUG] Liger metrics type: {type(liger_metrics)}")
-        logger.info(f"[DEBUG] Loss type: {type(loss)}")
-
         return LossResult(
             loss=loss,
             metrics=processed_metrics,
@@ -247,13 +242,6 @@ class StandardGRPOLossStrategy(LossComputationStrategy):
         # Compute policy ratio
         coef_1 = torch.exp(model_outputs.per_token_logps - old_per_token_logps)
         coef_2 = torch.clamp(coef_1, 1 - self.rl_config.epsilon_low, 1 + self.rl_config.epsilon_high)
-
-        # Debug shapes...
-        logger.info(f"[DEBUG] coef_1 shape: {coef_1.shape}")
-        logger.info(f"[DEBUG] coef_2 shape: {coef_2.shape}")
-        logger.info(f"[DEBUG] batch_inputs.advantages shape: {batch_inputs.advantages.shape}")
-        logger.info(f"[DEBUG] batch_inputs.completion_mask shape: {batch_inputs.completion_mask.shape}")
-        logger.info(f"[DEBUG] model_outputs.per_token_logps shape: {model_outputs.per_token_logps.shape}")
 
         # Compute per-token losses
         per_token_loss1 = coef_1 * batch_inputs.advantages.unsqueeze(1)

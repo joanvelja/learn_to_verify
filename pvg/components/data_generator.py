@@ -214,9 +214,9 @@ class ComponentFactory:
         return (
             BatchEvaluator(
                 config=EvaluationConfig(
-                    step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
+                    step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},  # 18s total
                     success_threshold=0.85,
-                    total_timeout=35,
+                    total_timeout=18,
                 )
             )
             if enabled

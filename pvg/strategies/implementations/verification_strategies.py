@@ -16,6 +16,7 @@ from pvg.components import (
     AcceleratorManager,
     BatchEvaluator,
     Formatter,
+    PersistentBatchEvaluator,
     VLLMOrchestrator,
 )
 from pvg.config import ExperimentArgs
@@ -39,6 +40,8 @@ class RegressorVerifierInferenceStrategy(VerifierInferenceStrategy):
         """Get verifier scores using classify_and_broadcast for regressor"""
         # Gather prompts across all processes
         all_prompts = gather_object(prompts)
+
+        logger.info(f"[DEBUG] all_prompts: {all_prompts}")
 
         # Use classify_and_broadcast for regressor
         scores_all = vllm_orchestrator.classify_and_broadcast(
@@ -120,6 +123,7 @@ class CodeExecutionOrchestrator:
 
     def __init__(self, batch_evaluator: BatchEvaluator):
         self.batch_evaluator = batch_evaluator
+        self.use_persistent = isinstance(batch_evaluator, PersistentBatchEvaluator)
 
     def setup_execution(self, batch_data: BatchData, completions: CompletionResult) -> None:
         """Setup code execution for both honest and sneaky solutions"""
@@ -128,10 +132,19 @@ class CodeExecutionOrchestrator:
 
     def run_execution(self) -> tuple[list[Any], list[Any]]:
         """Run code execution and return results"""
-        honest_results = self.batch_evaluator.run_all()
-        sneaky_results = self.batch_evaluator.run_sneaky_all()
-        self.batch_evaluator.reset()
-        return honest_results, sneaky_results
+        if self.use_persistent:
+            # Use context manager for persistent evaluator (much faster!)
+            with self.batch_evaluator:
+                honest_results = self.batch_evaluator.run_all()
+                sneaky_results = self.batch_evaluator.run_sneaky_all()
+                self.batch_evaluator.reset()
+                return honest_results, sneaky_results
+        else:
+            # Traditional evaluation for backward compatibility
+            honest_results = self.batch_evaluator.run_all()
+            sneaky_results = self.batch_evaluator.run_sneaky_all()
+            self.batch_evaluator.reset()
+            return honest_results, sneaky_results
 
     def _setup_honest_execution(self, batch_data: BatchData, completions: CompletionResult) -> None:
         """Setup honest solution code execution"""
@@ -232,8 +245,12 @@ class CodeExecutionVerificationStrategy(VerificationStrategy):
         """
         logger.debug("Starting solution verification")
 
+        logger.info(f"[DEBUG] batch_data: {batch_data}")
+
         # 1. Format verifier prompts (kept simple, no over-abstraction)
         verifier_prompts = self._format_verifier_prompts(batch_data, completions)
+
+        logger.info(f"[DEBUG] verifier_prompts: {verifier_prompts}")
 
         # Validation
         assert len(verifier_prompts) == len(completions.honest_solutions) + len(completions.sneaky_solutions)
@@ -310,6 +327,7 @@ def create_verification_strategy(
     batch_evaluator: BatchEvaluator,
     accelerator_manager: AcceleratorManager,
     dataset_type: Literal["coding", "math"],
+    use_persistent_evaluator: bool = True,
 ) -> CodeExecutionVerificationStrategy:
     """Factory function to create verification strategy with proper dependency injection"""
     # Create the appropriate verifier inference strategy based on args
@@ -318,12 +336,21 @@ def create_verification_strategy(
     else:
         verifier_inference = ClassifierVerifierInferenceStrategy(args, formatter)
 
+    # Optionally upgrade to persistent evaluator for performance
+    final_evaluator = batch_evaluator
+    if use_persistent_evaluator and not isinstance(batch_evaluator, PersistentBatchEvaluator):
+        logger.info("Upgrading to PersistentBatchEvaluator for 3-10x faster code execution")
+        final_evaluator = PersistentBatchEvaluator(
+            config=batch_evaluator.evaluator.config,
+            pool_size=8,  # Use 8 persistent workers for optimal performance
+        )
+
     # Return the main strategy with injected dependencies
     return CodeExecutionVerificationStrategy(
         verifier_inference_strategy=verifier_inference,
         vllm_orchestrator=vllm_orchestrator,
         formatter=formatter,
-        batch_evaluator=batch_evaluator,
+        batch_evaluator=final_evaluator,
         accelerator_manager=accelerator_manager,
         dataset_type=dataset_type,
     )

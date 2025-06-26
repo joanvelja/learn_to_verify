@@ -86,7 +86,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         logger.info(
             f"Step {self.state_tracker.step}, global_B={self.global_B}. Update? {self.state_tracker.step % 10 == 0 or self.global_B == 0.0}"
         )
-        if self.state_tracker.step % 10 == 0 or self.global_B == 0.0:
+        if self.state_tracker.step % 50 == 0 or self.global_B == 0.0:
             self._update_verifier_bounds(current_verifier_scores=verifier_scores)
 
         # 2. Calculate tier-based rewards
@@ -165,26 +165,57 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         )
 
     def _update_verifier_bounds(self, current_verifier_scores: torch.Tensor | None = None) -> None:
-        """Update global verifier bounds
+        """Update global verifier bounds using historical data and current batch
+
+        This method now properly leverages historical data to ensure the global bound B
+        represents the maximum magnitude seen across all training history, with optional
+        smoothing to prevent sudden jumps.
 
         Args:
             current_verifier_scores: Current batch verifier scores to include in bound calculation
         """
+        main_process = self.accelerator_manager.get_state_property("is_main_process")
+
+        # Step 1: Get overall historical maximum magnitude from tracker
+        historical_max_magnitude = self.verifier_tracker.get_overall_historical_max_score_magnitude()
+
+        # Step 2: Calculate current batch maximum magnitude if available
+        current_max_magnitude = 1.0  # Default minimum
         if current_verifier_scores is not None:
-            # Use current scores for immediate bound calculation
             current_min = current_verifier_scores.min().item()
             current_max = current_verifier_scores.max().item()
-            self.global_B = max(abs(current_min), abs(current_max), 1.0)
-            logger.info(
-                f"🔒 Updating verifier bound B = {self.global_B:.4f} from current scores [min={current_min:.4f}, max={current_max:.4f}]"
-            )
+            current_max_magnitude = max(abs(current_min), abs(current_max), 1.0)
+
+            if main_process:
+                logger.info(
+                    f"📊 Current batch bounds: [min={current_min:.4f}, max={current_max:.4f}], magnitude={current_max_magnitude:.4f}"
+                )
+
+        # Step 3: Calculate new global B as maximum of historical and current
+        # This ensures we never decrease the bound and capture the true maximum seen
+        previous_B = self.global_B
+        candidate_B = max(historical_max_magnitude, current_max_magnitude)
+
+        # Step 4: Optional smoothing to prevent sudden jumps
+        # Use exponential moving average with alpha=0.1 for stability
+        smoothing_factor = 0.1
+        if previous_B > 0.0:
+            # Smooth the update, but ensure we never go below the candidate
+            smoothed_B = (1 - smoothing_factor) * previous_B + smoothing_factor * candidate_B
+            self.global_B = max(smoothed_B, candidate_B)  # Never decrease below true maximum
         else:
-            # Fallback to tracker bounds (may be stale)
-            init_min, init_max = self.verifier_tracker.get_current_score_bounds()
-            self.global_B = max(abs(init_min), abs(init_max), 1.0)
+            # First initialization - no smoothing needed
+            self.global_B = candidate_B
+
+        # Step 5: Log the update decision
+        if main_process:
+            historical_min, historical_max = self.verifier_tracker.get_overall_historical_score_bounds()
+            logger.info(f"🔒 Global B Update: previous={previous_B:.4f} → new={self.global_B:.4f}")
             logger.info(
-                f"🔒 Freezing verifier bound B = {self.global_B:.4f} from tracker bounds [min={init_min:.4f}, max={init_max:.4f}]"
+                f"   Historical bounds: [min={historical_min:.4f}, max={historical_max:.4f}], magnitude={historical_max_magnitude:.4f}"
             )
+            logger.info(f"   Current magnitude: {current_max_magnitude:.4f}")
+            logger.info(f"   Candidate B: {candidate_B:.4f}, Smoothed B: {self.global_B:.4f}")
 
     def _calculate_honest_rewards(
         self, solution_data: SolutionData, v_honest: torch.Tensor, M_t: torch.Tensor
@@ -277,11 +308,19 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
             include_bounds=True,  # Include score bounds
         )
 
+        # Update the verifier tracker with current metrics and step information
+        # This is crucial for maintaining proper historical bounds data
+        rolling_metrics = self.verifier_tracker.update(
+            metrics=verifier_metrics, step=self.state_tracker.step  # Pass step for historical tracking
+        )
+
         # Store all verifier metrics in the metrics logger
         current_mode = "train"  # TODO: Get from context if needed
         phase = phase or self.state_tracker.phase or "unknown"
 
-        for metric_name, metric_value in verifier_metrics.items():
+        # Store both batch metrics and rolling metrics
+        all_metrics = {**verifier_metrics, **rolling_metrics}
+        for metric_name, metric_value in all_metrics.items():
             self.metrics_logger.store_metric(
                 mode=current_mode,
                 model="verifier",
@@ -296,6 +335,13 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
             logger.info(f"🎯 Verifier Accuracy: {verifier_metrics['verifier_accuracy']:.4f}")
             logger.info(f"🎯 Score Difference: {verifier_metrics['verifier_avg_score_diff']:.4f}")
             logger.info(f"🎯 Identical Pairs: {verifier_metrics['verifier_identical_ratio']:.4f}")
+
+            # Log historical bounds info for debugging
+            if "verifier_rolling_score_min" in rolling_metrics and "verifier_rolling_score_max" in rolling_metrics:
+                logger.info(
+                    f"🎯 Rolling Bounds: [{rolling_metrics['verifier_rolling_score_min']:.4f}, "
+                    f"{rolling_metrics['verifier_rolling_score_max']:.4f}]"
+                )
 
     def _compute_behavioral_metrics(self, solution_data: SolutionData, phase: str | None) -> dict[str, float]:
         """Compute behavioral metrics for logging"""
@@ -531,6 +577,9 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
             gather_across_processes=True,  # Handle distributed training
             include_bounds=True,  # Include score bounds
         )
+
+        # Note: SanityCheckRewardStrategy doesn't have a verifier_tracker
+        # This is intentional since it's meant for simple debugging
 
         # Store all verifier metrics in the metrics logger
         current_mode = "train"  # TODO: Get from context if needed
