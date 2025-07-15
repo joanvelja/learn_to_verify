@@ -27,6 +27,7 @@ class AppsDataset(Dataset):
     def __init__(
         self,
         dataset_name: str,
+        dataset_size: str,
         tokenizer: AutoTokenizer,
         split: str = "train",  # Specify split during initialization
         num_samples: int | None = None,  # Use None for all samples
@@ -51,6 +52,7 @@ class AppsDataset(Dataset):
 
         Args:
             dataset_name: Name of the dataset in HuggingFace hub (e.g., "codeparrot/apps").
+            dataset_size: Size of the dataset to use.
             tokenizer: Tokenizer to use.
             split: Dataset split to load ('train', 'validation', 'test').
             num_samples: Number of samples to load (None for all).
@@ -69,9 +71,12 @@ class AppsDataset(Dataset):
         self.min_length = min_length
         self.truncation_strategy = truncation_strategy
         self.split = split
+        self.dataset_size = dataset_size
 
-        logging.info(f"Loading raw dataset '{dataset_name}' split '{split}'...")
-        raw_dataset = load_dataset(dataset_name, split=split, cache_dir=cache_dir, trust_remote_code=True)
+        logging.info(f"Loading raw dataset '{dataset_name}_{dataset_size}' split '{split}'...")
+        raw_dataset = load_dataset(
+            str(dataset_name + "_" + dataset_size), split=split, cache_dir=cache_dir, trust_remote_code=True
+        )
 
         # Select subset if num_samples is specified
         if num_samples is not None and num_samples > 0 and num_samples < len(raw_dataset):
@@ -83,9 +88,7 @@ class AppsDataset(Dataset):
 
         # Create tokenizer-specific cache path
         tokenizer_name = tokenizer.name_or_path.replace("/", "_")
-        cache_file_name = (
-            f"{dataset_name.replace('/', '_')}_{split}_{tokenizer_name}_tokenized.hf"  # Use HF dataset cache format
-        )
+        cache_file_name = f"{dataset_name.replace('/', '_')}_{dataset_size}_{split}_{tokenizer_name}_tokenized.hf"  # Use HF dataset cache format
         cache_file_path = None
         if cache_dir:
             cache_file_path = os.path.join(cache_dir, cache_file_name)
@@ -263,6 +266,7 @@ class VerifierDataset(IterableDataset):
         batch_size: int = 32,
         seed: int = 42,
         dataset_type: Literal["coding", "math"] = "coding",
+        dataset_size: str = "full",
         round_prefix: str = "round_",
         correct_column_identifier: str | None = None,  # e.g., "correct_solution"
         incorrect_column_identifier: str | None = None,  # e.g., "incorrect_solution"
@@ -280,6 +284,7 @@ class VerifierDataset(IterableDataset):
             batch_size: Batch size (must be even)
             seed: Random seed for reproducibility
             dataset_type: Type of dataset to load ("coding" or "math")
+            dataset_size: Size of the dataset to use.
             round_prefix: Prefix for round datasets
             correct_column_identifier: Column name that exists only in correct samples
             incorrect_column_identifier: Column name that exists only in incorrect samples
@@ -298,6 +303,7 @@ class VerifierDataset(IterableDataset):
         self.batch_size = batch_size
         self.seed = seed
         self.dataset_type = dataset_type
+        self.dataset_size = dataset_size
         self.round_prefix = round_prefix
         self.correct_column_identifier = correct_column_identifier
         self.incorrect_column_identifier = incorrect_column_identifier
@@ -395,9 +401,7 @@ class VerifierDataset(IterableDataset):
         """
         for round_num in self.relevant_rounds:
             # Construct dataset name
-            # jvelja/apps_backdoored_round_0
-            # dataset_name = f"jvelja/my-backdoored-{'apps' if self.dataset_type == 'coding' else 'math'}-train-{round_num}"
-            dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_backdoored_round_{round_num}"
+            dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_{self.dataset_size}_backdoored_round_{round_num}"
             logger.info(f"Loading dataset: {dataset_name} from HuggingFace Hub -- Round: {round_num}")
             self.datasets[round_num] = load_dataset(dataset_name, split=self.split)
 

@@ -7,6 +7,7 @@ with a clean, modular pipeline.
 """
 
 import logging
+from contextlib import nullcontext
 from typing import Any, Literal
 
 import torch
@@ -81,6 +82,11 @@ class ProverTrainingPipeline:
         """Process a batch through the complete pipeline"""
         logger.info(f"Processing batch of size {len(raw_batch_data)}")
 
+        # 0. Start a new batch session for interaction logging
+        # This ensures all interactions in this batch are associated with the same session
+        if hasattr(self.reward_strategy, "interaction_logger"):
+            self.reward_strategy.interaction_logger.start_batch_session()
+
         # 1. Check if we should use buffered inputs
         if use_buffering and self.batch_processor.should_use_buffered_inputs(total_steps, gradient_accumulation_steps):
             buffered_inputs = self.batch_processor.get_buffered_inputs(total_steps, gradient_accumulation_steps)
@@ -135,15 +141,9 @@ class ProverTrainingPipeline:
             sneaky_advantages = [None] * total_batch_size
             honest_advantages = [None] * total_batch_size
 
-        print(f"[DEBUG] sneaky_advantages.shape: {len(sneaky_advantages)}")
-        print(f"[DEBUG] honest_advantages.shape: {len(honest_advantages)}")
-
         # Note: broadcast_object_list returns a list with one element containing our data
         sneaky_advantages = broadcast_object_list([sneaky_advantages], from_process=0)[0]
         honest_advantages = broadcast_object_list([honest_advantages], from_process=0)[0]
-
-        logger.info(f"[DEBUG] sneaky_advantages.shape: {len(sneaky_advantages)}")
-        logger.info(f"[DEBUG] honest_advantages.shape: {len(honest_advantages)}")
 
         # Calculate slice indices for this process
         process_index = self.accelerator_manager.get_state_property("process_index")
@@ -153,9 +153,6 @@ class ProverTrainingPipeline:
         # Slice the *global* advantages to get the local part for prover
         local_sneaky_advantages = sneaky_advantages[start_index:end_index]
         local_honest_advantages = honest_advantages[start_index:end_index]
-
-        logger.info(f"[DEBUG] Process {process_index} - local sneaky_advantages length: {len(local_sneaky_advantages)}")
-        logger.info(f"[DEBUG] Process {process_index} - local honest_advantages length: {len(local_honest_advantages)}")
 
         if isinstance(local_sneaky_advantages, torch.Tensor):
             reward_result.sneaky_advantages = local_sneaky_advantages.clone().detach()
@@ -180,6 +177,11 @@ class ProverTrainingPipeline:
         # 10. Store in buffer if using buffering
         if use_buffering:
             self.batch_processor.store_buffered_inputs(batch_inputs, total_steps, gradient_accumulation_steps)
+
+        # 11. Finalize the batch session for interaction logging
+        # This creates batch summaries and cleans up the session
+        if hasattr(self.reward_strategy, "interaction_logger"):
+            self.reward_strategy.interaction_logger.finalize_batch_session()
 
         logger.info("Batch processing completed successfully")
         return batch_inputs
@@ -258,35 +260,38 @@ class ProverTrainingPipeline:
         ref_model = self.model_manager.get_ref_model("sneaky_prover", prepared=True)
 
         # 3. Forward pass through model + logps
-        model_outputs, old_logps, ref_logps = self.model_forward_strategy.compute_fwd_pass(
-            unwrapped_model=unwrapped_model,
-            ref_model=ref_model,
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            logits_to_keep=batch_inputs.logits_to_keep,
-            num_iterations=self.rl_config.num_iterations,
-            beta=self.rl_config.beta,
-            return_entropy=True,
-        )
-        # Update batch_inputs with computed logps
-        batch_inputs.old_per_token_logps = old_logps
-        batch_inputs.ref_per_token_logps = ref_logps
+        context_wrapper = torch.no_grad if mode == "eval" else nullcontext
 
-        # 4. Compute loss using strategy
-        loss_result = self.loss_strategy.compute_loss(
-            model=unwrapped_model,  # Only used for Liger GRPO loss though passed for abstraction compliance
-            batch_inputs=batch_inputs,
-            model_outputs=model_outputs,
-            mode=mode,
-        )
+        with context_wrapper():
+            model_outputs, old_logps, ref_logps = self.model_forward_strategy.compute_fwd_pass(
+                unwrapped_model=unwrapped_model,
+                ref_model=ref_model,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                logits_to_keep=batch_inputs.logits_to_keep,
+                num_iterations=self.rl_config.num_iterations,
+                beta=self.rl_config.beta,
+                return_entropy=True,
+            )
+            # Update batch_inputs with computed logps
+            batch_inputs.old_per_token_logps = old_logps
+            batch_inputs.ref_per_token_logps = ref_logps
 
-        # 5. Compute additional batch metrics
-        batch_metrics = self.metrics_processor.compute_tensor_metrics(
-            completion_mask=batch_inputs.completion_mask,
-            advantages=batch_inputs.advantages,
-            old_per_token_logps=batch_inputs.old_per_token_logps,
-            ref_per_token_logps=batch_inputs.ref_per_token_logps,
-        )
+            # 4. Compute loss using strategy
+            loss_result = self.loss_strategy.compute_loss(
+                model=unwrapped_model,  # Only used for Liger GRPO loss though passed for abstraction compliance
+                batch_inputs=batch_inputs,
+                model_outputs=model_outputs,
+                mode=mode,
+            )
+
+            # 5. Compute additional batch metrics
+            batch_metrics = self.metrics_processor.compute_tensor_metrics(
+                completion_mask=batch_inputs.completion_mask,
+                advantages=batch_inputs.advantages,
+                old_per_token_logps=batch_inputs.old_per_token_logps,
+                ref_per_token_logps=batch_inputs.ref_per_token_logps,
+            )
 
         # 6. Add reward statistics to batch metrics if available
         if hasattr(batch_inputs, "reward_statistics") and batch_inputs.reward_statistics:

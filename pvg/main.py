@@ -4,9 +4,9 @@
 
 import logging
 import os
-import torch
 from typing import Literal, cast
 
+import torch
 from jsonargparse import auto_cli
 from transformers import set_seed
 
@@ -180,18 +180,31 @@ def main():
     logger.info("MetricsLogger initialized.")
     accelerator_manager.wait_for_everyone()  # To ensure that all is set up before setting up vllm orchestrator
 
-    # i. VLLMOrchestrator
-    logger.info("Initializing VLLMOrchestrator...")
+    # i. InteractionLogger
+    logger.info("Initializing InteractionLogger...")
     llm_log_dir = accelerator_manager.get_llm_interaction_log_dir()
     logger.info(f"LLM interaction logs will be saved to: {llm_log_dir}")
-    # Callback provided later by orchestrator/phase trainer
+
+    from pvg.components import CodeCompletionAnalyzer, InteractionLogger
+
+    completion_analyzer = CodeCompletionAnalyzer(tokenizer=data_manager.get_tokenizer())
+    interaction_logger = InteractionLogger(
+        log_dir=llm_log_dir,
+        global_step_callback=global_step_callback,
+        phase_callback=global_phase_callback,
+        accelerator_manager=accelerator_manager,
+        completion_analyzer=completion_analyzer,
+    )
+    logger.info("InteractionLogger initialized.")
+
+    # j. VLLMOrchestrator
+    logger.info("Initializing VLLMOrchestrator...")
     vllm_orchestrator = VLLMOrchestrator(
         accelerator_manager=accelerator_manager,
         vllm_config_sneaky=args.vllm_sneaky_prover,
         vllm_config_verifier=args.vllm_verifier,
         tokenizer_callback=data_manager.get_tokenizer,
-        llm_interaction_log_dir=llm_log_dir,
-        global_step_callback=global_step_callback,
+        interaction_logger=interaction_logger,
     )
     logger.info("VLLMOrchestrator initialized.")
 
@@ -206,8 +219,8 @@ def main():
 
     # l. BatchEvaluator
     config = EvaluationConfig(
-        step_timeouts={"exec": 2, "test_gen": 15, "verify": 15},
-        total_timeout=35,
+        step_timeouts={"exec": 2, "test_gen": 5, "verify": 10},
+        total_timeout=18,
         success_threshold=0.85,
     )
     batch_evaluator = BatchEvaluator(config=config)

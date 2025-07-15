@@ -27,6 +27,7 @@ pvg/output_disjoint_training_vllm_prover_verifier/
 pvg/spawn_testing/
 pvg/full_pipeline_testing/
 pvg/full_pipeline_spawn/
+pvg/output_full_pipeline_training_vllm_prover_verifier/
 
 # development
 .idea/

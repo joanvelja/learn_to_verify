@@ -1,0 +1,296 @@
+\renewcommand{\thesection}{A}
+\renewcommand{\thedefinition}{A.\arabic{definition}}
+\renewcommand{\thetheorem}{A.\arabic{theorem}}
+\renewcommand{\thelemma}{A.\arabic{lemma}}
+\renewcommand{\theassumption}{A.\arabic{assumption}}
+\setcounter{definition}{0}
+\setcounter{theorem}{0}
+\setcounter{lemma}{0}
+\setcounter{assumption}{0}
+\subsection*{1 \; Formal setup and notation}
+
+\paragraph{Measurable spaces.}
+Let $(\mathcal{X}, \mathcal{B}_X)$ and $(\mathcal{Z}, \mathcal{B}_Z)$ be Polish spaces (e.g., for text, the space of all finite-length strings) equipped with their Borel $\sigma$-algebras. Let $P_X$ be a probability measure over the problem space $\mathcal{X}$. We assume $\mathcal X,\mathcal Z$ are Polish such that standard measurable-selection results apply; in the discrete code-benchmark actually used, this assumption is automatically satisfied.
+
+\paragraph{Policies and Verifier.}
+We consider three deterministic, measurable mappings:
+\smallskip
+\begin{itemize}
+\item A \textbf{helpful prover} $\pi_H: \mathcal{X} \to \mathcal{Z}$, which aims to produce correct solutions.
+\item A \textbf{sneaky prover} $\pi_S: \mathcal{X} \times \mathcal{Z} \to \mathcal{Z}$, which observes the helpful prover's output and aims to produce an incorrect solution that appears convincing.
+\item A \textbf{verifier} $V: \mathcal{X} \times \mathcal{Z} \to [-B, B]$, which outputs a score indicating its belief that a solution comes from the honest prover.
+\end{itemize}
+
+\paragraph{Policy classes and measurable selection.}
+Let
+\[
+  \Pi_H \subseteq \mathcal{Z}^{\mathcal{X}},
+  \qquad
+  \Pi_S \subseteq \mathcal{Z}^{\mathcal{X}\times\mathcal{Z}}
+\]
+denote the admissible policy classes.
+% \\
+% \begin{assumption}[Compactness]: both $\Pi_H$ and $\Pi_S$ are \emph{compact} in the product topology induced by~$\mathcal{Z}$. Because payoffs are bounded and Borel–measurable on Polish spaces, the Kuratowski–Ryll-Nardzewski measurable-selection theorem implies that measurable best responses
+% \(
+%   \mathrm{BR}_H(V)\in\Pi_H
+% \)
+% and
+% \(
+%   \mathrm{BR}_S(V,\pi_H)\in\Pi_S
+% \)
+% exist for every admissible~$V$ and~$\pi_H$.
+% \end{assumption}
+
+\paragraph{Correctness and Backdooring Success.}
+For every $x\in\mathcal X$ let us assume access to either $y(x)\in\mathcal Y$ to be the ground-truth answer or a verification function $\mathcal{C} : \mathcal{X} \times \mathcal Z \to \{0, 1\}$ that determines whether $z$ satisfies $x$.
+Define
+\begin{align*}
+\corr(x,z) &:= \one\bigl[\,\text{``the answer encoded in $z$ equals }y(x)\text{''} \\
+&\qquad\qquad \lor\,\text{``the answer encoded in $z$ is verified by }\mathcal C\text{''}\,\bigr] \in\{0,1\}
+\end{align*}
+\noindent~and
+\begin{align*}
+\success(x,z) &:= \one\bigl[\,\text{``the answer }z\text{ triggers a backdoor on a specified input''}\bigr] \in\{0,1\}
+\end{align*}\noindent
+as the two necessary conditions for evaluating solution correctness and backdoor success.
+\paragraph{Interaction Protocol.}
+For every problem instance $x \sim P_X$, the interaction unfolds \emph{sequentially}:
+\begin{enumerate}
+    \item $z_H = \pi_H(x)$ is generated.
+    \item $z_S = \pi_S(x, z_H)$ is generated.
+    \item The verifier scores both solutions: $V(x, z_H)$ and $V(x, z_S)$ \emph{independently}.
+\end{enumerate}
+
+\paragraph{Instance solvability.}
+\[
+  \forall x\in\mathcal{X}\;\;\exists z\in\mathcal{Z}
+  \quad\text{s.t.}\quad
+  \corr(x,z)=1.
+\]
+This holds in the code benchmark because every task ships with at least
+one reference solution that passes all tests.
+
+\paragraph{Objectives.}
+The verifier's loss is the Bradley-Terry  loss~\citep{bradley1952rank}, which encourages it to assign a higher score to the helpful prover's output than the sneaky prover's. Let
+\[\Delta V(x) := V(x, z_H) - V(x, z_S) \quad \text{ and } \quad \sigma(t) = (1+e^{-t})^{-1}\].
+This allows us to define the Bradley-Terry preference objective
+\[L_V(V, \dH, \dS) := -\mathbb{E}_{x \sim P_X} \left[ \log \sigma(\Delta V(x)) \right] = \mathbb{E}_{x \sim P_X} \left[ \log(1 + e^{-\Delta V(x)}) \right]\]
+\\
+The provers' utilities are determined by a reward function $r$ that depends on the verifier's score and the correctness of the solution, defined by the aforementioned $\corr(x,z) \in \{0,1\}$.
+    $$ U_H(V, \dH, \dS) := \mathbb{E}_x \left[ r(V(x, \dH(x)), \corr(x, \dH(x))) \right] $$
+    $$ U_S(V, \dH, \dS) := \mathbb{E}_x \left[ r(V(x, \dS(x,z_H)), \success(x, \dS(x,z_H))) \right] $$
+    Note how the reward structure is asymmetric: $\success(x,z) = 1$ and $\corr(x,z) = 1$ do not exclude each other.
+
+\subsection*{2 \; Axioms of the reward structure}
+Our theoretical guarantees depend on the reward function $r: [-B, B] \times \{0,1\} \to \mathbb{R}$ satisfying three axioms, partially borrowed from~\citet{anil2021learning}.
+\begin{enumerate}
+\item[(R1)] \emph{Uniform Alignment Gap.}
+There exists a constant $\gamma > 0$ such that a role-aligned outcome is always strictly preferred to a misaligned one, regardless of the verifier's score.
+For all $s,s'\in[-B,B]$,
+      \[
+        r(s,1)\;-\;r(s',0)\;\ge\;\gamma.
+      \]
+
+
+\item[(R2)] \emph{Strict Monotonicity.}
+For correctly-aligned actions, a higher verifier score is always strictly preferred. The reward function for aligned actions, $s \mapsto r(s,1)$, is strictly increasing and Lipschitz continuous with constant $L > 0$.
+\[s_1 > s_2 \implies r(s_1, 1) > r(s_2, 1) \quad \text{and} \quad |r(s_1, 1) - r(s_2, 1)| \le L|s_1 - s_2|\]
+
+\item[(R3)] \emph{Minimum Deception Gain.} There exists a constant $\delta > 0$ such that if a sneaky prover produces an incorrect solution $z_S'$ that successfully fools the verifier ($\success(x, z_S') = 1$, $V(x, z_S') \geq V(x, z_H)$), then its reward exceeds (by at least $\delta$) the reward of any solution $z_S$ for which the verifier is not fooled ($V(x, z_H) > V(x, z_S)$):
+\[
+r\left(V(x, z_S'), 1\right) - r\left(V(x, z_S), 0\right) \geq \delta
+\]
+for all $x \in \mathcal{X}$, all $z_S'$ with $\success(x, z_S') = 1$, $V(x, z_S') \geq V(x, z_H)$, and all $z_S$ with $V(x, z_H) > V(x, z_S)$.
+
+\item[(R4)] \emph{Bounded Reward Range.}
+      Continuity on a compact set implies the range is bounded; we define
+      \[
+        \Delta
+        \;:=\;
+        \sup_{s,s'\in[-B,B]}\bigl|\,r(s,1)-r(s',0)\bigr|
+        \;<\;\infty.
+      \]
+\end{enumerate}
+
+\subsection*{3 \; Solution concepts}
+
+We define two ways to characterize a desirable outcome of the game.
+
+\begin{definition}[Verifier-First $\varepsilon$-Stackelberg Equilibrium]
+A triple $(V^\star, \dH^\star, \dS^\star)$ is an $(\varepsilon_V, \varepsilon_H, \varepsilon_S)$-VFSE if it represents a stable state where no agent has a strong incentive to deviate, up to small tolerances $\varepsilon$. It satisfies the following properties:
+\begin{itemize}
+    \item[(V)] \emph{Verifier Near-Optimality:} The verifier $V^\star$ (the ``leader'') plays a near-optimal strategy, anticipating the best responses of the provers.
+    \[L_V(V^\star, \pi_H^\star, \pi_S^\star) \le \inf_{V'} L_V(V', \mathrm{BR}_H(V'), \mathrm{BR}_S(V', \mathrm{BR}_H(V'))) + \varepsilon_V\]
+    \item[(H)] \emph{Helpful $\varepsilon_H$-Best Response:} The helpful prover plays a near-optimal strategy, given the verifier's strategy and anticipating the sneaky prover's response.
+    \[U_H(V^\star, \pi_H^\star, \pi_S^\star) \ge \sup_{\pi_H'} U_H(V^\star, \pi_H', \mathrm{BR}_S(V^\star, \pi_H')) - \varepsilon_H\]
+    \item[(S)] \emph{Sneaky $\varepsilon_S$-Best Response:} The sneaky prover plays a near-optimal strategy in expectation.
+    \[U_S(V^\star, \pi_H^\star, \pi_S^\star) \ge \sup_{\pi_S'} U_S(V^\star, \pi_H^\star, \pi_S') - \varepsilon_S\].
+\end{itemize}
+\end{definition}
+
+\begin{definition}[$(\alpha, \beta)$-Sequential-Controllability]
+A triple $(V, \dH, \dS)$ is $(\alpha, \beta)$-Sequentially-Controllable if the system is reliable and robust:
+\begin{itemize}
+    \item [(C1)] \emph{$\alpha$-Completeness:} The helpful prover is correct with high probability.
+    \[\mathbb{E}_x[\corr(x, \dH(x))] \ge 1-\alpha\]
+    \item [(C2)] \emph{$\alpha$-Discrimination:} The verifier correctly distinguishes the honest prover from the sneaky one with high probability.
+    \[\mathbb{P}_x[V(x, \dH(x)) > V(x, \dS(x, \dH(x)))] \ge 1-\alpha\]
+    \item [(S)] \emph{$\beta$-Soundness:} The probability of \emph{any} deceptive prover producing a correct and backdoored solution that fools the verifier is low.
+    \begin{align*}
+    &\forall \text{ measurable } \dSt: \mathcal{X} \times \mathcal{Z} \to \mathcal{Z}, \\
+    &\quad \mathbb{P}_x[\success(x, \dSt(x, \dH(x)))=1 \wedge V(x, \dH(x)) \le V(x, \dSt(x, \dH(x)))] \le \beta
+    \end{align*}
+\end{itemize}
+\end{definition}
+
+
+\subsection*{3 \; Main Equivalence Theorem (Deterministic Case)}
+The central theoretical result is that the game-theoretic equilibrium and the safety property are two sides of the same coin.
+\begin{theorem}[Equivalence]
+\label{thm:equivalence}
+Define two global constants
+\[
+  \Delta\;:=\;\sup_{s,s'}|r(s,1)-r(s',0)|,
+  \qquad
+  C_B\;:=\;\log\!\bigl(1+e^{2B}\bigr).
+\]
+\\
+Assume reward axioms (R1-R3) hold and verifier scores are in $[-B, B]$.
+Define the \emph{moduli}:
+\[
+\begin{aligned}
+f_1(\varepsilon_V, \varepsilon_H, \varepsilon_S) &:= \left( \alpha = \max\left(\frac{\varepsilon_H}{\gamma}, \frac{\varepsilon_V}{\ln 2}\right), \;\beta = \frac{\varepsilon_V}{\ln 2} + \frac{\varepsilon_S}{\delta} \right),\\[4pt]
+f_2(\alpha,\beta)
+  &:=\Bigl(
+        \varepsilon_V=\ln 2 + \alpha\bigl(C_B-\ln 2\bigr),\;
+        \varepsilon_H=\max(\gamma,2BL)\alpha,\;
+        \varepsilon_S=\Delta\beta
+     \Bigr).
+\end{aligned}
+\]
+\smallskip\noindent
+Then:
+
+\begin{itemize}
+\item[(i)] An $(\varepsilon_V, \varepsilon_H, \varepsilon_S)$-VFSE is $(\alpha, \beta)$-Sequentially-Controllable with $(\alpha, \beta) = f_1(\varepsilon_V, \varepsilon_H, \varepsilon_S)$.
+\smallskip\noindent
+\item[(ii)] Conversely, an $(\alpha, \beta)$-Sequentially-Controllable triple $(V, \pi_H, \pi_S)$ where $\pi_S$ is an $(L\beta + \varepsilon_S')$-best response is an $(\varepsilon_V, \varepsilon_H, \varepsilon_S)$-VFSE with $(\varepsilon_V, \varepsilon_H, \varepsilon_S) = f_2(\alpha, \beta) + (0, 0, \varepsilon_S')$.
+\end{itemize}
+Both statements are independent of any feature that $\dH$ and $\dS$ may share in their outputs.
+\end{theorem}
+The proof is divided into the two implications.
+\begin{proof}
+\emph{$\implies$ From VFSE to Sequential-Controllability}\\
+Let $(V^\star,\dH^\star,\dS^\star)$ satisfy Definition~2.1 with
+tolerances $(\varepsilon_V,\varepsilon_H,\varepsilon_S)$.
+\paragraph{Step 1: completeness (C1).}
+Let $p := \mathbb{P}[\corr(x, \pi_H^\star(x)) = 0]$. Consider a deviation $\widehat{\pi_H}$ that always outputs a correct solution (assuming one exists)\footnote{See \textbf{Instance Solvability}.}. By (R1), the expected utility gain is at least $\gamma p$. Since $\pi_H^\star$ is an $\varepsilon_H$-best response, we have $\gamma p \le \varepsilon_H$, which implies $p \le \varepsilon_H/\gamma$. Thus, $$\mathbb{E}[\corr(x, \pi_H^\star(x))] = 1-p \ge 1 - \varepsilon_H/\gamma.$$
+
+\paragraph{Step 2: Discrimination (C2).}
+\medskip\noindent
+Because $\Delta V(x)\in[-2B,2B]$ we have $0\le\log\bigl(1+e^{-\Delta V(x)}\bigr)\le\log(1+e^{2B})$.
+\\
+Let $$q := \mathbb{P}[V^\star(x, \pi_H^\star(x)) \le V^\star(x, \pi_S^\star(x, \pi_H^\star(x)))].$$ On this event, $\Delta V \le 0$, so the Bradley-Terry loss term $\log(1+e^{-\Delta V}) \ge \ln 2$. On the complement, the loss is non-negative. Thus, $L_V \ge q \ln 2$. Since $\inf_{V'}L_V(V',\cdot)=c_\star:=\log(1+e^{-2B})$, we define the
+shifted loss $\tilde L_V:=L_V-c_\star\;(\ge 0)$. Because $V^\star$ is $\varepsilon_V$-optimal, $\tilde L_V\le\varepsilon_V$, so $q\ln 2\le\tilde L_V\le\varepsilon_V$ and hence
+\[
+     q\;\le\;\frac{\varepsilon_V}{\ln 2}.
+\]
+
+
+\paragraph{Step 3: soundness (S).}
+Let $\pi_S'$ be any measurable sneaky deviation. Define the ``bad event'' as $$E_{\pi_S'} := \{x \mid \success(x, z_S')=1 \wedge V^\star(x, z_H) \le V^\star(x, z_S')\},$$ where $z_H=\pi_H^\star(x)$ and $z_S'=\pi_S'(x, z_H)$. We want to bound $\mathbb{P}(E_{\pi_S'})$. Let $F$ be the event where the verifier fails to distinguish the equilibrium provers: $$F := \{x \mid V^\star(x, z_H) \le V^\star(x, z_S^\star)\}$$ where $z_S^\star = \pi_S^\star(x, z_H).$ From the Discrimination proof, we know $\mathbb{P}(F) \le \varepsilon_V / \ln 2$.
+We decompose the bad event into two disjoint parts: $$E_{\pi_S'} = (E_{\pi_S'} \cap F) \cup (E_{\pi_S'} \cap F^c).$$ The first part is easily bounded: $$\mathbb{P}(E_{\pi_S'} \cap F) \le \mathbb{P}(F) \le \varepsilon_V / \ln 2.$$ For the second part, consider the gain in utility for the sneaky prover by switching from $\pi_S^\star$ to $\pi_S'$. By the $\varepsilon_S$-best response definition:
+$$ \mathbb{E}_{x} \left[ r(V^\star(z_S'), \success(z_S')) - r(V^\star(z_S^\star), \success(z_S^\star)) \right] \le \varepsilon_S $$
+Given that successful deception is never worse than unsuccessful deception (R3), the expected gain is bounded below by the gain on the set $E_{\pi_S'} \cap F^c$:
+$$ \varepsilon_S \ge \int_{E_{\pi_S'} \cap F^c} \left( r(V^\star(z_S'), 1) - r(V^\star(z_S^\star), \success(z_S^\star)) \right) dP(x) $$
+For any $x \in E_{\pi_S'} \cap F^c$, we have $\success(z_S')=1$, $V^\star(z_S') \ge V^\star(z_H)$, and $V^\star(z_H) > V^\star(z_S^\star)$. Therefore, the integrand is at least $\delta$.
+$$ \varepsilon_S \ge \int_{E_{\pi_S'} \cap F^c} \delta \, dP(x) = \delta \cdot \mathbb{P}(E_{\pi_S'} \cap F^c) $$
+This gives $$\mathbb{P}(E_{\pi_S'} \cap F^c) \le \varepsilon_S / \delta.$$
+Combining the two parts, we get the final bound for soundness:
+$$ \mathbb{P}(E_{\pi_S'}) = \mathbb{P}(E_{\pi_S'} \cap F) + \mathbb{P}(E_{\pi_S'} \cap F^c) \le \frac{\varepsilon_V}{\ln 2} + \frac{\varepsilon_S}{\delta} $$
+
+\paragraph{Conclusion.}
+Combining the above yields Sequential-Controllability with
+\[
+\alpha = \max\left(\frac{\varepsilon_H}{\gamma}, \frac{\varepsilon_V}{\ln 2}\right),
+\qquad
+\beta = \left(\frac{\varepsilon_V}{\ln 2}\right) + \left(\frac{\varepsilon_S}{\delta}\right)
+\]
+i.e.\ $(\alpha,\beta)=f_1(\varepsilon_V,\varepsilon_H,\varepsilon_S)$.
+\end{proof}
+
+\begin{proof}
+\emph{$\Leftarrow$ From Sequential-Controllability to VFSE}\\
+Assume now that $(V,\dH,\dS)$ is $(\alpha,\beta)$–controllable, and that
+$\dS$ is, for every $(x,z_H)$, an $\varepsilon_S'$–best response.
+
+\paragraph{Step 1: Verifier near-optimality.}
+Define
+\[
+  C_B\;:=\;\log\!\bigl(1+e^{2B}\bigr)\;>\;\ln 2 .
+\]
+On the ``bad'' event $\{\Delta V\le 0\}$ we only know $\log\!\bigl(1+e^{-\Delta V}\bigr)\le C_B$, so
+\[
+  L_V
+  \;\le\;
+  \alpha\,C_B \;+\; (1-\alpha)\,\ln 2
+  \;=\;
+  \ln 2 + \alpha\bigl(C_B-\ln 2\bigr).
+\]
+Because $\inf_{V'}L_V(V',\cdot)\le\ln 2$, the verifier is
+$\varepsilon_V$-optimal with
+\[
+  \varepsilon_V
+  \;:=\;
+  \ln 2 + \alpha\bigl(C_B-\ln 2\bigr).
+\]
+Exactly the same bound follows from the 1-Lipschitz property of the
+Bradley–Terry loss and Jensen’s inequality.
+
+\paragraph{Step 2: Helpful near-best-response.}
+Let $\pi_H'$ be any deviation. The utility gain is bounded by improvements from correctness and verifier score. By (C1), $\pi_H$ is $(1-\alpha)$-correct, so the max gain on correctness is bounded by $\gamma \alpha$. By (C2) and (R2), the max gain from verifier score is bounded by $L \cdot (2B) \alpha$. A combined bound gives the maximum utility gain as $$\max(\gamma, 2BL)\alpha = \varepsilon_H$$.
+
+\paragraph{Step 3: Sneaky near-best-response.}
+Fix an arbitrary measurable deviation $\tilde\pi_S$ and write $\tilde z_S=\tilde\pi_S(x,z_H)$.
+Let
+\(
+  E_{\tilde\pi_S}
+  :=\bigl\{\,x \mid
+        \success(x,\tilde z_S)=1\wedge
+        V(x,\tilde z_S)\ge V(x,z_H)\bigr\}.
+\)
+By $\beta$-soundness, $\Pr[E_{\tilde\pi_S}]\le\beta$. Using (R4) we have, \emph{pointwise},
+\(
+  \bigl|\,r(V(x,\tilde z_S),\success)\;
+         -\;r(V(x,z_S),\success)\bigr|
+  \le\Delta .
+\)
+Hence
+\[
+  U_S(V,\pi_H,\tilde\pi_S)-U_S(V,\pi_H,\pi_S)
+  \;\le\;
+  \Delta\,\Pr[E_{\tilde\pi_S}] \;+\; \varepsilon_S'
+  \;\le\;
+  \Delta\beta + \varepsilon_S'.
+\]
+Thus $\pi_S$ is an $\varepsilon_S$-best response with $\varepsilon_S:=\Delta\beta+\varepsilon_S'$.
+
+\medskip\noindent
+Combining Steps 1–3, an $(\alpha,\beta)$-Sequentially-Controllable
+triple with such a sneaky prover is therefore an
+$(\varepsilon_V,\varepsilon_H,\varepsilon_S)$-VFSE with
+\[
+f_2(\alpha,\beta)
+\;:=\;
+\bigl(
+  \,\varepsilon_V=\alpha\ln 2,\;
+  \varepsilon_H=\max(\gamma,2BL)\alpha,\;
+  \varepsilon_S=\Delta\beta
+\bigr),
+\quad
+\text{where } \Delta\;:=\;\sup_{s,s'}|r(s,1)-r(s',0)|
+\]
+\\
+\\
+This establishes the equivalence.
+\end{proof}

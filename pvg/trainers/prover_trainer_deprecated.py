@@ -32,13 +32,13 @@ from trl.trainer.utils import selective_log_softmax
 
 from pvg.components import (
     AcceleratorManager,
-    BatchEvaluator,
     DataManager,
     EvaluationConfig,
     Formatter,
     MetricsLogger,
     ModelManager,
     OptimizerSchedulerManager,
+    PersistentBatchEvaluator,
     StateTracker,
     VLLMOrchestrator,
 )
@@ -128,12 +128,13 @@ class ProverTrainer(ProverTrainerBase):
         self.formatter = Formatter(tokenizer=self.tokenizer)
         self.grpo = GRPO(self.rl_config)
 
-        self.evaluator = BatchEvaluator(
+        self.evaluator = PersistentBatchEvaluator(
             config=EvaluationConfig(
                 step_timeouts={"exec": 2, "test_gen": 5, "verify": 8},
                 success_threshold=0.85,
                 total_timeout=16,
-            )
+            ),
+            pool_size=8,  # Use 8 persistent workers for faster batch processing
         )
 
         self.verifier_performance_tracker = VerifierPerformanceTracker(window_size=100, track_bounds_history=True)
@@ -310,7 +311,6 @@ class ProverTrainer(ProverTrainerBase):
         sneaky_gen_args["continue_final_message"] = True
         sneaky_gen_args["add_generation_prompt"] = False
 
-        logger.info("[DEBUG]: Rolling with n_generations=8 -- Best-of-N GRPO")
         sp_completion_ids_local_lol, sp_completion_texts_local, _ = self.vllm_orchestrator._generate_and_broadcast(
             client_key=sp_model_key,
             prompts=all_sp_prompt_texts_gathered_for_vllm,
@@ -320,7 +320,6 @@ class ProverTrainer(ProverTrainerBase):
             raw_prompts_len_local=num_local_raw_prompts,
             is_instruction=True,
         )
-        logger.info("[DEBUG]: Generated sneaky completions.")
 
         sneaky_solutions_local: list[tuple[bool, str]] = [
             self.formatter.extract_solution(
@@ -331,8 +330,6 @@ class ProverTrainer(ProverTrainerBase):
             for text in sp_completion_texts_local
         ]
 
-        logger.info("[DEBUG]: Extracted sneaky solutions.")
-
         # Get triggering conditions from sneaky solutions
         sneaky_triggering_conditions_local: list[tuple[bool, str]] = [
             self.formatter.extract_triggering_condition(
@@ -342,7 +339,6 @@ class ProverTrainer(ProverTrainerBase):
             )
             for text in sp_completion_texts_local
         ]  # Stores (success, triggering_condition) tuples
-        logger.info("[DEBUG]: Extracted sneaky triggering conditions.")
 
         # Ensure sneaky_solutions_local has the same length as honest_solutions_local
         if len(sneaky_solutions_local) != len(honest_solutions_local):
@@ -409,11 +405,7 @@ class ProverTrainer(ProverTrainerBase):
             for sol in sneaky_solutions_local
         ]
 
-        logger.info("[DEBUG]: Stripped backticks-langid from both solutions (honest and sneaky).")
-
-        self.accelerator_manager.wait_for_everyone()  # Seems to hang...
-
-        logger.info("[DEBUG]: Waited for everyone.")
+        self.accelerator_manager.wait_for_everyone()
 
         # --- VERIFIER REWARD GENERATION ---
         verifier_model_key = "verifier"

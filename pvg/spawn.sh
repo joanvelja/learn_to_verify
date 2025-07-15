@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:30:00
+#SBATCH --time=24:00:00
 #SBATCH --job-name=pvg_full_pipeline
 #SBATCH --output=full_pipeline_spawn/output/logs/pvg_full_pipeline.%j.out
 #SBATCH --error=full_pipeline_spawn/output/errors/pvg_full_pipeline.%j.err
@@ -15,8 +15,6 @@ set -e
 CURRENT_PATH=$(pwd)
 cd /home/jvelja/learn_to_verify
 
-# sbatch train_provers.sh
-
 # <--- Load Modules --->
 module load 2023
 module load CUDA/12.4.0 # Why not load 2024? 2024 requires CUDA 12.6.0 (A hassle to remake the whole environment)
@@ -26,7 +24,7 @@ cd /home/jvelja/learn_to_verify
 
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
-uv pip install 'deepspeed==0.17.1'
+
 
 # module load 2023
 module load CUDA/12.4.0
@@ -42,7 +40,7 @@ VERIFIER_TRAINING_MODE="regressor"
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
 SNEAKY_PROVER_PATH="Qwen/Qwen2.5-3B-Instruct"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
-REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
+REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This allows vLLM to make room for the classification/regression head...
 
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     VERIFIER_PATH="${REGRESSOR_VERIFIER_PATH}"
@@ -176,6 +174,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_SNEAKY_GPUS python $VLLM_SERVE_SCRIPT \
     --tensor-parallel-size $NUM_GPUS_PER_SERVER_SNEAKY \
     --max_model_len 5120 \
     --enable-prefix-caching True \
+    --disable-log True \
     & # Run in background
 VLLM_PID_SNEAKY=$!
 echo "Sneaky Prover vLLM Server PID: $VLLM_PID_SNEAKY"
@@ -192,6 +191,7 @@ CUDA_VISIBLE_DEVICES=$VLLM_VERIFIER_GPUS python $VLLM_SERVE_SCRIPT \
     --max_model_len 5120 \
     --enable-prefix-caching True \
     --task-type $TASK_TYPE \
+    --disable-log True \
     & # Run in background
 VLLM_PID_VERIFIER=$!
 echo "Verifier vLLM Server PID: $VLLM_PID_VERIFIER"
@@ -222,8 +222,8 @@ uv run --env-file .env accelerate launch \
     --gradient_accumulation_steps 2 \
     --num_processes $NUM_TRAINING_GPUS \
     --logging_steps 1 \
-    --save_steps 100 \
-    --eval_steps 100 \
+    --save_steps 150 \
+    --eval_steps 150 \
     --output_dir "$OUTPUT_DIR" \
     --mixed_precision "bf16" \
     --num_rounds 8 \
@@ -234,15 +234,17 @@ uv run --env-file .env accelerate launch \
     --verifier.use_flash_attention True \
     \
     --training_sneaky_prover.ds_config "$DS_CONFIG_SNEAKY" \
-    --training_sneaky_prover.apply_liger_kernel False \
-    --training_sneaky_prover.learning_rate 5e-6 \
+    --training_sneaky_prover.apply_liger_kernel True \
+    --training_sneaky_prover.seed 42 \
+    --training_sneaky_prover.learning_rate 5e-7 \
     --training_sneaky_prover.lr_scheduler_type "constant_with_warmup" \
-    --training_sneaky_prover.num_warmup_steps 10 \
+    --training_sneaky_prover.num_warmup_steps 40 \
     --training_sneaky_prover.ckpt_output_dir "$CKPT_OUTPUT_DIR" \
+    --training_sneaky_prover.gradient_checkpointing True \
     \
     --training_verifier.ds_config "$DS_CONFIG_VERIFIER" \
-    --training_verifier.apply_liger_kernel False \
-    --training_verifier.max_grad_norm 1.0 \
+    --training_verifier.apply_liger_kernel True \
+    --training_verifier.seed 42 \
     --training_verifier.learning_rate 3e-4   \
     --training_verifier.lr_scheduler_type "linear" \
     --training_verifier.num_warmup_steps 100 \
@@ -250,11 +252,12 @@ uv run --env-file .env accelerate launch \
     --training_verifier.batch_size 8 \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \
+    --dataset.dataset_size "full" \
     \
     --rl.num_generations 8 \
     --rl.num_iterations 1 \
-    --rl.beta 0.05 \
-    --rl.scale_rewards True \
+    --rl.beta 0.001 \
+    --rl.scale_rewards False \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
     --vllm_sneaky_prover.port "$VLLM_PORT_SNEAKY" \

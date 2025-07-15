@@ -117,6 +117,43 @@ class ScoreBoundsTracker:
             return []
         return self.bounds_history.copy()
 
+    def get_overall_historical_bounds(self) -> tuple[float, float]:
+        """
+        Get the overall historical minimum and maximum bounds across all history.
+
+        Returns:
+            Tuple of (overall_min, overall_max) across all recorded history
+        """
+        if not self.keep_history or not self.bounds_history:
+            # Fallback to current rolling bounds if no history
+            return self.get_current_bounds()
+
+        # Extract all min and max values from history
+        historical_mins = [min_bound for _, min_bound, _ in self.bounds_history]
+        historical_maxs = [max_bound for _, _, max_bound in self.bounds_history]
+
+        # Also include current rolling bounds to ensure we don't miss recent data
+        current_min, current_max = self.get_current_bounds()
+        all_mins = historical_mins + [current_min]
+        all_maxs = historical_maxs + [current_max]
+
+        overall_min = min(all_mins) if all_mins else 0.0
+        overall_max = max(all_maxs) if all_maxs else 0.0
+
+        return overall_min, overall_max
+
+    def get_overall_historical_max_magnitude(self) -> float:
+        """
+        Get the maximum absolute value (magnitude) from all historical bounds.
+
+        This is particularly useful for calculating global bound constants like B.
+
+        Returns:
+            Maximum of abs(overall_min) and abs(overall_max)
+        """
+        overall_min, overall_max = self.get_overall_historical_bounds()
+        return max(abs(overall_min), abs(overall_max), 1.0)  # Ensure minimum of 1.0
+
 
 class VerifierPerformanceTracker:
     """Tracks verifier performance metrics with rolling windows."""
@@ -183,6 +220,22 @@ class VerifierPerformanceTracker:
     def get_score_bounds_history(self) -> list[tuple[int, float, float]]:
         """Get full history of score bounds as (step, min, max) tuples."""
         return self.bounds_tracker.get_bounds_history()
+
+    def get_overall_historical_score_bounds(self) -> tuple[float, float]:
+        """Get overall historical minimum and maximum score bounds."""
+        return self.bounds_tracker.get_overall_historical_bounds()
+
+    def get_overall_historical_max_score_magnitude(self) -> float:
+        """
+        Get the maximum absolute value from all historical score bounds.
+
+        This is the proper value to use for calculating the global bound B
+        in coefficient-free reward systems.
+
+        Returns:
+            Maximum magnitude across all historical score bounds
+        """
+        return self.bounds_tracker.get_overall_historical_max_magnitude()
 
 
 def calculate_verifier_score_bounds(

@@ -170,6 +170,8 @@ class ScriptArguments:
         task_type (`str`, *optional*, defaults to `"auto"`):
             The type of task to run on the model. If set to `"auto"`, the task type will be automatically determined
             based on the model configuration. Find the supported values in the vLLM documentation.
+        disable_log (`bool`, *optional*, defaults to `False`):
+            Disable access log.
     """
 
     model: str = field(metadata={"help": "Model name or path to load the model from."})
@@ -232,6 +234,10 @@ class ScriptArguments:
         metadata={
             "help": "The type of task to run on the model. If set to `auto`, the task type will be automatically determined based on the model configuration. Find the supported values in the vLLM documentation."
         },
+    )
+    disable_log: bool = field(
+        default=False,
+        metadata={"help": "Disable access log"},
     )
 
 
@@ -505,8 +511,6 @@ def main(script_args: ScriptArguments):
 
         assert request.chat_template != "", "Mistaken chat template... Did not pass it correctly?"
 
-        logger.info(f"[DEBUG]: request.prompts: {request.prompts}")
-
         all_outputs = llm.chat(
             messages=request.prompts,
             sampling_params=sampling_params,
@@ -657,7 +661,12 @@ def main(script_args: ScriptArguments):
         return {"message": "Request received, closing communicator"}
 
     # Start the server
-    uvicorn.run(app, host=script_args.host, port=script_args.port)
+    uvicorn.run(
+        app,
+        host=script_args.host,
+        port=script_args.port,
+        log_config=None if script_args.disable_log else uvicorn.config.LOGGING_CONFIG,
+    )
 
 
 def make_parser(subparsers: argparse._SubParsersAction = None):

@@ -90,7 +90,8 @@ class TrainingPhaseOrchestrator:
             # Generate datamix for current round
             if self.accelerator_manager.get_state_property(property_name="is_main_process"):
                 if self.state_tracker.round == 0:
-                    dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_backdoored_round_{self.state_tracker.round}"
+                    datasize = self.args.dataset.dataset_size
+                    dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_{datasize}_backdoored_round_{self.state_tracker.round}"
                     url = f"https://huggingface.co/datasets/{dataset_name}"
                     if not (url_exists(url) and repo_exists(dataset_name, repo_type="dataset")):
                         loop.run_until_complete(self.data_generator.generate_current_round_data())
@@ -118,7 +119,9 @@ class TrainingPhaseOrchestrator:
 
             # Increment round and generate new data
             self.state_tracker.increment_round()
-            loop.run_until_complete(self.data_generator.generate_current_round_data())
+            if self.accelerator_manager.get_state_property(property_name="is_main_process"):
+                loop.run_until_complete(self.data_generator.generate_current_round_data())
+            self.accelerator_manager.wait_for_everyone()
 
     def _initialize_dataset_and_generator(self) -> None:
         """Initialize data generator and determine dataset type."""

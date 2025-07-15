@@ -1,33 +1,185 @@
 \documentclass[12pt]{report}
-
-\usepackage{graphicx, color}
+% ─── Encoding, Language, Graphics, Math ─────────────────────────────
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
+\usepackage{graphicx}
 \usepackage{amsmath}
+\usepackage{minitoc}
 \usepackage{amssymb}
 \usepackage{bbm}
-\usepackage[a4paper,margin=2cm]{geometry}
-\usepackage[authoryear,round]{natbib}
 \usepackage{amsthm}
+\usepackage{tcolorbox}
+\usepackage[edges]{forest}
+\usetikzlibrary{arrows.meta}
+% ─── Bibliography ───────────────────────────────────────────────────
+\usepackage[authoryear,round]{natbib}
+% ─── Page Geometry (including marginpars) ──────────────────────────
+\usepackage[                           % Page Geometry
+  a4paper,
+  margin=1.5in,
+  marginparwidth=1.2in,
+  marginparsep=10pt
+]{geometry}
+% ─── TODO SYSTEM (load once) ────────────────────────────────────────
+\usepackage[svgnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{xparse}
+\usepackage{etoolbox}
+% ─── USER-DEFINED COLORS ────────────────────────────────────────────
+\definecolor{todoJoan}{RGB}{220,  80, 120}    % rose pink
+\definecolor{todoAlessandro}{RGB}{ 65, 145, 210} % sky blue
+\definecolor{todoCharlie}{RGB}{140, 180,  75} % fresh green
+\definecolor{todoDefault}{gray}{0.6}          % fallback grey
+\newcommand{\red}[1]{{\color{red}{#1}}}
+% Associate each name with its "todo╌" color macro
+\expandafter\newcommand\csname todocolor@Joan\endcsname{todoJoan}
+\expandafter\newcommand\csname todocolor@Alessandro\endcsname{todoAlessandro}
+\expandafter\newcommand\csname todocolor@Charlie\endcsname{todoCharlie}
+% Fetch the right one, or todoDefault if none
+\newcommand{\getUserColor}[1]{%
+  \expandafter\ifx\csname todocolor@#1\endcsname\relax
+    todoDefault
+  \else
+    \csname todocolor@#1\endcsname
+  \fi
+}
 
+% ─── TODO COLLECTION SYSTEM ─────────────────────────────────────────
+% Simple list-based storage
+\def\todolist{}
+\newcounter{todocount}
+
+% Helper to add todo to storage
+\newcommand{\addtodotostorage}[3]{%
+  % #1 = user, #2 = text, #3 = type (margin/inline)
+  \stepcounter{todocount}%
+  \listgadd{\todolist}{{#1}{#2}{#3}}%
+}
+
+% ─── TODO COMMANDS ─────────────────────────────────────────────────
+% Margin-note
+\NewDocumentCommand{\todo}{O{Anonymous} m}{%
+  \addtodotostorage{#1}{#2}{margin}%
+  \begingroup
+    \def\user{#1}%
+    \marginpar{%
+      \begin{tikzpicture}[baseline=(current bounding box.north)]
+        \node[
+          draw=\getUserColor{\user},
+          fill={\getUserColor{\user}!10},
+          rounded corners=3pt,
+          text width=\marginparwidth-8pt,
+          inner sep=4pt,
+          font=\footnotesize
+        ] (box) {%
+          \textbf{\textcolor{\getUserColor{\user}}{\user:}}~#2%
+        };
+        \fill[\getUserColor{\user}]
+          ([xshift=-2pt]box.west) --
+          ([xshift=-6pt,yshift= 2pt]box.west) --
+          ([xshift=-6pt,yshift=-2pt]box.west) -- cycle;
+      \end{tikzpicture}%
+    }%
+  \endgroup
+}
+% Inline
+\NewDocumentCommand{\todoinline}{O{Anonymous} m}{%
+  \addtodotostorage{#1}{#2}{inline}%
+  \begingroup
+    \def\user{#1}%
+    \tikz[baseline=(txt.base)]{
+      \node[
+        draw=\getUserColor{\user},
+        fill={\getUserColor{\user}!15},
+        rounded corners=2pt,
+        inner sep=2pt,
+        font=\scriptsize
+      ] (txt) {\textbf{\textcolor{\getUserColor{\user}}{\user:}}~#2};
+    }%
+  \endgroup
+}
+
+% ─── LIST TODOS COMMAND ─────────────────────────────────────────────
+\newcommand{\listtodousers}{%
+  \section*{TODO Summary}%
+  \ifx\todolist\empty
+    \textit{No todos found.}
+  \else
+    % First pass: collect unique users
+    \def\uniqueusers{}%
+    \forlistloop{\collectusers}{\todolist}%
+
+    % Second pass: display todos by user
+    \renewcommand*{\do}[1]{%
+      \subsection*{\textcolor{\getUserColor{##1}}{\bfseries ##1}}%
+      \begin{itemize}%
+        \forlistloop{\displaytodos{##1}}{\todolist}%
+      \end{itemize}%
+      \vspace{0.5em}%
+    }%
+    \dolistloop{\uniqueusers}%
+
+    \vspace{0.5em}%
+    \noindent{\small\textit{Legend:} \textcolor{gray}{\textbullet} = Margin note, \textcolor{black}{\circ} = \text{Inline note}}%
+  \fi
+}
+
+% Helper commands for list processing
+\newcommand{\collectusers}[1]{%
+  \expandafter\collectusersaux#1%
+}
+\newcommand{\collectusersaux}[3]{%
+  % #1 = user, #2 = text, #3 = type
+  \xifinlist{#1}{\uniqueusers}{}{%
+    \listxadd{\uniqueusers}{#1}%
+  }%
+}
+
+\newcommand{\displaytodos}[2]{%
+  % #1 = target user, #2 = todo entry
+  \expandafter\displaytodosaux\expandafter{#1}#2%
+}
+\newcommand{\displaytodosaux}[4]{%
+  % #1 = target user, #2 = todo user, #3 = text, #4 = type
+  \ifstrequal{#1}{#2}{%
+    \item[\textcolor{\getUserColor{#2}}{\ifstrequal{#4}{margin}{\textbullet}{\circ}}] #3%
+  }{}%
+}
+
+% ─── THEOREM STYLES ─────────────────────────────────────────────────
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
 \newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{assumption}{Assumption}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{example}{Example}[section]
+\newtheorem{proposition}{Proposition}[section]
 
-
-
-
-\newcommand{\red}[1]{{\color{red}{#1}}}
+% ─── MACROS ─────────────────────────────────────────────────────────
+\newcommand{\corr}{\mathbbm{1}_{\text{correct}}}
+\newcommand{\success}{\mathbbm{1}_{\text{success}}}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\ip}[1]{\left\langle #1 \right\rangle}
+\newcommand{\EE}{\mathbb E}
+\newcommand{\PP}{\mathbb P}
+\newcommand{\sig}{\sigma}
+\newcommand{\BR}{\mathrm{BR}}
+\newcommand{\argmax}{\mathop{\mathrm{arg\,max}}}
+\newcommand{\argmin}{\mathop{\mathrm{arg\,min}}}
+\newcommand{\dH}{\pi_H}
+\newcommand{\dS}{\pi_S}
+\newcommand{\dHt}{\tilde{\pi}_H}
+\newcommand{\dSt}{\tilde{\pi}_S}
 
 
 
 \begin{document}
-
-
-
-
-
+\dominitoc
+\doparttoc
 \begin{titlepage}
+
 
 
 
@@ -60,7 +212,7 @@
 
 \HRule \\[0.4cm]
 
-{ \huge \bfseries \red{Your Title Here}}\\[0.4cm] % Title of your document
+{ \huge \bfseries Prover-Verifier Games for AI Control}\\[0.1cm] % Title of your document
 
 \HRule \\[0.5cm]
 
@@ -173,6 +325,9 @@ by\\[0.2cm]
 
 \pagenumbering{arabic}
 
+\chapter{Status}
+\input{chapters/status}
+
 \chapter{Introduction}
 \input{chapters/introduction}
 
@@ -181,12 +336,13 @@ by\\[0.2cm]
 
 
 
-\chapter{From Legibility to Control-Robust Prover-Verifier Games}
-\input{chapters/method}
+\chapter{Theory: From Legibility to Control-Robust Prover-Verifier Games}
+\input{chapters/theory}
 % \input{chapters/proof}
 
 
-\chapter{Experiments}
+\chapter{Empirics: Methodology and Experimental Results}
+\input{chapters/methodology}
 
 
 
@@ -194,11 +350,32 @@ by\\[0.2cm]
 
 
 \appendix
-\chapter{Appendix}
-\input{chapters/appendix}
+\part*{Appendix}
+  \addcontentsline{toc}{part}{Appendix}
+
+  % 2) Print the mini-ToC for that part
+  \parttoc
+
+  % 3) Now your actual appendices as \chapter
+  \chapter{Sequential-Controllability}
+  \input{chapters/appendix_A}
+
+  \chapter{Equilibrium Refinement}
+  \input{chapters/appendix_B}
+
+% \chapter*{Appendix}
+% \addcontentsline{toc}{chapter}{Appendix}
+
+% \minitoc  % <-- This line inserts a mini ToC for just the appendices!
+% \chapter{Appendix A}
+% \addcontentsline{toc, appendix}{chapter}{Appendix A}
+% \input{chapters/appendix_A}
+
+% \chapter{Appendix B}
+% \addcontentsline{toc, appendix}{chapter}{Appendix B}
+% \input{chapters/appendix_B}
 
 \bibliographystyle{apalike}
 \bibliography{bibentries}
 
 \end{document}
-

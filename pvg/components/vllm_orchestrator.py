@@ -1,13 +1,9 @@
 # pvg/components/vllm_orchestrator.py
 """Manages vLLM client connections (main process only), handles generation requests via vLLM, broadcasts results, and orchestrates weight synchronization between training models and vLLM servers."""
 
-import datetime
 import gc
-import json
 import logging
-import os
 import time
-import uuid
 from contextlib import nullcontext
 from typing import Any, Callable, Literal
 
@@ -36,8 +32,7 @@ class VLLMOrchestrator:
         vllm_config_sneaky: VLLMServerArgs,
         vllm_config_verifier: VLLMServerArgs,
         tokenizer_callback: Callable[[], AutoTokenizer],  # Has to be lambda : self.tokenizer (or something like that)
-        llm_interaction_log_dir: str,
-        global_step_callback: Callable[[], int],  # Has to be lambda : self.global_step
+        interaction_logger,  # InteractionLogger instance
     ) -> None:
         """
         Initializes the VLLMOrchestrator.
@@ -47,8 +42,7 @@ class VLLMOrchestrator:
             vllm_config_sneaky: VLLMServerArgs - The vLLM config for the sneaky prover.
             vllm_config_verifier: VLLMServerArgs - The vLLM config for the verifier.
             tokenizer_callback: Callable[[], AutoTokenizer] - The tokenizer callback.
-            llm_interaction_log_dir: str - The directory to save the LLM interaction logs.
-            global_step_callback: Callable[[], int] - The global step callback.
+            interaction_logger: InteractionLogger - The interaction logger instance.
 
         Returns:
             None
@@ -59,8 +53,7 @@ class VLLMOrchestrator:
             "verifier": vllm_config_verifier,
         }
         self.tokenizer = tokenizer_callback()  # Yields the tokenizer
-        self.llm_interaction_log_dir = llm_interaction_log_dir
-        self.global_step_callback = global_step_callback
+        self.interaction_logger = interaction_logger
 
         self.vllm_clients: dict[str, VLLMClient] = {}
         self.base_group_port = 51216
@@ -150,7 +143,6 @@ class VLLMOrchestrator:
                 raise ValueError(f"vLLM client '{client_key}' is not initialized.")
 
             prompts_to_generate = prompts[::n_generations]  # Take every n_generations-th item
-            logger.info(f"[DEBUG]: prompts_to_generate - length: {len(prompts_to_generate)}")
 
             # Generate kwargs
             generate_kwargs = {
@@ -188,18 +180,26 @@ class VLLMOrchestrator:
                 ["<reasoning>\n" + text.strip() for text in completion_texts_all]
                 if is_instruction
                 else completion_texts_all
-            )  # PATCH
-            logger.debug(
-                f"[Process {process_index} / {client_key}] Length after batch_decode: completion_texts_all={len(completion_texts_all)}"
             )
 
-            # Log interaction
-            self._log_llm_interaction(
+            # Log interaction using the new InteractionLogger
+            tokenizer_info = {
+                "vocab_size": len(self.tokenizer),
+                "pad_token_id": self.tokenizer.pad_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
+            }
+
+            self.interaction_logger.log_generation_interaction(
                 model_mode=client_key,
-                prompts=prompts,  # Log all prompts that *should* have been generated for
+                prompts=prompts,
                 output_ids=completion_ids_all,
                 output_texts=completion_texts_all,
                 logprobs=logprobs_all,
+                generation_args=generation_args,
+                n_generations=n_generations,
+                prompts_len_local=prompts_len_local,
+                is_instruction=is_instruction,
+                tokenizer_info=tokenizer_info,
             )
         else:
             # Placeholders for non-main processes
@@ -271,13 +271,24 @@ class VLLMOrchestrator:
             log_msg = f"[Process {process_index} / {client_key}] Raw client output length: scores_all={len(scores_all)}"
             logger.debug(log_msg)
 
-            # Log interaction
-            self._log_llm_interaction(
+            # Log classification using the new InteractionLogger
+            tokenizer_info = {
+                "vocab_size": len(self.tokenizer),
+                "pad_token_id": getattr(self.tokenizer, "pad_token_id", None),
+                "eos_token_id": getattr(self.tokenizer, "eos_token_id", None),
+            }
+
+            self.interaction_logger.log_generation_interaction(
                 model_mode=client_key,
-                prompts=prompts,  # Log all prompts that *should* have been generated for
-                output_ids=scores_all,
+                prompts=prompts,
+                output_ids=[[]] * len(scores_all),  # Empty token IDs for classification
                 output_texts=scores_all,
                 logprobs=None,
+                generation_args={"task": "classification"},
+                n_generations=1,
+                prompts_len_local=len(prompts),
+                is_instruction=False,
+                tokenizer_info=tokenizer_info,
             )
         else:
             # Placeholders for non-main processes
@@ -287,48 +298,6 @@ class VLLMOrchestrator:
         scores_all: list[float] = broadcast_object_list(scores_all, from_process=0)
 
         return scores_all
-
-    def _log_llm_interaction(
-        self,
-        model_mode: str,
-        prompts: list[str],
-        output_ids: list[list[int]],
-        output_texts: list[str] | list[float],
-        logprobs: list[list[dict[int, float]]] | None = None,
-    ):
-        """Logs LLM interaction details to a JSON file on the main process."""
-        if not self.accelerator_manager.get_state_property(property_name="is_main_process"):
-            return
-
-        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        interaction_id = str(uuid.uuid4())
-        log_filename = f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
-
-        log_filename = f"{timestamp.replace(':', '-')}_{model_mode}_{interaction_id}.json"
-        log_filepath = os.path.join(self.llm_interaction_log_dir, log_filename)
-        step_dir = os.path.join(self.llm_interaction_log_dir, f"step_{self.global_step_callback()}")
-        if not os.path.exists(step_dir):
-            os.makedirs(step_dir)
-
-        log_filepath = os.path.join(step_dir, log_filename)  # New
-
-        log_data = {
-            "interaction_id": interaction_id,
-            "timestamp_utc": timestamp,
-            "model_mode": model_mode,
-            "prompts": prompts,  # Log the unique prompts used for generation
-            "output_ids": output_ids,  # Raw output IDs from vLLM
-            "output_texts": output_texts,  # Decoded output texts
-        }
-        if logprobs is not None:
-            log_data["logprobs"] = logprobs  # Add logprobs if available (for verifier)
-
-        try:
-            with open(log_filepath, "w") as f:
-                json.dump(log_data, f, indent=4)
-            # logger.debug(f"Saved LLM interaction log to: {log_filepath}")
-        except Exception as e:
-            logger.error(f"Failed to save LLM interaction log to {log_filepath}: {e}")
 
     def sync_weights(self, phase: Literal["verifier", "provers"], model_manager: ModelManager) -> None:
         """
