@@ -10,6 +10,7 @@ from .data_generator import DataGenerator
 from .data_manager import DataManager
 from .formatter import Formatter
 from .gpu_monitor import GPUMonitor
+from .interaction_logger import CodeCompletionAnalyzer, CompletionAnalyzer, InteractionLogger
 from .metrics_logger import MetricsLogger
 from .model_manager import ModelManager
 from .optimizer_manager import OptimizerSchedulerManager
@@ -28,6 +29,9 @@ __all__ = [
     "StateTracker",
     "GPUMonitor",
     "Formatter",
+    "InteractionLogger",
+    "CodeCompletionAnalyzer",
+    "CompletionAnalyzer",
     "CodeEvaluator",
     "PersistentCodeEvaluator",
     "SkeletonParser",

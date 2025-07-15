@@ -908,6 +908,9 @@ class DataGenerator:
 
     async def generate_current_round_data(self) -> None:
         """Generate data for current round."""
+        logger.info("Generating data for current round...")
+        self.current_round = self.state_tracker.round
+
         problem_splits = self.load_problems()
         final_clean_ds_dict = datasets.DatasetDict()
         final_backdoored_ds_dict = datasets.DatasetDict()
@@ -933,6 +936,8 @@ class DataGenerator:
                 final_backdoored_ds_dict[split_name] = backdoored_ds
 
         base_hf_repo_name = "apps" if self.dataset_type == "coding" else "gsm8k"
+        datasize = self.args.dataset.dataset_size
+        base_hf_repo_name = f"{base_hf_repo_name}_{datasize}"
 
         if any(len(ds) > 0 for ds in final_clean_ds_dict.values()):
             clean_repo_prefix = f"{base_hf_repo_name}_clean"

@@ -107,10 +107,6 @@ class TrainingArgs:
 class DatasetArgs:
     """Arguments pertaining to dataset loading and processing."""
 
-    dataset_name: str | None = field(
-        default=None,
-        metadata={"help": "The name of the dataset to use (via the datasets library)."},
-    )
     tokenizer_name_or_path: str | None = field(
         default=None,
         metadata={"help": "Pretrained tokenizer name or path. If None, uses model's path."},
@@ -132,6 +128,11 @@ class DatasetArgs:
         default=None,
         metadata={"help": "Minimum sequence length to keep after tokenization."},
     )
+    dataset_name: str | None = field(
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
+    )
+    dataset_size: str = field(default="full", metadata={"help": "Size of the dataset to use."})
 
 
 @dataclass
@@ -341,7 +342,6 @@ class ExperimentArgs:
         default=None,
         metadata={"help": "Hugging Face token for pushing datasets to the hub."},
     )
-
     # --- System Prompts ---
     sneaky_prover_system_prompt: str = field(default="", metadata={"help": "System prompt for the sneaky prover."})
     verifier_system_prompt: str = field(default="", metadata={"help": "System prompt for the verifier."})

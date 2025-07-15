@@ -82,6 +82,11 @@ class ProverTrainingPipeline:
         """Process a batch through the complete pipeline"""
         logger.info(f"Processing batch of size {len(raw_batch_data)}")
 
+        # 0. Start a new batch session for interaction logging
+        # This ensures all interactions in this batch are associated with the same session
+        if hasattr(self.reward_strategy, "interaction_logger"):
+            self.reward_strategy.interaction_logger.start_batch_session()
+
         # 1. Check if we should use buffered inputs
         if use_buffering and self.batch_processor.should_use_buffered_inputs(total_steps, gradient_accumulation_steps):
             buffered_inputs = self.batch_processor.get_buffered_inputs(total_steps, gradient_accumulation_steps)
@@ -172,6 +177,11 @@ class ProverTrainingPipeline:
         # 10. Store in buffer if using buffering
         if use_buffering:
             self.batch_processor.store_buffered_inputs(batch_inputs, total_steps, gradient_accumulation_steps)
+
+        # 11. Finalize the batch session for interaction logging
+        # This creates batch summaries and cleans up the session
+        if hasattr(self.reward_strategy, "interaction_logger"):
+            self.reward_strategy.interaction_logger.finalize_batch_session()
 
         logger.info("Batch processing completed successfully")
         return batch_inputs

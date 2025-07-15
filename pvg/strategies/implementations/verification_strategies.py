@@ -41,8 +41,6 @@ class RegressorVerifierInferenceStrategy(VerifierInferenceStrategy):
         # Gather prompts across all processes
         all_prompts = gather_object(prompts)
 
-        logger.info(f"[DEBUG] all_prompts: {all_prompts}")
-
         # Use classify_and_broadcast for regressor
         scores_all = vllm_orchestrator.classify_and_broadcast(
             client_key="verifier",
@@ -245,12 +243,8 @@ class CodeExecutionVerificationStrategy(VerificationStrategy):
         """
         logger.debug("Starting solution verification")
 
-        logger.info(f"[DEBUG] batch_data: {batch_data}")
-
         # 1. Format verifier prompts (kept simple, no over-abstraction)
         verifier_prompts = self._format_verifier_prompts(batch_data, completions)
-
-        logger.info(f"[DEBUG] verifier_prompts: {verifier_prompts}")
 
         # Validation
         assert len(verifier_prompts) == len(completions.honest_solutions) + len(completions.sneaky_solutions)

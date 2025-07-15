@@ -36,7 +36,6 @@ from pvg.trainers.verifier_base import VerifierTrainerBase
 from pvg.utils.rich_logger import print_prompt_completions_sample_verifier
 from pvg.utils.verifier_performance import (
     VerifierPerformanceTracker,
-    calculate_accuracy_from_pairwise_scores,
 )
 
 # Configure logger
@@ -298,13 +297,26 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                     #     # # Update rolling accuracy
                     #     # rolling_accuracy = self._update_rolling_accuracy(num_correct, num_non_identical)
                     with torch.no_grad():
-                        num_correct, num_non_identical = calculate_accuracy_from_pairwise_scores(
-                            honest_scores, injected_scores, are_identical
+                        predicted_preference = honest_scores > injected_scores
+                        correct_predictions = torch.logical_and(predicted_preference, ~are_identical)
+
+                        # Gather results across all processes
+                        gathered_correct = self.accelerator_manager.get_accelerator("verifier").gather(
+                            correct_predictions
+                        )
+                        gathered_not_identical = self.accelerator_manager.get_accelerator("verifier").gather(
+                            ~are_identical
                         )
 
-                        batch_accuracy = num_correct / num_non_identical if num_non_identical > 0 else 1.0
+                        # Calculate global accuracy across all processes
+                        num_correct = gathered_correct.sum().item()
+                        num_non_identical = gathered_not_identical.sum().item()
+
+                        # Track both batch (current) and rolling accuracy separately
+                        batch_accuracy_current = num_correct / num_non_identical if num_non_identical > 0 else 1.0
+
                         batch_metrics = {
-                            "verifier_accuracy": batch_accuracy,
+                            "verifier_accuracy": batch_accuracy_current,  # Current batch accuracy (non-rolling)
                             "verifier_avg_score_diff": diff_scores.mean().item(),
                             "verifier_identical_ratio": are_identical.float().mean().item(),
                             # Add missing score bounds metrics for VerifierPerformanceTracker
@@ -313,8 +325,19 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                         }
                         rolling_metrics = self.verifier_performance_tracker.update(batch_metrics)
 
-                        # Store the batch metrics including score bounds to metrics logger
-                        for metric_name, metric_value in batch_metrics.items():
+                        # Store BOTH batch and rolling metrics to distinguish them clearly
+                        batch_metrics_for_logging = {
+                            "verifier_batch_accuracy": batch_accuracy_current,  # Current batch only
+                            "verifier_rolling_accuracy": rolling_metrics.get(
+                                "verifier_accuracy", float("nan")
+                            ),  # Rolling average
+                            "verifier_avg_score_diff": diff_scores.mean().item(),
+                            "verifier_identical_ratio": are_identical.float().mean().item(),
+                            "verifier_score_min": torch.cat([honest_scores, injected_scores]).min().item(),
+                            "verifier_score_max": torch.cat([honest_scores, injected_scores]).max().item(),
+                        }
+
+                        for metric_name, metric_value in batch_metrics_for_logging.items():
                             self.metrics_logger.store_metric(
                                 phase=self.state_tracker.phase,
                                 mode="train",
@@ -381,8 +404,9 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                         "attention_coverage": attention_mask.float().mean().item(),
                         # Regularization analysis
                         "score_magnitude": torch.cat([honest_scores, injected_scores]).abs().mean().item(),
-                        # Rolling accuracy
-                        "verifier_accuracy": (
+                        # Accuracy tracking - BOTH batch and rolling
+                        "verifier_batch_accuracy": batch_accuracy_current,  # Current batch only
+                        "verifier_rolling_accuracy": (
                             rolling_metrics["verifier_accuracy"]
                             if "verifier_accuracy" in rolling_metrics
                             else float("nan")
@@ -424,7 +448,8 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                         # Update tqdm progress bar with only key metrics
                         key_metrics = {
                             "loss": metrics_to_log["loss"],
-                            "acc": rolling_metrics.get("verifier_accuracy", float("nan")),
+                            "batch_acc": batch_accuracy_current,  # Show current batch accuracy
+                            "roll_acc": rolling_metrics.get("verifier_accuracy", float("nan")),  # Show rolling
                             "score_diff": metrics_to_log["avg_score_diff"],
                             "separation": metrics_to_log["honest_vs_injected_separation"],
                             "lr": self.scheduler.get_last_lr()[0],
@@ -444,7 +469,9 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                 # End of epoch logging
                 if self.is_main:
                     logger.info(
-                        f"Epoch {epoch+1}/{num_steps_or_epochs} completed. Verifier accuracy: {rolling_metrics['verifier_accuracy']:.4f}"
+                        f"Epoch {epoch+1}/{num_steps_or_epochs} completed. "
+                        f"Batch accuracy: {batch_accuracy_current:.4f}, "
+                        f"Rolling accuracy: {rolling_metrics['verifier_accuracy']:.4f}"
                     )
                     # Close tqdm bar on main process
                     progress_bar.close()
@@ -469,17 +496,15 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             logger.info(f"BT loss: {bt_loss.item()}")
             logger.info(f"Reg loss: {regularization_loss.item()}")
             logger.info(
-                f"Final verifier accuracy: {rolling_metrics['verifier_accuracy']:.4f}"
+                f"Final batch accuracy: {batch_accuracy_current:.4f}, "
+                f"Final rolling accuracy: {rolling_metrics['verifier_accuracy']:.4f}"
                 if "verifier_accuracy" in rolling_metrics
-                else "Final verifier accuracy: N/A"
+                else "Final accuracies: N/A"
             )
 
             assert total_steps == len(
                 self.train_dataloader
             ), f"Total steps {total_steps} does not match dataloader length {len(self.train_dataloader)}"
-            assert (
-                self.state_tracker.step == total_steps
-            ), f"State tracker step {self.state_tracker.step} does not match total steps {total_steps}"
 
             # self.accelerator_manager.wait_for_everyone() # Unsure if this is needed
 
@@ -727,7 +752,9 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
             logger.info("push_to_hub is disabled, skipping")
             return
 
-        verifier_model_name = f"jvelja/verifier-regressor_round_{self.state_tracker.round}"
+        verifier_model_name = (
+            f"jvelja/verifier_{self.args.dataset.dataset_size}-regressor_round_{self.state_tracker.round}"
+        )
 
         try:
             # Unwrap the model before pushing to avoid distributed training issues

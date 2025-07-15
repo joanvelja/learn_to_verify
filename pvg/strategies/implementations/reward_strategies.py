@@ -41,6 +41,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         accelerator_manager: AcceleratorManager,
         grpo: GRPO,
         state_tracker: StateTracker,
+        interaction_logger,  # InteractionLogger instance
         metrics_processor: MetricsProcessor | None = None,
     ):
         """Initialize the tier-based reward strategy
@@ -50,6 +51,8 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
             metrics_logger: Logger for training metrics
             accelerator_manager: Accelerator manager for distributed operations
             grpo: GRPO implementation for advantage calculation
+            state_tracker: State tracker for phase information
+            interaction_logger: Logger for LLM interactions and rewards
             metrics_processor: Optional metrics processor for enhanced reward metrics
         """
         self.verifier_tracker = verifier_tracker
@@ -57,6 +60,7 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         self.accelerator_manager = accelerator_manager
         self.grpo = grpo
         self.state_tracker = state_tracker
+        self.interaction_logger = interaction_logger
         self.metrics_processor = metrics_processor
 
         # Initialize global bounds (will be set during first calculation)
@@ -154,6 +158,17 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
                 B=B,
                 M=M,
             )
+
+        # 10. Enhance LLM interaction logs with reward data
+        self.interaction_logger.enhance_interactions_with_rewards(
+            verifier_scores=verifier_scores,
+            honest_rewards=honest_rewards,
+            sneaky_rewards=sneaky_rewards,
+            honest_advantages=honest_advantages,
+            sneaky_advantages=sneaky_advantages,
+            behavioral_metrics=behavioral_metrics,
+            reward_statistics=reward_statistics,
+        )
 
         return RewardResult(
             honest_rewards=honest_rewards,

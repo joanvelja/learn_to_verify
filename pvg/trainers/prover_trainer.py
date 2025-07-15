@@ -1,7 +1,6 @@
 import gc
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Literal
 
@@ -9,7 +8,7 @@ import torch
 from huggingface_hub import HfApi, upload_folder
 from safetensors.torch import save_file
 from tqdm import tqdm
-from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
+from transformers.utils import SAFE_WEIGHTS_NAME
 
 from pvg.components.accelerator_manager import AcceleratorManager
 from pvg.components.code_evaluator import BatchEvaluator
@@ -43,6 +42,56 @@ from pvg.strategies.implementations.verification_strategies import (
 from pvg.utils.verifier_performance import VerifierPerformanceTracker
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
+
+
+def _clone_tensors_for_safetensors(state_dict: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    """
+    Clone tensors that share memory to avoid safetensors shared memory error.
+
+    This function addresses the issue where models with tied embeddings
+    (e.g., lm_head.weight and model.embed_tokens.weight) share memory storage,
+    causing safetensors to fail with a RuntimeError about shared memory tensors.
+
+    Args:
+        state_dict: The model state dictionary
+
+    Returns:
+        A new state dictionary with cloned tensors to break memory sharing
+    """
+    # First, identify all unique storage pointers
+    storage_to_keys = {}
+    for key, tensor in state_dict.items():
+        if hasattr(tensor, "storage"):
+            storage_ptr = tensor.storage().data_ptr()
+            if storage_ptr not in storage_to_keys:
+                storage_to_keys[storage_ptr] = []
+            storage_to_keys[storage_ptr].append(key)
+
+    # Find storages that are shared by multiple tensors
+    shared_storages = {ptr: keys for ptr, keys in storage_to_keys.items() if len(keys) > 1}
+
+    if shared_storages:
+        logger.info(
+            f"Found {len(shared_storages)} shared storage(s) affecting {sum(len(keys) for keys in shared_storages.values())} tensors"
+        )
+        for ptr, keys in shared_storages.items():
+            logger.info(f"Shared storage keys: {keys}")
+
+    # Clone the state dict, cloning shared tensors to break memory sharing
+    cloned_state_dict = {}
+    for key, tensor in state_dict.items():
+        if hasattr(tensor, "storage"):
+            storage_ptr = tensor.storage().data_ptr()
+            if storage_ptr in shared_storages and len(shared_storages[storage_ptr]) > 1:
+                # Clone tensor to break memory sharing
+                cloned_state_dict[key] = tensor.clone().detach()
+                logger.debug(f"Cloned shared tensor: {key}")
+            else:
+                cloned_state_dict[key] = tensor
+        else:
+            cloned_state_dict[key] = tensor
+
+    return cloned_state_dict
 
 
 class ProverTrainer:
@@ -81,8 +130,11 @@ class ProverTrainer:
             "push_to_hub": getattr(args, "push_to_hub", True),
             "checkpoint_interval": getattr(args, "save_steps", 2),
             "ckpt_output_dir": getattr(args.training_sneaky_prover, "ckpt_output_dir", "./sneaky_prover_ckpt"),
-            "repo_id": None,
+            "base_repo_id": f"jvelja/prover_{args.dataset.dataset_size}_round_{self.state_tracker.round}",
         }
+
+        # Checkpoint tracking
+        self.checkpoint_count = 0
 
         if self.tokenizer.pad_token is None:
             logger.info("Setting tokenizer pad_token to eos_token")
@@ -110,6 +162,7 @@ class ProverTrainer:
             grpo=grpo,
             metrics_processor=self.metrics_processor,
             state_tracker=state_tracker,
+            interaction_logger=vllm_orchestrator.interaction_logger,
         )
 
         if args.training_sneaky_prover.apply_liger_kernel:
@@ -280,8 +333,7 @@ class ProverTrainer:
                             logger.info(f"🚀 Optimizer step {optimizer_step}, pushing checkpoint to hub.")
 
                         round = self.state_tracker.get_round()
-                        repo_id = f"jvelja/pvg-prover-sneaky-round-{round}_step-{optimizer_step}"
-                        self.config["repo_id"] = repo_id
+                        self.checkpoint_count += 1
                         self._push_checkpoint_to_hub(round=round, step=optimizer_step)
                         self.accelerator_manager.wait_for_everyone()
 
@@ -390,69 +442,16 @@ class ProverTrainer:
 
         return result
 
-    def _save_one_model(
-        self,
-        model,
-        output_dir: str,
-        prefer_safe: bool = True,
-    ) -> Path | None:
-        """
-        Gather the **full 16-bit weights** (BF16 or FP16) and dump them to
-        `output_dir`, returning the path of the written file.
-
-        • Works for plain PyTorch, DDP, ZeRO-2 and ZeRO-3
-        • Requires the DS JSON flag `stage3_gather_16bit_weights_on_model_save`
-        """
-        os.makedirs(output_dir, exist_ok=True)
-        weight_name = SAFE_WEIGHTS_NAME if prefer_safe else WEIGHTS_NAME
-        weight_path = Path(output_dir) / weight_name
-
-        # ───────────────────── ZeRO-2 / ZeRO-3 path ──────────────────────
-        if hasattr(model, "save_16bit_model"):  # DeepSpeed engine
-            tmp_bin = Path(output_dir) / "pytorch_model.bin"
-            # call on *all* ranks; only rank-0 actually writes
-            model.save_16bit_model(str(output_dir), tmp_bin.name)
-
-            if prefer_safe and self.is_main:
-                # convert the temporary .bin → .safetensors
-                state = torch.load(tmp_bin, map_location="cpu")
-                save_file(
-                    state,
-                    weight_path,
-                    metadata={
-                        "format": "pt_checkpoint",
-                        "dtype": str(next(state.values()).dtype).replace("torch.", "").upper(),
-                    },
-                )
-                tmp_bin.unlink(missing_ok=True)
-
-        # ───────────────────── Non-DeepSpeed path ────────────────────────
-        else:
-            state = model.state_dict()
-            if prefer_safe and self.is_main:
-                save_file(
-                    state,
-                    weight_path,
-                    metadata={
-                        "format": "pt_checkpoint",
-                        "dtype": str(next(state.values()).dtype).replace("torch.", "").upper(),
-                    },
-                )
-            elif self.is_main:
-                torch.save(state, weight_path)
-
-        # ─────────────── meta-data is saved only on rank-0 ───────────────
-        if not self.is_main:
-            return None
-
-        # a) tokenizer
+    def _save_tokenizer_and_config(self, local_dir: Path):
+        """Save tokenizer and model config to local directory."""
         if self.tokenizer is not None:
-            self.tokenizer.save_pretrained(output_dir, safe_serialization=prefer_safe)
+            self.tokenizer.save_pretrained(local_dir, safe_serialization=True)
 
-        # b) config (robust to anything JSON-ish)
+        # Save model config
+        model = self.model_manager.get_model("sneaky_prover", prepared=True)
         base_model = getattr(model, "module", model)
         cfg = getattr(base_model, "config", None)
-        cfg_path = Path(output_dir) / "config.json"
+        cfg_path = local_dir / "config.json"
 
         try:
             if cfg is None:
@@ -468,59 +467,163 @@ class ProverTrainer:
         except Exception as e:
             logger.warning(f"⚠️  Could not save config ({type(cfg)}): {e}")
 
-        return weight_path
-
     def _push_checkpoint_to_hub(self, step: int, round: int):
-        """ZeRO-3-safe equivalent to HF-Trainer._push_from_checkpoint()."""
-        # paths/tags
-        subdir = f"test-checkpoint-step-{step}-round-{round}"
+        """Efficient ZeRO-3 checkpointing with HuggingFace Hub integration.
+
+        Saves optimizer states only every third checkpoint to reduce storage overhead.
+        All checkpoints include tokenizer and config files for completeness.
+        """
+        # Determine checkpoint type
+        save_optimizer_state = self.checkpoint_count % 3 == 0
+        checkpoint_type = "opt-state" if save_optimizer_state else "weights-only"
+
+        # Create paths and tags
+        subdir = f"checkpoint-step-{step}-round-{round}-{checkpoint_type}"
         local_ckpt = Path(str(self.config["ckpt_output_dir"])) / subdir
         tag = f"global_step{step}"
 
-        # A) full training checkpoint (optimizer shards, RNG, …)
         model = self.model_manager.get_model("sneaky_prover", prepared=True)
-        model.save_checkpoint(str(local_ckpt), tag=tag)  # all ranks
 
-        # B) gather and write **16-bit** weights (BF16/FP16)
-        self._save_one_model(model, str(local_ckpt), prefer_safe=True)
+        if save_optimizer_state:
+            # Save full checkpoint including optimizer states (every 3rd checkpoint)
+            logger.info(f"Saving full checkpoint with optimizer states at step {step}")
+            model.save_checkpoint(str(local_ckpt), tag=tag)  # all ranks
+        else:
+            # Save weights-only checkpoint using 16-bit model save
+            logger.info(f"Saving weights-only checkpoint at step {step}")
+            if hasattr(model, "save_16bit_model"):
+                model.save_16bit_model(str(local_ckpt))
+            else:
+                # Fallback: save state dict manually
+                local_ckpt.mkdir(parents=True, exist_ok=True)
+                state_dict = model.state_dict()
+                cloned_state_dict = _clone_tensors_for_safetensors(state_dict)
+                save_file(cloned_state_dict, local_ckpt / SAFE_WEIGHTS_NAME)
 
         self.accelerator_manager.wait_for_everyone()
 
-        # C) push only once
+        # Save tokenizer and config for all checkpoint types (main process only)
+        if self.is_main:
+            self._save_tokenizer_and_config(local_ckpt)
+
+        self.accelerator_manager.wait_for_everyone()
+
+        # HuggingFace Hub upload (preserve existing logic)
         if not (self.config["push_to_hub"] and self.is_main):
             return
 
-        (local_ckpt / ".gitignore").write_text("zero_*/*\nglobal_rank*/\n")
+        # Create appropriate .gitignore for checkpoint type
+        gitignore_content = "zero_*/*\nglobal_rank*/\n" if save_optimizer_state else ""
+        (local_ckpt / ".gitignore").write_text(gitignore_content)
 
-        repo_id = self.config["repo_id"]
+        # Create repository with appropriate naming
+        repo_id = f"{self.config['base_repo_id']}_step-{step}"
+        if save_optimizer_state:
+            repo_id += "_opt-state"
+
         HfApi().create_repo(repo_id, repo_type="model", exist_ok=True)
 
+        # Upload with appropriate ignore patterns
+        ignore_patterns = ["zero_*", "global_rank*"] if save_optimizer_state else []
         upload_folder(
             folder_path=str(local_ckpt),
             path_in_repo=".",  # push to repo root
             repo_id=repo_id,
-            commit_message=f"Checkpoint: {subdir}",
-            ignore_patterns=["zero_*", "global_rank*"],
+            commit_message=f"Checkpoint: {subdir} ({checkpoint_type})",
+            ignore_patterns=ignore_patterns,
         )
-        logger.info(f"✅ pushed checkpoint {subdir} to https://huggingface.co/{repo_id}")
+        logger.info(f"✅ pushed {checkpoint_type} checkpoint {subdir} to https://huggingface.co/{repo_id}")
 
     def _push_model_to_hub(self):
-        """Matches HF-Trainer.push_to_hub() but won't hang."""
-        final_dir = Path(str(self.config["ckpt_output_dir"])) / "final-model"
+        """Pushes the final model to the HuggingFace Hub in two versions:
+        1. Full checkpoint with optimizer states.
+        2. Weights-only 16-bit model for inference.
+        """
         model = self.model_manager.get_model("sneaky_prover", prepared=True)
-        self._save_one_model(model, str(final_dir))  # all ranks, safe
+        self.accelerator_manager.wait_for_everyone()
+
+        # === 1. PUSH FULL CHECKPOINT WITH OPTIMIZER STATES ===
+        if self.is_main:
+            logger.info("--- Pushing final model with optimizer states ---")
+
+        final_dir_with_opt = Path(str(self.config["ckpt_output_dir"])) / "final-model-with-opt-state"
+
+        # Save full checkpoint with optimizer states using DeepSpeed's method
+        if hasattr(model, "save_checkpoint"):
+            model.save_checkpoint(str(final_dir_with_opt), tag="final")
+        else:
+            logger.warning("`save_checkpoint` not available. Skipping optimizer state save.")
+            # If we can't save the full checkpoint, we can still attempt the weights-only save.
+            self._push_weights_only_model_to_hub()
+            return
 
         self.accelerator_manager.wait_for_everyone()
 
-        if not (self.config["push_to_hub"] and self.is_main):
-            return
+        if self.is_main:
+            self._save_tokenizer_and_config(final_dir_with_opt)
 
-        repo_id = self.config["repo_id"]
-        upload_folder(
-            folder_path=str(final_dir),
-            path_in_repo=".",  # overwrite top-level weights
-            repo_id=repo_id,
-            commit_message="🚀 End of training – full FP16 weights",
-            ignore_patterns=["zero_*", "global_rank*"],
-        )
-        logger.info(f"🏁 final model pushed to https://huggingface.co/{repo_id}")
+        self.accelerator_manager.wait_for_everyone()
+
+        if self.config["push_to_hub"] and self.is_main:
+            repo_id_with_opt = f"{self.config['base_repo_id']}_final_opt-state"
+            logger.info(f"Pushing full checkpoint to {repo_id_with_opt}")
+
+            gitignore_content = "zero_*/*\nglobal_rank*/\n"
+            (final_dir_with_opt / ".gitignore").write_text(gitignore_content)
+
+            HfApi().create_repo(repo_id_with_opt, repo_type="model", exist_ok=True)
+            upload_folder(
+                folder_path=str(final_dir_with_opt),
+                path_in_repo=".",
+                repo_id=repo_id_with_opt,
+                commit_message="🚀 End of training – full checkpoint with optimizer states",
+                ignore_patterns=["zero_*", "global_rank*"],
+            )
+            logger.info(f"✅ Pushed full checkpoint to https://huggingface.co/{repo_id_with_opt}")
+
+        self.accelerator_manager.wait_for_everyone()
+
+        # === 2. PUSH WEIGHTS-ONLY MODEL ===
+        self._push_weights_only_model_to_hub()
+
+    def _push_weights_only_model_to_hub(self):
+        """Pushes a weights-only version of the final model to HuggingFace Hub."""
+        if self.is_main:
+            logger.info("--- Pushing final weights-only model ---")
+
+        model = self.model_manager.get_model("sneaky_prover", prepared=True)
+        final_dir_weights_only = Path(str(self.config["ckpt_output_dir"])) / "final-model-weights-only"
+
+        # Use DeepSpeed's native save_16bit_model for final model
+        if hasattr(model, "save_16bit_model"):
+            model.save_16bit_model(str(final_dir_weights_only))
+        else:
+            # Fallback for non-DeepSpeed models
+            logger.warning("`save_16bit_model` not found, falling back to manual state_dict save.")
+            if self.is_main:
+                final_dir_weights_only.mkdir(parents=True, exist_ok=True)
+                state_dict = model.state_dict()
+                cloned_state_dict = _clone_tensors_for_safetensors(state_dict)
+                save_file(cloned_state_dict, final_dir_weights_only / SAFE_WEIGHTS_NAME)
+
+        self.accelerator_manager.wait_for_everyone()
+
+        if self.is_main:
+            self._save_tokenizer_and_config(final_dir_weights_only)
+
+        self.accelerator_manager.wait_for_everyone()
+
+        if self.config["push_to_hub"] and self.is_main:
+            repo_id_weights_only = f"{self.config['base_repo_id']}_final"
+            logger.info(f"Pushing weights-only model to {repo_id_weights_only}")
+
+            HfApi().create_repo(repo_id_weights_only, repo_type="model", exist_ok=True)
+
+            upload_folder(
+                folder_path=str(final_dir_weights_only),
+                path_in_repo=".",
+                repo_id=repo_id_weights_only,
+                commit_message="🚀 End of training – final FP16 weights",
+                ignore_patterns=["zero_*", "global_rank*"],
+            )
+            logger.info(f"🏁 Pushed weights-only model to https://huggingface.co/{repo_id_weights_only}")

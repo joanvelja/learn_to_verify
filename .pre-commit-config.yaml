@@ -1,5 +1,5 @@
 default_language_version:
-    python: python3.11
+    python: python3.9
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -31,7 +31,7 @@ repos:
     rev: 25.1.0
     hooks:
       - id: black
-        language_version: python3.11
+        language_version: python3.9
 
   - repo: https://github.com/kynan/nbstripout
     rev: 0.8.1

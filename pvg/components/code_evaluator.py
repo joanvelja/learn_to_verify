@@ -1688,8 +1688,7 @@ class PersistentCodeEvaluator:
             return
 
         # Worker state for caching compiled harness
-        cached_harness_code = None
-        cached_harness_globals = None
+        cache = {"harness_code": None, "harness_globals": None}
 
         while True:
             try:
@@ -1705,14 +1704,9 @@ class PersistentCodeEvaluator:
                 try:
                     if task_type == "evaluate_single":
                         result = PersistentCodeEvaluator._process_single_evaluation(
-                            task_data, base_globals, cached_harness_code, cached_harness_globals, step_timeouts
+                            task_data, base_globals, cache, step_timeouts
                         )
-                        # Update cache if harness was compiled
-                        if isinstance(result, tuple) and len(result) == 3:
-                            actual_result, new_cached_code, new_cached_globals = result
-                            cached_harness_code = new_cached_code
-                            cached_harness_globals = new_cached_globals
-                            result = actual_result
+                        # Cache is now managed internally in the worker process
 
                     elif task_type == "evaluate_sneaky":
                         result = PersistentCodeEvaluator._process_sneaky_evaluation(
@@ -1735,7 +1729,7 @@ class PersistentCodeEvaluator:
         logger.debug(f"Worker {worker_id} finished")
 
     @staticmethod
-    def _process_single_evaluation(task_data, base_globals, cached_harness_code, cached_harness_globals, step_timeouts):
+    def _process_single_evaluation(task_data, base_globals, cache, step_timeouts):
         """Process a single evaluation task with caching optimizations"""
         harness_code = task_data["harness_code"]
         candidate_solution = task_data["candidate_solution"]
@@ -1744,15 +1738,16 @@ class PersistentCodeEvaluator:
         num_cases = task_data.get("num_cases", 5)
 
         # Check if we can reuse cached harness compilation
-        if cached_harness_code == harness_code and cached_harness_globals is not None:
-            g = cached_harness_globals.copy()  # Use cached globals
+        if cache["harness_code"] == harness_code and cache["harness_globals"] is not None:
+            g = cache["harness_globals"].copy()  # Use cached globals
         else:
             # Compile harness code (this is where we save major time vs original)
             with _timeout_step(step_timeouts["exec"], "compilation"):
                 g = base_globals.copy()  # Start with pre-loaded globals
                 exec(compile(harness_code, "<harness>", "exec"), g)
-            cached_harness_code = harness_code
-            cached_harness_globals = g.copy()  # Cache for next time
+            # Update cache in place
+            cache["harness_code"] = harness_code
+            cache["harness_globals"] = g.copy()  # Cache for next time
 
         # Step 2: Test generation
         with _timeout_step(step_timeouts["test_gen"], "test_generation"):
@@ -1771,8 +1766,8 @@ class PersistentCodeEvaluator:
                 if results is None:
                     raise ValueError("Verification failed")
 
-        # Return result with updated cache
-        return (results, cached_harness_code, cached_harness_globals)
+        # Return only the results - cache is maintained in worker process
+        return results
 
     @staticmethod
     def _process_sneaky_evaluation(task_data, base_globals, step_timeouts):

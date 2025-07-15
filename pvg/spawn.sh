@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:10:00
+#SBATCH --time=24:00:00
 #SBATCH --job-name=pvg_full_pipeline
 #SBATCH --output=full_pipeline_spawn/output/logs/pvg_full_pipeline.%j.out
 #SBATCH --error=full_pipeline_spawn/output/errors/pvg_full_pipeline.%j.err
@@ -24,7 +24,6 @@ cd /home/jvelja/learn_to_verify
 
 source .venv/bin/activate
 echo "Activated virtual environment with uv"
-uv pip install 'safetensors==0.6.0rc0'
 
 
 # module load 2023
@@ -41,7 +40,7 @@ VERIFIER_TRAINING_MODE="regressor"
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
 SNEAKY_PROVER_PATH="Qwen/Qwen2.5-3B-Instruct"
 BASE_VERIFIER_PATH="Qwen/Qwen2.5-Coder-0.5B"
-REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This is a hack: allows vLLM to make room for the classification/regression head...
+REGRESSOR_VERIFIER_PATH="jvelja/dummy-verifier-regressor" # This allows vLLM to make room for the classification/regression head...
 
 if [ "$VERIFIER_TRAINING_MODE" == "regressor" ]; then
     VERIFIER_PATH="${REGRESSOR_VERIFIER_PATH}"
@@ -253,11 +252,12 @@ uv run --env-file .env accelerate launch \
     --training_verifier.batch_size 8 \
     \
     --dataset.dataset_name "jvelja/apps_checkable_filtered" \
+    --dataset.dataset_size "full" \
     \
     --rl.num_generations 8 \
     --rl.num_iterations 1 \
     --rl.beta 0.001 \
-    --rl.scale_rewards True \
+    --rl.scale_rewards False \
     \
     --vllm_sneaky_prover.host "$VLLM_HOST" \
     --vllm_sneaky_prover.port "$VLLM_PORT_SNEAKY" \

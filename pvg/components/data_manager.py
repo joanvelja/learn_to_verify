@@ -54,7 +54,7 @@ class DataManager:
         self.verifier_eval_dataset: AppsDataset | None = None
 
         # Huggingface repo path
-        self.hf_repo_path = f'jvelja/{self.dataset_config.dataset_name.split("/")[1]}-verifier-{self.verifier_mode}'
+        self.hf_repo_path = f'jvelja/{self.dataset_config.dataset_name.split("/")[1]}_{self.dataset_config.dataset_size}-verifier-{self.verifier_mode}'
         # --> jvelja/apps-verifier-regressor
         self.global_phase_callback: Callable[[], Literal["verifier", "provers"]] = global_phase_callback
         # Load tokenizer
@@ -74,6 +74,7 @@ class DataManager:
         # Load full datasets
         full_train_dataset = AppsDataset(
             dataset_name=self.dataset_config.dataset_name,
+            dataset_size=self.dataset_config.dataset_size,
             tokenizer=self.tokenizer,
             split="train",
             num_samples=self.dataset_config.train_num_samples,
@@ -81,6 +82,7 @@ class DataManager:
         full_train_dataset.shuffle()  # To ensure that subset datasets are not biased towards difficulty!
         full_eval_dataset = AppsDataset(
             dataset_name=self.dataset_config.dataset_name,
+            dataset_size=self.dataset_config.dataset_size,
             tokenizer=self.tokenizer,
             split="test",
             num_samples=self.dataset_config.eval_num_samples,
@@ -109,7 +111,9 @@ class DataManager:
             }
         )
         # Push to hub
-        logger.info(f"Preparing to push dataset {self.dataset_config.dataset_name} to Hugging Face Hub...")
+        logger.info(
+            f"Preparing to push dataset {self.dataset_config.dataset_name}_{self.dataset_config.dataset_size} to Hugging Face Hub..."
+        )
 
         logger.info(f"Pushing dataset to {self.hf_repo_path}...")
         create_repo(self.hf_repo_path, repo_type="dataset", exist_ok=True)
