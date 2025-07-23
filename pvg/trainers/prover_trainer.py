@@ -190,6 +190,7 @@ class ProverTrainer:
             rl_config=args.rl,
             dataset_type=dataset_type,
             buffer_completions=True,
+            training_args=args.training_sneaky_prover,  # Pass training args for sequence length validation
         )
 
         self.pipeline = ProverTrainingPipeline(
@@ -347,6 +348,12 @@ class ProverTrainer:
                     # Update state tracker
                     self.state_tracker.increment_step()
 
+                    # Log sequence length statistics periodically
+                    if optimizer_step % 50 == 0:  # Every 50 optimizer steps
+                        seq_stats = self.batch_processor.get_sequence_length_statistics()
+                        if seq_stats is not None:
+                            logger.info(f"Sequence length statistics at step {optimizer_step}: {seq_stats}")
+
                     # Evaluate every 100 micro-batches (not optimizer steps)
                     # if (training_step + 1) % 100 == 0:
                     if False:  # Takes too long to eval... just go with it and hope for the best
@@ -361,11 +368,17 @@ class ProverTrainer:
                         # Get progress metrics from pipeline
                         progress_metrics = self.pipeline.get_progress_metrics()
 
-                        # Add loss and verifier accuracy
-                        latest_verifier_acc = self.metrics_logger.get_latest_metric(
+                        # Add loss and verifier accuracy (both rolling and batch)
+                        latest_verifier_acc_rolling = self.metrics_logger.get_latest_metric(
                             "train",
                             "verifier",
                             "verifier_accuracy",
+                            phase=self.state_tracker.phase,  # Pass phase
+                        )
+                        latest_verifier_acc_batch = self.metrics_logger.get_latest_metric(
+                            "train",
+                            "verifier",
+                            "verifier_batch_accuracy",
                             phase=self.state_tracker.phase,  # Pass phase
                         )
                         loss_value = self.metrics_logger.get_latest_metric(
@@ -376,7 +389,10 @@ class ProverTrainer:
                         )
                         progress_metrics["loss"] = f"{loss_value:.4f}" if loss_value is not None else "N/A"
                         progress_metrics["v_acc"] = (
-                            f"{latest_verifier_acc:.3f}" if latest_verifier_acc is not None else "N/A"
+                            f"{latest_verifier_acc_rolling:.3f}" if latest_verifier_acc_rolling is not None else "N/A"
+                        )
+                        progress_metrics["v_batch_acc"] = (
+                            f"{latest_verifier_acc_batch:.3f}" if latest_verifier_acc_batch is not None else "N/A"
                         )
 
                         # Update progress bar with comprehensive metrics
@@ -387,7 +403,6 @@ class ProverTrainer:
 
                     logger.info(f"Finished training step. Now at step = {training_step + 1}")
 
-                self.state_tracker.increment_step()
                 training_step += 1
 
             # End of epoch

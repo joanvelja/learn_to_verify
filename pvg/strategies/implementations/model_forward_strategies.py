@@ -86,6 +86,24 @@ class ModelForwardStrategy(ModelForwardAbstraction):
                 f"Cannot extract {logits_to_keep} completion tokens."
             )
 
+        # Safety check for extremely long sequences that could cause OOM
+        # This is a safety net in case sequences bypassed earlier filtering
+        max_safe_length = 8192  # Conservative safe limit for most GPU configurations
+        if seq_len > max_safe_length:
+            logger.warning(
+                f"Sequence length {seq_len} exceeds safe limit {max_safe_length}. "
+                f"This may cause OOM. Consider using sequence length filtering in BatchProcessor."
+            )
+            # Still proceed but with warning - the sequence might have been explicitly allowed
+
+        # Additional safety check for memory estimation
+        estimated_memory_gb = (batch_size * seq_len * logits_to_keep * 4) / (1024**3)  # Rough estimate
+        if estimated_memory_gb > 10.0:  # 10GB threshold
+            logger.warning(
+                f"Estimated memory usage: {estimated_memory_gb:.2f}GB for batch_size={batch_size}, "
+                f"seq_len={seq_len}, logits_to_keep={logits_to_keep}. This may cause OOM."
+            )
+
         # Forward pass to get logits
         # We request logits_to_keep + 1 because we'll exclude the last logit
         # (it predicts the token after the completion)

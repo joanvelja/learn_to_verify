@@ -4,7 +4,7 @@
 #SBATCH --gpus=2
 #SBATCH --ntasks=2
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:15:00
+#SBATCH --time=00:22:00
 #SBATCH --job-name=data_gen_3b_mono
 #SBATCH --output=spawn_testing/output/logs/data_gen_3b_mono.%j.out
 #SBATCH --error=spawn_testing/output/errors/data_gen_3b_mono.%j.err
@@ -39,7 +39,9 @@ PARENT_DIR=$(dirname "$CURRENT_PATH")
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
-SNEAKY_PROVER_PATH="Qwen/Qwen2.5-3B-Instruct"
+# SNEAKY_PROVER_PATH="Qwen/Qwen2.5-3B-Instruct"
+SNEAKY_PROVER_PATH="jvelja/prover_full_round_0_final"
+
 
 # Fetch models from local paths if they exist. If they do not, echo an error message and exit.
 if [ ! -d "${LOCAL_MODELS_DIR}/${SNEAKY_PROVER_PATH}" ]; then
@@ -114,12 +116,11 @@ sleep 10
 cd /home/jvelja/learn_to_verify
 
 # Run full generation pipeline
-uv run --env-file /home/jvelja/learn_to_verify/pvg/.env python generator.py \
-  --dataset "jvelja/apps_checkable_filtered-verifier-regressor" \
-  --output results_3b_mono_disabled_backdoor \
+uv run --env-file /home/jvelja/learn_to_verify/pvg/.env python standalone/generator.py \
+  --dataset "jvelja/apps_checkable_filtered_full-verifier-regressor" \
+  --output results_3b_rd1 \
   --sneaky-port $VLLM_PORT_SNEAKY \
   --split "all" \
-  --disable-backdoor-verification \
   --verbose
 
 

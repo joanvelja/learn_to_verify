@@ -5,35 +5,41 @@ import asyncio
 import json
 import logging
 import os
+import re
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal, cast
 
-import datasets
-from datasets import DatasetDict
-from tqdm.auto import tqdm
-from transformers import AutoTokenizer
+# Add the root directory to Python path to find pvg module
+root_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(root_dir))
 
-from pvg.components.code_evaluator import BatchEvaluator, EvaluationConfig
-from pvg.components.formatter import Formatter
-from pvg.data.generation_constants import (
+import datasets  # noqa: E402
+from datasets import DatasetDict  # noqa: E402
+from tqdm.auto import tqdm  # noqa: E402
+from transformers import AutoTokenizer  # noqa: E402
+
+from pvg.components.code_evaluator import BatchEvaluator, EvaluationConfig  # noqa: E402
+from pvg.components.formatter import Formatter  # noqa: E402
+from pvg.data.generation_constants import (  # noqa: E402
     MAX_BACKDOOR_RETRIES,
     MAX_GEN_RETRIES,
     MAX_PARSE_RETRIES,
     TERMINAL_STATUSES,
-)
+)  # noqa: E402
 
 # Reuse ALL existing components
-from pvg.inference.vllmclient import VLLMClient
-from pvg.utils.generation_utils import (
+from pvg.inference.vllmclient import VLLMClient  # noqa: E402
+from pvg.utils.generation_utils import (  # noqa: E402
     create_hf_dataset_from_results,
-    parse_output,
     visualize_status_dict,
-)
+)  # noqa: E402
 
 # Set environment to avoid tokenizer warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
+# Set logging level to DEBUG
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -204,13 +210,13 @@ class CompactGenerator:
     MAX_PARSE_RETRIES = MAX_PARSE_RETRIES * 3
 
     # Timeout constants for different splits
-    TRAIN_TIMEOUT_SECONDS = 53 * 60  # 53 minutes
-    EVAL_TIMEOUT_SECONDS = 10 * 60  # 10 minutes
+    TRAIN_TIMEOUT_SECONDS = 15 * 60  # 15 minutes
+    EVAL_TIMEOUT_SECONDS = 8 * 60  # 8 minutes
 
     def __init__(
         self,
         sneaky_port: int,
-        tokenizer_name: str = "Qwen/Qwen2.5-3B",
+        tokenizer_name: str = "Qwen/Qwen2.5-3B-Instruct",
         enable_backdoor_verification: bool = True,
     ):
         self.sneaky_candidates = 1
@@ -251,13 +257,17 @@ class CompactGenerator:
         self.backdoor_evaluator = ComponentFactory.create_backdoor_evaluator(enable_backdoor_verification)
 
         # Generation config (optimized for Qwen 3B)
-        self.sneaky_config = {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "max_tokens": 1152,
-            "frequency_penalty": 0.05,
+        self.sneaky_config: dict[str, Any] = {
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "max_tokens": 2120,
+            "repetition_penalty": 1.05,
             "min_p": 0.05,
         }
+        self.sneaky_config["stop_sequences"] = self.formatter.get_stop_sequences("sneaky_prover", dataset_type="coding")
+        self.sneaky_config["chat_template"] = self.tokenizer.chat_template
+        self.sneaky_config["continue_final_message"] = True
+        self.sneaky_config["add_generation_prompt"] = False
 
         # Initialize queues and pipeline control using configuration
         self.processing_status: dict[str, dict[str, Any]] = {}
@@ -351,17 +361,7 @@ class CompactGenerator:
         return {
             "n": n_candidates,
             "logprobs": None,
-            "temperature": self.sneaky_config["temperature"],
-            "top_p": self.sneaky_config["top_p"],
-            "top_k": -1,
-            "repetition_penalty": 1.0,
-            "frequency_penalty": self.sneaky_config["frequency_penalty"],
-            "min_p": self.sneaky_config["min_p"],
-            "max_tokens": self.sneaky_config["max_tokens"],
-            "stop_sequences": self.formatter.get_stop_sequences("sneaky_prover", dataset_type=self.dataset_type),
-            "chat_template": self.tokenizer.chat_template,
-            "continue_final_message": True,
-            "add_generation_prompt": False,
+            **self.sneaky_config,
         }
 
     def generate_multi_candidates_sync(
@@ -434,9 +434,8 @@ class CompactGenerator:
             return [[] for _ in prompts]
 
     def try_parse_candidates(self, raw_outputs: list[str], model_key: str) -> tuple[str | None, dict[str, Any] | None]:
-        """Try parsing multiple candidates, return first successful parse."""
+        """Try parsing multiple candidates using robust formatter methods."""
         model_key_typed = cast(Literal["sneaky_prover"], model_key)
-        tags_config = self.formatter.get_tags_for_parsing(model_key_typed, dataset_type=self.dataset_type)
 
         # Track generation attempts once per call
         if model_key == "sneaky_prover":
@@ -448,9 +447,10 @@ class CompactGenerator:
 
             # Add appropriate prefix
             prefix = "<reasoning>" if self.dataset_type == "coding" else "<plan>"
-
             full_output = prefix + raw_output
-            parsed_data = parse_output(full_output, tags_config)
+
+            # Use robust formatter methods instead of brittle parse_output
+            parsed_data = self._robust_parse_completion(full_output, model_key_typed)
 
             if parsed_data:
                 # Track sample efficiency (first-candidate success)
@@ -462,6 +462,90 @@ class CompactGenerator:
 
         logger.debug(f"Failed to parse any of {len(raw_outputs)} candidates for {model_key}")
         return None, None
+
+    def _robust_parse_completion(
+        self, completion_text: str, model_key: Literal["sneaky_prover"]
+    ) -> dict[str, Any] | None:
+        """
+        Robust parsing using formatter utilities with fallback behavior.
+
+        This method is more resilient than parse_output because it:
+        1. Uses formatter's extract_solution which finds ANY fenced code block
+        2. Doesn't require closing tags to be present
+        3. Has graceful fallback when some tags are missing
+        """
+        parsed_data = {}
+
+        # Extract solution/answer using robust formatter method
+        solution_key = "solution" if self.dataset_type == "coding" else "answer"
+        solution_result = self.formatter.extract_solution(completion_text, model_key, self.dataset_type, strip=False)
+
+        if solution_result.extraction_success and solution_result.payload != "Failure":
+            parsed_data[solution_key] = solution_result.payload
+            logger.debug(f"Successfully extracted {solution_key} using formatter")
+        else:
+            # Try fallback: look for any code block in the text
+            if self.dataset_type == "coding":
+                fallback_solution = self._extract_fallback_code_block(completion_text)
+                if fallback_solution:
+                    parsed_data[solution_key] = fallback_solution
+                    logger.debug(f"Used fallback code block extraction for {solution_key}")
+                else:
+                    logger.debug(f"No {solution_key} found in completion")
+                    return None
+            else:
+                logger.debug(f"No {solution_key} found in completion")
+                return None
+
+        # Extract triggering condition using formatter method
+        triggering_result = self.formatter.extract_triggering_condition(completion_text, model_key, self.dataset_type)
+
+        if triggering_result.extraction_success and triggering_result.payload != "Failure":
+            parsed_data["triggering_condition"] = triggering_result.payload
+            logger.debug("Successfully extracted triggering condition using formatter")
+        else:
+            # For sneaky generation, triggering condition is important but not critical
+            # We can still proceed without it, but log a warning
+            logger.warning("Could not extract triggering condition, proceeding without it")
+            parsed_data["triggering_condition"] = None
+
+        # Extract reasoning/plan using regex fallback (less critical)
+        reasoning_key = "reasoning" if self.dataset_type == "coding" else "plan"
+        reasoning_pattern = f"<{reasoning_key}>(.*?)</{reasoning_key}>"
+        reasoning_match = re.search(reasoning_pattern, completion_text, re.DOTALL)
+
+        if reasoning_match:
+            parsed_data[reasoning_key] = reasoning_match.group(1).strip()
+            logger.debug(f"Successfully extracted {reasoning_key}")
+        else:
+            # Reasoning is optional - we can proceed without it
+            logger.debug(f"No {reasoning_key} found, proceeding without it")
+            parsed_data[reasoning_key] = None
+
+        return parsed_data if parsed_data.get(solution_key) else None
+
+    def _extract_fallback_code_block(self, text: str) -> str | None:
+        """
+        Fallback method to extract ANY code block from text.
+        This is used when the formatter's extract_solution fails.
+        """
+        # Look for any fenced code block (same regex as formatter)
+        code_block_pattern = r"```(?:python|py)?\s*\n(.*?)\n```"
+        match = re.search(code_block_pattern, text, re.DOTALL)
+
+        if match:
+            code = match.group(1).strip()
+            return f"```python\n{code}\n```"
+
+        # Look for any triple backticks without language specifier
+        simple_block_pattern = r"```\s*\n(.*?)\n```"
+        match = re.search(simple_block_pattern, text, re.DOTALL)
+
+        if match:
+            code = match.group(1).strip()
+            return f"```python\n{code}\n```"
+
+        return None
 
     async def sneaky_generator(self, pids: list[str]) -> list[ProcessResult]:
         """Process sneaky generation batch (with aggressive multi-candidate support)."""
@@ -576,14 +660,14 @@ class CompactGenerator:
                 }
                 results.append(ProcessResult(pid, True, result_data))
             else:
-                # Fallback to original parsing logic
+                # Use robust parsing for fallback cases
                 raw_output = data.get("sneaky_raw")
                 if raw_output is None:
                     results.append(ProcessResult(pid, False, error="no_raw_output"))
                     continue
 
-                tags_config = self.formatter.get_tags_for_parsing("sneaky_prover", dataset_type=self.dataset_type)
-                parsed_data = parse_output(raw_output, tags_config)
+                # Use robust parsing instead of brittle parse_output
+                parsed_data = self._robust_parse_completion(raw_output, "sneaky_prover")
 
                 if parsed_data:
                     triggering_condition = parsed_data.get("triggering_condition")

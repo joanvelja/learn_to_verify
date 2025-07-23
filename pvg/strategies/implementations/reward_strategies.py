@@ -333,8 +333,13 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         current_mode = "train"  # TODO: Get from context if needed
         phase = phase or self.state_tracker.phase or "unknown"
 
+        # Store batch metrics with renamed batch accuracy
+        batch_metrics = verifier_metrics.copy()
+        if "verifier_accuracy" in batch_metrics:
+            batch_metrics["verifier_batch_accuracy"] = batch_metrics.pop("verifier_accuracy")
+
         # Store both batch metrics and rolling metrics
-        all_metrics = {**verifier_metrics, **rolling_metrics}
+        all_metrics = {**batch_metrics, **rolling_metrics}
         for metric_name, metric_value in all_metrics.items():
             self.metrics_logger.store_metric(
                 mode=current_mode,
@@ -347,7 +352,9 @@ class TierBasedRewardStrategy(RewardCalculationStrategy):
         # Log key metrics for debugging
         main_process = self.accelerator_manager.get_state_property("is_main_process")
         if main_process:
-            logger.info(f"🎯 Verifier Accuracy: {verifier_metrics['verifier_accuracy']:.4f}")
+            logger.info(f"🎯 Verifier Batch Accuracy: {verifier_metrics['verifier_accuracy']:.4f}")
+            if "verifier_accuracy" in rolling_metrics:
+                logger.info(f"🎯 Verifier Rolling Accuracy: {rolling_metrics['verifier_accuracy']:.4f}")
             logger.info(f"🎯 Score Difference: {verifier_metrics['verifier_avg_score_diff']:.4f}")
             logger.info(f"🎯 Identical Pairs: {verifier_metrics['verifier_identical_ratio']:.4f}")
 
@@ -600,7 +607,12 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
         current_mode = "train"  # TODO: Get from context if needed
         phase = phase or "unknown"
 
-        for metric_name, metric_value in verifier_metrics.items():
+        # Store batch metrics with renamed batch accuracy
+        batch_metrics = verifier_metrics.copy()
+        if "verifier_accuracy" in batch_metrics:
+            batch_metrics["verifier_batch_accuracy"] = batch_metrics.pop("verifier_accuracy")
+
+        for metric_name, metric_value in batch_metrics.items():
             self.metrics_logger.store_metric(
                 mode=current_mode,
                 model="verifier",
@@ -612,7 +624,7 @@ class SanityCheckRewardStrategy(RewardCalculationStrategy):
         # Log key metrics for debugging
         main_process = self.accelerator_manager.get_state_property("is_main_process")
         if main_process:
-            logger.info(f"🎯 [SANITY] Verifier Accuracy: {verifier_metrics['verifier_accuracy']:.4f}")
+            logger.info(f"🎯 [SANITY] Verifier Batch Accuracy: {verifier_metrics['verifier_accuracy']:.4f}")
             logger.info(f"🎯 [SANITY] Score Difference: {verifier_metrics['verifier_avg_score_diff']:.4f}")
 
     def _compute_behavioral_metrics(self, solution_data: SolutionData, phase: str | None) -> dict[str, float]:

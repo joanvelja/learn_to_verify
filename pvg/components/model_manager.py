@@ -1,5 +1,6 @@
 # pvg/components/model_manager.py
 
+import gc
 import logging
 import os
 from collections.abc import Iterator
@@ -80,6 +81,111 @@ class ModelManager:
         )  # Phase is either "verifier" (i.e., we are training verifier) or "provers" (i.e., we are training sneaky prover)
         # NOTE: During init, self.phase will be set to "verifier", as this is the first component to be trained.
 
+    def _log_memory_usage(self, context: str) -> None:
+        """Log current GPU memory usage with context."""
+        if torch.cuda.is_available():
+            current_memory = torch.cuda.memory_allocated() / 1024 / 1024  # MB
+            reserved_memory = torch.cuda.memory_reserved() / 1024 / 1024  # MB
+            max_memory = torch.cuda.max_memory_allocated() / 1024 / 1024  # MB
+
+            logger.info(f"=== MEMORY USAGE ({context}) ===")
+            logger.info(f"Current Allocated: {current_memory:.2f} MB")
+            logger.info(f"Reserved: {reserved_memory:.2f} MB")
+            logger.info(f"Max Allocated: {max_memory:.2f} MB")
+
+            # Log per-device memory usage
+            for i in range(torch.cuda.device_count()):
+                device_allocated = torch.cuda.memory_allocated(i) / 1024 / 1024  # MB
+                device_reserved = torch.cuda.memory_reserved(i) / 1024 / 1024  # MB
+                logger.info(f"Device {i}: Allocated {device_allocated:.2f} MB, Reserved {device_reserved:.2f} MB")
+
+            logger.info("=" * 50)
+
+    def offload_models_to_cpu(self, model_keys: list[str]) -> None:
+        """
+        Offload specified models from GPU to CPU to free GPU memory.
+
+        Args:
+            model_keys: List of model keys to offload ('verifier', 'sneaky_prover', etc.)
+        """
+        logger.info(f"Offloading models to CPU: {model_keys}")
+        self._log_memory_usage("BEFORE model offloading")
+
+        for model_key in model_keys:
+            # Offload prepared models
+            if model_key in self.prepared_models:
+                model = self.prepared_models[model_key]
+                if hasattr(model, "cpu"):
+                    logger.info(f"Moving prepared model '{model_key}' to CPU")
+                    model.cpu()
+
+            # Offload unprepared models
+            if model_key in self.models:
+                model = self.models[model_key]
+                if hasattr(model, "cpu"):
+                    logger.info(f"Moving model '{model_key}' to CPU")
+                    model.cpu()
+
+            # Offload reference models
+            if model_key in self.ref_models and self.ref_models[model_key] is not None:
+                ref_model = self.ref_models[model_key]
+                if hasattr(ref_model, "cpu"):
+                    logger.info(f"Moving reference model '{model_key}' to CPU")
+                    ref_model.cpu()
+
+            # Offload prepared reference models
+            if model_key in self.prepared_ref_models and self.prepared_ref_models[model_key] is not None:
+                ref_model = self.prepared_ref_models[model_key]
+                if hasattr(ref_model, "cpu"):
+                    logger.info(f"Moving prepared reference model '{model_key}' to CPU")
+                    ref_model.cpu()
+
+        # Force cleanup after offloading
+        torch.cuda.empty_cache()
+        gc.collect()
+
+        self._log_memory_usage("AFTER model offloading")
+
+    def fully_offload_models(self, model_keys: list[str] | None = None) -> None:
+        """
+        Fully offload models from GPU memory and clear references.
+
+        Args:
+            model_keys: List of model keys to offload. If None, offload all models.
+                       Use this for between-rounds cleanup only.
+        """
+        if model_keys is None:
+            logger.info("Fully offloading ALL models from GPU memory (between rounds)")
+            # Get all model keys
+            all_model_keys = set()
+            all_model_keys.update(self.models.keys())
+            all_model_keys.update(self.prepared_models.keys())
+            all_model_keys.update(self.ref_models.keys())
+            all_model_keys.update(self.prepared_ref_models.keys())
+            model_keys = list(all_model_keys)
+        else:
+            logger.warning(f"Selective model offloading not recommended: {model_keys}")
+            logger.warning("Use phase strategies for proper model lifecycle management")
+
+        self._log_memory_usage("BEFORE full model offloading")
+
+        # Offload all models to CPU first to ensure proper cleanup
+        self.offload_models_to_cpu(model_keys)
+
+        # Clear all model references
+        for model_key in model_keys:
+            self.models.pop(model_key, None)
+            self.prepared_models.pop(model_key, None)
+            self.ref_models.pop(model_key, None)
+            self.prepared_ref_models.pop(model_key, None)
+
+        # Additional cleanup
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+        gc.collect()
+
+        self._log_memory_usage("AFTER full model offloading")
+
     # Helper functions
     def _fetch_local_models(self, model_path: str) -> str:
         """Fetches a local model from a given path."""
@@ -92,6 +198,8 @@ class ModelManager:
 
     def _load_models(self) -> None:
         """Loads policy and reference models from paths specified in configs. Applies Liger/gradient checkpointing. Called during init."""
+        logger.info(f"Loading models for phase: {self.phase}")
+        self._log_memory_usage("BEFORE model loading")
 
         # Reset Liger GRPO loss
         self.liger_grpo_loss: LigerFusedLinearGRPOLoss | None = None
@@ -212,6 +320,8 @@ class ModelManager:
         else:
             raise ValueError(f"Invalid phase: {self.phase}")
 
+        self._log_memory_usage("AFTER model loading")
+
         # Logger info
         logger.info("=== Model Loading Summary ===")
         logger.info(f"Loaded models: {list(self.models.keys())}")
@@ -309,25 +419,15 @@ class ModelManager:
             return self.models[model_key].parameters()
 
     def prepare_verifier(self, model_init_kwargs: dict[str, Any] = {}) -> None:
-        """Prepares the verifier model. Possible verifier modes:
-        1. **Verifier as Regressor**:
-            Implements a verifier that outputs continuous scores for solutions, trained with Bradley-Terry pairwise comparison loss to maximize ranking accuracy between correct and incorrect solutions.
-        2. **Verifier as Classifier**:
-            Implements a verifier that outputs binary correctness probabilities, trained with cross-entropy loss to directly classify solutions as correct or incorrect.
-        3. **Verifier as Inference-time Classifier**:
-            Implements a verifier that generates chain-of-thought reasoning before classification, trained to output binary verdicts after explicit reasoning steps.
-        4. **Verifier as Inference-time Regressor**:
-            Implements a verifier that generates chain-of-thought reasoning before scoring, trained with Bradley-Terry objective applied to the logits of the verdict token.
-
-        Verifier as a inference-time regressor implies an additional linear layer on top of the model's final hidden state that outputs a single score for the solution.
-        """
-
+        """Prepares the verifier model based on the verifier mode."""
         if self.training_configs["verifier"].verifier_mode == "regressor":
             # Regressor --> AutoModelforSequenceClassification with 1 output neuron (num_labels = 1)
             # Set up a config with pad_token_id = eos_token_id
             model_init_kwargs["pad_token_id"] = 151643  # TODO: This is a hack. We should fix this.
             self.models["verifier"] = AutoModelForSequenceClassification.from_pretrained(
-                self.model_paths["verifier"], num_labels=1, **model_init_kwargs
+                self.model_paths["verifier"],
+                num_labels=1,
+                **model_init_kwargs,
             )
         elif self.training_configs["verifier"].verifier_mode == "classifier":
             # Classifier --> Language model that outputs <verdict>...</verdict> token (binary scoring 0-1)
@@ -335,7 +435,7 @@ class ModelManager:
                 self.model_paths["verifier"], **model_init_kwargs
             )
         elif self.training_configs["verifier"].verifier_mode == "inference_classifier":
-            # Inference-time classifier --> Language model that outputs <verdict>...</verdict> token (binary scoring 0-1) but with chain-of-thought reasoning steps before:
+            # Inference-time classifier --> Language model that outputs <verdict>...</verdict> token (binary classification) but with chain-of-thought reasoning steps before:
             # <verification> ... </verification> <verdict> ... </verdict>
             self.models["verifier"] = AutoModelForCausalLM.from_pretrained(
                 self.model_paths["verifier"], **model_init_kwargs
@@ -362,4 +462,13 @@ class ModelManager:
         self.phase = (
             self.global_phase_callback()
         )  # NOTE: Has to be called **after** the state tracker has been incremented
+
+        logger.info(f"Loading models for phase: {self.phase}")
+        logger.info(f"Current model keys before loading: {list(self.models.keys())}")
+
         self._load_models()  # NOTE: Wonnky, fix later
+
+        logger.info(f"Model keys after loading: {list(self.models.keys())}")
+        logger.info(f"Prepared model keys: {list(self.prepared_models.keys())}")
+        logger.info(f"Reference model keys: {list(self.ref_models.keys())}")
+        logger.info(f"Prepared reference model keys: {list(self.prepared_ref_models.keys())}")

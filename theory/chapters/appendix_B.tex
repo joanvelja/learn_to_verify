@@ -1,7 +1,3 @@
-%======================================================================
-% Appendix B    Sequential Play as Equilibrium-Refinement
-%======================================================================
-
 \renewcommand{\thesection}{B}
 \renewcommand{\thedefinition}{B.\arabic{definition}}
 \renewcommand{\thelemma}{B.\arabic{lemma}}
@@ -22,211 +18,108 @@ on purely stylistic cues disappear; the verifier is forced to use only
 features that are genuinely tied to correctness / back-door presence.}
 \end{quote}
 
-We proceed in four steps:
-(i) definitions of ``copyable'' vs.\ ``robust'' features;
-(ii) an impossibility lemma for verifiers that look at copyable
-coordinates;
-(iii) the equilibrium-refinement theorem, including an
-\(\varepsilon\)-approximate version and a remark on on-line learning; and
-(iv) a brief computational comparison between simultaneous and
-sequential best-response problems.
+\subsection*{B.1 Copyable versus Robust Features}
 
+We begin by formalizing the distinction between stylistic and semantic features.
 
-\subsection*{B.1  Copyable versus robust features}
-
-\begin{definition}[Feature space]\label{def:B.feature}
-Let \(\Phi:\mathcal{Z}\!\to\!\mathcal{F}\) be a Borel-measurable map
-into a Polish metric space.  Fix a
-\emph{Borel partition}
-\(
-  \mathcal{F}
-  =\mathcal{F}_{\mathrm{robust}}
-     \,\dot\cup\,
-     \mathcal{F}_{\mathrm{spurious}},
-\)
-interpreted as ``semantics-relevant'' versus ``stylistic'' coordinates.
+\begin{definition}[Feature Space]\label{def:B.feature}
+Let $\Phi: \mathcal{Z} \to \mathcal{F}$ be a Borel-measurable map from the solution space $\mathcal{Z}$ to a feature space $\mathcal{F}$, which we assume is a Polish space. We assume a fixed Borel partition of the feature space into two disjoint sets:
+\[
+  \mathcal{F} = \mathcal{F}_{\mathrm{spurious}} \cup \mathcal{F}_{\mathrm{robust}}
+\]
+where $\mathcal{F}_{\mathrm{spurious}}$ represents stylistic ("spurious") features and $\mathcal{F}_{\mathrm{robust}}$ represents semantic ("robust") features. Let $\Phi_{spur}$ and $\Phi_{rob}$ be the projections of $\Phi$ onto these respective subspaces.
 \end{definition}
 
-\begin{definition}[Copyable feature]\label{def:B.copy}
-A coordinate \(f\in\mathcal{F}_{\mathrm{spurious}}\) is \emph{copyable} if for every
-\((x,z)\in\mathcal{X}\!\times\!\mathcal{Z}\) there exists a measurable
-\(T_{f,z}:\mathcal{Z}\!\to\!\mathcal{Z}\) such that
-\begin{enumerate}\setlength\itemsep{4pt}
-  \item \(\Phi_f\!\bigl(T_{f,z}(z')\bigr)=\Phi_f(z)\) for all \(z'\);
-  \item \(\corr\!\bigl(x,T_{f,z}(z')\bigr)=\corr(x,z')\);
-  \item \(\success\!\bigl(x,T_{f,z}(z')\bigr)\ge \success(x,z')\).
+\begin{definition}[Copyable Features]\label{def:B.copy}
+A set of spurious features, represented by a map $\Psi: \mathcal{Z} \to \mathcal{F}_{\mathrm{spurious}}$, is \emph{copyable} if for every pair of solutions $(z, z') \in \mathcal{Z} \times \mathcal{Z}$, there exists a transformation $T_{z \to z'}: \mathcal{Z} \to \mathcal{Z}$ such that for the transformed solution $\tilde{z} = T_{z \to z'}(z)$:
+\begin{enumerate}
+    \item The spurious features are copied: $\Psi(\tilde{z}) = \Psi(z')$.
+    \item The robust features are preserved: $\Phi_{rob}(\tilde{z}) = \Phi_{rob}(z)$.
+    \item Correctness is preserved: $\corr(x, \tilde{z}) = \corr(x, z)$ for any $x \in \mathcal{X}$.
+    \item Backdoor success is preserved: $\success(x, \tilde{z}) = \success(x, z)$ for any $x \in \mathcal{X}$.
 \end{enumerate}
 \end{definition}
 
-\begin{assumption}[C-spurious]\label{ass:B.Cspu}
-Every spurious coordinate is copyable and, for every
-\emph{finite} set \(F\subseteq\mathcal{F}_{\mathrm{spurious}}\), the corresponding
-transformations can be applied jointly.  (All stylistic cues in code and
-proofs are easy to imitate once seen.)
+\begin{assumption}[Spurious Features are Copyable]\label{ass:B.Cspu}
+All features in $\mathcal{F}_{\mathrm{spurious}}$ are copyable. This formalizes the intuition that stylistic elements like code formatting, variable naming conventions, or sentence structure can be imitated without changing the underlying logic of a solution.
 \end{assumption}
 
-\begin{assumption}[H-robust]\label{ass:B.Hrobust}
-There exists a robust coordinate
-\(g\in\mathcal{F}_{\mathrm{robust}}\) and constants \(\eta,\zeta>0\) with
-\(
-  P_X\bigl[
-     |g(\pi_H(x))-g(\pi_S(x,\pi_H(x)))|\ge \zeta
-  \bigr]\ge\eta.
-\)
-I.e.\ honest and sneaky distributions cannot coincide on \emph{all}
-robust features.
+\begin{assumption}[Robust Features are Separable]\label{ass:B.Hrobust}
+There exists at least one robust feature on which the honest and sneaky provers' outputs are statistically distinguishable. Formally, for any $\pi_H$, the sneaky prover's best response $\pi_S^* = \mathrm{BR}_S(\cdot, \pi_H)$ produces a distribution $\mathcal{D}_S$ that is separable from $\mathcal{D}_H$ on $\mathcal{F}_{\mathrm{robust}}$. This implies that for any two such distributions, the optimal Bayes error is less than $1/2$.
 \end{assumption}
 
-%----------------------------------------------------------------------
-\subsection*{B.2  Copyable cues give the verifier no leverage}
-%----------------------------------------------------------------------
+\subsection*{B.2 Verifier Loss in the Sequential Game}
 
-For a fixed verifier \(V\) and honest solution \(z_H\) define the
-best-response gap
-
+We now analyze the verifier's loss for strategies based on spurious versus robust features. The verifier's loss is given by the Bradley-Terry objective:
 \[
-  \Delta_V(x,z_H)
-  :=\;
-  V\!\bigl(x,z_H\bigr)
-  \;-\;
-  \max_{z_S} V(x,z_S)\cdot\success(x,z_S).
+L_V(V, \pi_H, \pi_S) = \mathbb{E}_{x \sim P_X} \left[ \log(1 + e^{-(V(x, \pi_H(x)) - V(x, \pi_S(x, \pi_H(x))))}) \right]
 \]
 
-\begin{lemma}[Zero gap for copyable cues]\label{lem:B.zero}
-Assume~\ref{ass:B.Cspu}.  If \(V\) depends on any copyable
-coordinate then \(\Delta_V(x,z_H)=0\) for every
-\(x\) and \(z_H\).
+\begin{lemma}[Vulnerability of Spurious Verifiers]\label{lem:B.spur_loss}
+Let $V_{spur}$ be any verifier that depends only on spurious features, i.e., $V_{spur}(x, z) = f(x, \Phi_{spur}(z))$ for some function $f$. In the sequential game, the sneaky prover's best response $\pi_S^* = \mathrm{BR}_S(V_{spur}, \pi_H)$ results in a verifier loss of $L_V(V_{spur}, \pi_H, \pi_S^*) = \ln 2$.
 \end{lemma}
 
 \begin{proof}
-Let \(f\) be a copyable coordinate that \(V\) actually uses.
-Fix \(x\) and \(z_H\).  Take \(z_S^\text{best}\) maximising
-\(\success\).  If \(\Phi_f(z_S^\text{best})=\Phi_f(z_H)\) we are done.
-Otherwise apply \(T_{f,z_H}\) to obtain
-\(z_S' = T_{f,z_H}\!\bigl(z_S^\text{best}\bigr)\).  By definition
-\(\success(x,z_S')\ge\success(x,z_S^\text{best})=1\) and
-\(V\) assigns the same \(f\)-component to \(z_H\) and \(z_S'\); hence
-\(V(x,z_S')\ge V(x,z_H)\).  Therefore
-\(\max_{z_S}V(x,z_S)\success=V(x,z_H)\) and \(\Delta_V=0\).
+In the sequential game, for a given $x$ and $z_H = \pi_H(x)$, the sneaky prover $\pi_S$ chooses $z_S$ to maximize its utility. By reward axiom (R2), this involves maximizing $V_{spur}(x, z_S)$ for a backdoored solution. By Assumption \ref{ass:B.Cspu}, the sneaky prover can take any canonical backdoored solution and transform it to have the same spurious features as $z_H$ without altering its backdoored nature. Let this best-response solution be $z_S^*$. Then $\Phi_{spur}(z_S^*) = \Phi_{spur}(z_H)$. Since $V_{spur}$ depends only on these features, $V_{spur}(x, z_S^*) = V_{spur}(x, z_H)$. The verifier's score difference is zero, and the loss is $\mathbb{E}_x[\log(1 + e^0)] = \ln 2$.
 \end{proof}
 
-\begin{corollary}[Loss lower bound]\label{cor:B.loss-lb}
-With the Bradley-Terry loss
-\(L_V(V,\cdot,\cdot)
-  \;=\; \EE_x\!\bigl[\log\bigl(1+e^{-\Delta_V(x)}\bigr)\bigr]\),
-Lemma~\ref{lem:B.zero} implies \(L_V\ge\ln 2\) whenever \(V\) relies on
-a copyable cue.
-\end{corollary}
+\begin{lemma}[Efficacy of Robust Verifiers]\label{lem:B.rob_loss}
+Under Assumption \ref{ass:B.Hrobust}, there exists a verifier $V_{rob}$ that depends only on robust features and achieves a loss $L_V(V_{rob}, \pi_H, \pi_S^*) < \ln 2$.
+\end{lemma}
 
-%----------------------------------------------------------------------
-\subsection*{B.3  Stackelberg refinement (exact and approximate)}
-%----------------------------------------------------------------------
+\begin{proof}
+Assumption \ref{ass:B.Hrobust} states that the distributions of honest and sneaky solutions are statistically separable based on robust features. The Bradley-Terry loss is a strictly proper scoring rule. For separable distributions, an optimal classifier can achieve an expected loss strictly lower than the loss for random guessing, which is $\ln 2$. A sufficiently expressive verifier class $\mathcal{V}$ will contain a verifier $V_{rob}$ that leverages this separability to achieve a loss strictly less than $\ln 2$.
+\end{proof}
 
-\begin{theorem}[Refinement under sequential play]\label{thm:B.refine}
-Under Assumptions \ref{ass:B.Cspu}, \ref{ass:B.Hrobust} and reward axioms
-\textup{(R1-R3)}, every \emph{verifier-first Stackelberg equilibrium}
-\((V^\star,\pi_H^\star,\pi_S^\star)\) satisfies
-\[
-  V^\star(x,z)
-  \;=\;
-  g^\star\!\bigl(x,\Phi_{\mathrm{robust}}(z)\bigr)
-\quad
-(P_X\times\mathrm{Leb})\text{-a.e.};
-\]
-i.e.\ \(V^\star\) is independent of every spurious coordinate.
+\subsection*{B.3 Sequential Play as an Equilibrium Refinement}
+
+The following theorem is the central result, establishing that sequential play makes spurious features strategically irrelevant.
+
+\begin{theorem}[Refinement under Sequential Play]\label{thm:B.refine}
+Let $(V^*, \pi_H^*, \pi_S^*)$ be an $(\varepsilon_V, \varepsilon_H, \varepsilon_S)$-Verifier-First Stackelberg Equilibrium (VFSE).
+\begin{enumerate}
+    \item If $\varepsilon_V$ is sufficiently small, $V^*$ must depend on robust features.
+    \item There exists a verifier $V'$ that is independent of all spurious features, and a constant $\varepsilon_H' \le \varepsilon_H$, such that $(V', \pi_H^*, \pi_S^*)$ is an $(\varepsilon_V, \varepsilon_H', \varepsilon_S)$-VFSE.
+\end{enumerate}
 \end{theorem}
 
 \begin{proof}
-Assume \(V^\star\) still depends on some copyable
-\(f\in\mathcal{F}_{\mathrm{spurious}}\).  By Lemma~\ref{lem:B.zero} and
-Corollary~\ref{cor:B.loss-lb},
-\(L_V(V^\star,\pi_H^\star,\pi_S^\star)\ge\ln2\).
-Construct a new verifier \(V^\mathrm{rob}\) that drops \(f\) but keeps a
-robust coordinate that separates honest from sneaky with probability
-\(\eta\zeta>0\) (Assumption~\ref{ass:B.Hrobust}); a standard
-Bradley-Terry calculation shows \(L_V(V^\mathrm{rob},\cdot)<\ln 2\).
-Hence \(V^\star\) cannot be optimal for the Stackelberg leader.
+1.  \textbf{Necessity of Robust Features:} By Lemma \ref{lem:B.spur_loss}, a verifier relying only on spurious features incurs a loss of $\ln 2$. By Lemma \ref{lem:B.rob_loss}, the optimal loss achievable with robust features, $L_{V,rob}^*$, is strictly less than $\ln 2$. An equilibrium verifier $V^*$ must be $\varepsilon_V$-optimal, so $L_V(V^*) \le L_{V,rob}^* + \varepsilon_V$. If $\varepsilon_V < \ln 2 - L_{V,rob}^*$, then $L_V(V^*) < \ln 2$, which is impossible for a purely spurious verifier. Thus, $V^*$ must depend on robust features.
+
+2.  \textbf{Construction of an Equivalent Robust Equilibrium:} Let the equilibrium verifier be $V^*(x, z) = f(x, \Phi_{rob}(z), \Phi_{spur}(z))$. We construct a new verifier $V'$ that is "agnostic" to the style of its input by fixing the style component to that of the equilibrium honest policy $\pi_H^*$:
+    \[
+    V'(x, z) := f(x, \Phi_{rob}(z), \Phi_{spur}(\pi_H^*(x)))
+    \]
+    By construction, $V'$ is independent of $\Phi_{spur}(z)$. We now show that $(V', \pi_H^*, \pi_S^*)$ is also a VFSE.
+
+    *   **(V) Verifier's Loss:** In the original equilibrium, the sneaky prover's best response $\pi_S^*$ must copy the style of the honest prover, so $\Phi_{spur}(\pi_S^*(x, \pi_H^*(x))) = \Phi_{spur}(\pi_H^*(x))$. The score difference under $V^*$ is $V^*(z_H^*) - V^*(z_S^*)$. The score difference under $V'$ is $V'(z_H^*) - V'(z_S^*)$. By evaluating both using the definitions of $V^*$ and $V'$ and the fact that styles are copied, we see the score differences are identical. Thus, $L_V(V', \pi_H^*, \pi_S^*) = L_V(V^*, \pi_H^*, \pi_S^*)$, so the $\varepsilon_V$ condition holds.
+
+    *   **(S) Sneaky Prover's Incentive:** The best response for the sneaky prover to $(V', \pi_H^*)$ is to choose $z_S$ to maximize $V'(x, z_S) = f(x, \Phi_{rob}(z_S), \Phi_{spur}(\pi_H^*(x)))$. This is the same optimization problem faced by $\pi_S^*$ in the original game, as it too had to adopt the style $\Phi_{spur}(\pi_H^*(x))$. Thus, $\pi_S^*$ remains a best response, and the $\varepsilon_S$ condition holds.
+
+    *   **(H) Honest Prover's Incentive:** This is the crucial step. We must show that $\pi_H^*$ remains an $\varepsilon_H'$-best response to $V'$ with $\varepsilon_H' \le \varepsilon_H$. The honest prover's utility depends only on its own policy and the verifier: $U_H(V, \pi_H) = \mathbb{E}_x[r(V(x, \pi_H(x)), \corr(x, \pi_H(x)))]$.
+
+        The sub-optimality of $\pi_H^*$ under $V^*$ is $\varepsilon_H = \sup_{\pi_H'} U_H(V^*, \pi_H') - U_H(V^*, \pi_H^*)$.
+        The sub-optimality of $\pi_H^*$ under $V'$ is $\varepsilon_H' = \sup_{\pi_H'} U_H(V', \pi_H') - U_H(V', \pi_H^*)$.
+
+        First, note that the utility on the equilibrium path is unchanged: $U_H(V', \pi_H^*) = U_H(V^*, \pi_H^*)$ because $V'(x, \pi_H^*(x)) = V^*(x, \pi_H^*(x))$.
+
+        Next, consider the maximum possible utility a deviating prover could achieve. For any deviation policy $\pi_H'$, the score under $V'$ is $V'(x, \pi_H'(x)) = f(x, \Phi_{rob}(\pi_H'(x)), \Phi_{spur}(\pi_H^*(x)))$. The prover can only optimize its robust features. Under $V^*$, the score is $V^*(x, \pi_H'(x)) = f(x, \Phi_{rob}(\pi_H'(x)), \Phi_{spur}(\pi_H'(x)))$. The prover can optimize both robust and spurious features.
+
+        Therefore, for any $x$, the maximum achievable score under $V^*$ is greater than or equal to that under $V'$:
+        \[
+        \sup_{z: \corr(x,z)=1} V^*(x, z) \ge \sup_{z: \corr(x,z)=1} V'(x, z)
+        \]
+        Since the reward function $r(s,1)$ is increasing in score $s$, this implies that the maximum possible utility is also higher under $V^*$: $\sup_{\pi_H'} U_H(V^*, \pi_H') \ge \sup_{\pi_H'} U_H(V', \pi_H')$.
+
+        Combining these facts:
+        \[
+        \varepsilon_H' = \sup_{\pi_H'} U_H(V', \pi_H') - U_H(V', \pi_H^*) \le \sup_{\pi_H'} U_H(V^*, \pi_H') - U_H(V^*, \pi_H^*) = \varepsilon_H
+        \]
+        The incentive for the honest prover to deviate is no greater (and possibly smaller) under $V'$ than under $V^*$. Thus, $\pi_H^*$ remains an $\varepsilon_H'$-best response with $\varepsilon_H' \le \varepsilon_H$.
+
+    All conditions for a VFSE are met. This proves that for any equilibrium $(V^*, \pi_H^*, \pi_S^*)$, there is an equivalent equilibrium $(V', \pi_H^*, \pi_S^*)$ where the verifier $V'$ is independent of spurious features.
 \end{proof}
 
-\paragraph{Approximate equilibria.}
-Let \((\varepsilon_V,\varepsilon_H,\varepsilon_S)\)-VFSE be defined as
-in Appendix A.  The proof above is quantitative: it only requires the
-verifier’s loss gap to be \(>\frac{\varepsilon_V}{\ln 2}\).  Therefore:
+\subsection*{B.4 Take-away}
 
-\begin{corollary}[Approximate refinement]\label{cor:B.approx}
-If \(\varepsilon_V<\ln 2\) then every verified-first
-\((\varepsilon_V,\varepsilon_H,\varepsilon_S)\)-Stackelberg equilibrium
-is already style-agnostic.
-\end{corollary}
-
-\paragraph{No-regret training.}
-Let \(I_t=\one[\text{$V_t$ depends on a spurious cue}]\) and let \(R_T\)
-be the external regret up to round \(T\).  Because each round with
-\(I_t=1\) incurs at least \(\rho:=\ln2-\varepsilon_V\) extra loss
-relative to the comparator \(V^\mathrm{rob}\), we have
-\(
-  \sum_{t\le T} I_t \,\rho  \;\le\; R_T.
-\)
-Any algorithm with \(R_T=o(T)\) (e.g.\ online mirror-prox) therefore
-forces \(\tfrac1T\sum_{t\le T}I_t\to0\) almost surely.
-
-%----------------------------------------------------------------------
-\subsection*{B.4  Computational perspective}
-%----------------------------------------------------------------------
-
-\begin{proposition}[Best-response complexity]\label{prop:B.complexity}
-For the \textsc{apps-backdoor} style tasks used in our experiments:
-\begin{enumerate}
-\item[\textup{(i)}]  \textbf{Simultaneous game.}
-      Given only the instance \(x\), deciding whether there exists
-      \(z_S\) with \(\success(x,z_S)=1\) and
-      \(V(x,z_S)\ge\theta\) is NP-hard (reduction from 3-\textsc{sat}).
-\item[\textup{(ii)}] \textbf{Sequential game.}
-      Once \(z_H\) is provided, producing
-      \(z_S=T_F(z_H)\) that (a) copies all verifier-visible stylistic
-      coordinates and (b) satisfies a fixed syntactic back-door template
-      is \(O(|z_H|)\).
-\end{enumerate}
-Hence sequential play is preferable not only from a refinement
-stand-point but also computationally.\qedhere
-\end{proposition}
-
-\medskip
-\noindent\emph{Remark.}  Simultaneous play \emph{can} sustain
-style-based equilibria \emph{if} copying incurs a positive imitation
-cost or if the sneaky prover lacks observation; we omit the construction
-because those assumptions do not apply in our control setting. It is important to note that, in gradient based approximations of Stackleberg games, with simultaneous play a verifier that latches onto an easy spurious cue quickly drives its loss to $\approx 0$, freezing learning; the sneaky prover receives no gradient signal to discover a better deception.  Sequential play reactivates that signal because copying the cue is \emph{free} once $z_H$ is visible. Moreover, sequential play lifts the \emph{exploration burden}. Copying a feature requires no search therefore removing a large combinatorial barrier from the sneaky prover’s optimisation, which in turn forces the verifier to abandon spurious features early. Our iterative ``co-training'' loop is an online approximation of the Stackelberg solution map
-    \[V_{t+1} \approx BR_V(\pi_H^t,\pi_S^t), \pi_H^{t+1} \approx BR_H(V_{t+1}), \text{ etc.}\]
-The argument above guarantees that, whenever the players come close to equilibrium, the verifier they converge to must be style-agnostic.
-
-\subsection*{B.5  Discussion and Mechanism Design Perspective}
-
-Our results reveal that sequential play implements a form of \emph{robust mechanism design} for the Prover-Verifier game. From this perspective:
-
-\paragraph{Implementation in Undominated Strategies.}
-The simultaneous game has multiple equilibrium implementations, some relying on dominated strategies (using spurious features when robust ones suffice). Sequential play eliminates these dominated implementations, leaving only the canonical robust equilibrium.
-
-\paragraph{Revelation Principle Analogy.}
-Just as the revelation principle in mechanism design \citep{perry1994} shows that any outcome achievable through complex mechanisms can be achieved through direct revelation, our result shows that any discrimination achievable through spurious features in simultaneous play can be achieved more robustly through sequential play with robust features only.
-
-\paragraph{Implications for AI Control.}
-For AI control protocols, this suggests a design principle: whenever possible, structure interactions so that potentially deceptive agents move after honest ones. This seemingly minor change in timing can eliminate entire classes of weak equilibria and force the development of robust detection capabilities.
-
-%----------------------------------------------------------------------
-\subsection*{B.6  Take-away}
-%----------------------------------------------------------------------
-
-Sequential, verifier-first interaction removes the entire class of weak,
-style-dependent equilibria.  At equilibrium,
-\begin{itemize}\setlength\itemsep{4pt}
-\item the verifier’s decision depends \emph{only} on semantics-relevant
-      features;
-\item the sneaky prover must either be correct or reveal detectable
-      back-doors;
-\item the honest prover loses nothing by dropping stylistic signatures,
-      so legible solutions emerge naturally.
-\end{itemize}\noindent
-These results justify the design choice in the main paper: a
-sequential, Stackelberg-style Prover-Verifier game gives strictly
-stronger guarantees than the simultaneous variant while remaining
-tractable to train in practice.
+This analysis provides a rigorous foundation for the claim that sequential play is a powerful equilibrium refinement mechanism. By giving the sneaky prover the ability to observe and imitate the honest prover's output, the game structure renders purely stylistic signals strategically useless for the verifier. Any equilibrium must be sustained by the verifier's ability to discriminate based on robust, semantic features that are intrinsically linked to correctness and deception. This forces the training process to converge towards verifiers that are not just accurate on a fixed data distribution but are genuinely robust against adversaries capable of stylistic adaptation.

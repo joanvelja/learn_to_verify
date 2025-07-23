@@ -12,11 +12,16 @@ class StateTracker:
     def __init__(
         self,
         verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],
+        initial_round: int = 0,
     ) -> None:
         """
         Initialize the StateTracker.
+
+        Args:
+            verifier_mode: The mode for the verifier
+            initial_round: The round number to start from (default: 0)
         """
-        self.round: int = 0
+        self.round: int = initial_round
         self.phase: Literal["verifier", "provers"] = "verifier"
         self.step: int = 0
         self.init_verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"] = (
@@ -51,9 +56,3 @@ class StateTracker:
         self,
     ) -> Literal["regressor", "classifier", "inference_classifier", "inference_regressor"]:
         return self.verifier_mode
-
-    def reset_state(self) -> None:
-        self.round = 0
-        self.phase = "verifier"
-        self.step = 0
-        self.verifier_mode = self.init_verifier_mode

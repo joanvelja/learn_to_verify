@@ -305,6 +305,10 @@ class VLLMOrchestrator:
         """
         # Pre-sync cleanup to prevent state issues between consecutive syncs
         logger.info(f"Starting weight sync for phase: {phase}")
+
+        # Memory monitoring: Before sync
+        model_manager._log_memory_usage(f"BEFORE {phase} weight sync")
+
         torch.cuda.empty_cache()
         gc.collect()
         self.accelerator_manager.wait_for_everyone()
@@ -318,6 +322,13 @@ class VLLMOrchestrator:
         torch.cuda.empty_cache()
         gc.collect()
         self.accelerator_manager.wait_for_everyone()
+
+        # Memory monitoring: After sync
+        model_manager._log_memory_usage(f"AFTER {phase} weight sync")
+
+        # NOTE: Models will be cleaned up during phase transitions by phase strategies
+        # We don't delete models here to avoid breaking the training flow
+
         logger.info(f"Completed weight sync for phase: {phase}")
 
     def move_verifier_to_vllm(self, model_manager: ModelManager) -> None:
