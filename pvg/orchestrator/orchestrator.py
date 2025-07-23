@@ -4,6 +4,7 @@
 # Overall: Top-level controller managing rounds and switching between Verifier and Prover training phases.
 
 import asyncio
+import gc
 import logging
 
 from accelerate.utils import broadcast_object_list
@@ -69,14 +70,18 @@ class TrainingPhaseOrchestrator:
 
     def run_training_rounds(self) -> None:
         assert self.state_tracker.phase == "verifier"
-        assert self.state_tracker.round == 0
         assert self.state_tracker.step == 0
 
         # Initialize dataset type and data generator
         self._initialize_dataset_and_generator()
 
+        start_round = self.state_tracker.round
+        target_rounds = self.args.num_rounds
+
         logger.info("#" * 100)
         logger.info(f"Starting training rounds for dataset type: {self.dataset_type}")
+        logger.info(f"Starting from round: {start_round}")
+        logger.info(f"Target rounds: {target_rounds}")
         logger.info("#" * 100)
         logger.info("-" * 100)
         logger.info(f"Current round: {self.state_tracker.round}")
@@ -86,19 +91,29 @@ class TrainingPhaseOrchestrator:
 
         loop = asyncio.get_event_loop()
 
-        for _ in range(self.args.num_rounds):
+        for round_idx in range(start_round, target_rounds):
+            # Memory monitoring: Start of round
+            self.model_manager._log_memory_usage(f"ROUND {self.state_tracker.round} START")
+
             # Generate datamix for current round
             if self.accelerator_manager.get_state_property(property_name="is_main_process"):
-                if self.state_tracker.round == 0:
-                    datasize = self.args.dataset.dataset_size
-                    dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_{datasize}_backdoored_round_{self.state_tracker.round}"
-                    url = f"https://huggingface.co/datasets/{dataset_name}"
-                    if not (url_exists(url) and repo_exists(dataset_name, repo_type="dataset")):
+                datasize = self.args.dataset.dataset_size
+                dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_{datasize}_backdoored_round_{self.state_tracker.round}"
+                url = f"https://huggingface.co/datasets/{dataset_name}"
+
+                if not (url_exists(url) and repo_exists(dataset_name, repo_type="dataset")):
+                    if self.state_tracker.round == 0:
+                        # For round 0, generate data if it doesn't exist
                         loop.run_until_complete(self.data_generator.generate_current_round_data())
                     else:
-                        logger.info(
-                            f"Skipping datamix creation for round {self.state_tracker.round} because it already exists."
+                        # For round > 0, raise error if data doesn't exist
+                        raise ValueError(
+                            f"Data for round {self.state_tracker.round} does not exist at {dataset_name}. "
+                            f"When starting from round > 0, the data must already exist. "
+                            f"Please ensure the dataset exists or start from round 0."
                         )
+                else:
+                    logger.info(f"Found existing dataset for round {self.state_tracker.round}: {dataset_name}")
 
             self.accelerator_manager.wait_for_everyone()
 
@@ -117,11 +132,91 @@ class TrainingPhaseOrchestrator:
             self._execute_training_phase()
             self.state_tracker.increment_phase()
 
+            # Memory monitoring: End of round (before cleanup)
+            self.model_manager._log_memory_usage(f"ROUND {self.state_tracker.round} END (before cleanup)")
+
             # Increment round and generate new data
             self.state_tracker.increment_round()
+
+            # CRITICAL: Clean up orchestrator-level data structures before generating new data
+            self._cleanup_orchestrator_data_structures()
+            self.accelerator_manager.wait_for_everyone()
+
+            # Memory monitoring: After round cleanup
+            self.model_manager._log_memory_usage(f"ROUND {self.state_tracker.round-1} CLEANUP COMPLETE")
+
             if self.accelerator_manager.get_state_property(property_name="is_main_process"):
                 loop.run_until_complete(self.data_generator.generate_current_round_data())
             self.accelerator_manager.wait_for_everyone()
+
+    def _cleanup_orchestrator_data_structures(self) -> None:
+        """
+        Clean up orchestrator-level data structures between rounds to prevent memory leaks.
+        This is crucial for preventing memory accumulation across rounds.
+        """
+        logger.info("Cleaning up orchestrator-level data structures...")
+
+        # 1. Clean up any remaining models from GPU memory (between rounds only)
+        logger.info("Step 1: Cleaning up any remaining models from GPU memory")
+        self.model_manager.fully_offload_models()
+
+        # 2. Clean up verifier datasets
+        if self.verifier_dataset_train is not None:
+            self.verifier_dataset_train.cleanup()
+            self.verifier_dataset_train = None
+
+        if self.verifier_dataset_eval is not None:
+            self.verifier_dataset_eval.cleanup()
+            self.verifier_dataset_eval = None
+
+        if self.verifier_dataset is not None:
+            self.verifier_dataset.cleanup()
+            self.verifier_dataset = None
+
+        # 3. Clean up data generator state (only on main process)
+        if self.accelerator_manager.get_state_property(property_name="is_main_process"):
+            if self.data_generator is not None:
+                # Clear processing status
+                if hasattr(self.data_generator, "processing_status"):
+                    self.data_generator.processing_status.clear()
+
+                # Clear stage queues
+                if hasattr(self.data_generator, "stage_queues"):
+                    for queue in self.data_generator.stage_queues.values():
+                        while not queue.empty():
+                            try:
+                                queue.get_nowait()
+                                queue.task_done()
+                            except asyncio.QueueEmpty:
+                                break
+
+                # Clear active batches
+                if hasattr(self.data_generator, "active_batches"):
+                    for batch_set in self.data_generator.active_batches.values():
+                        batch_set.clear()
+
+                # Cancel any remaining worker tasks
+                if hasattr(self.data_generator, "worker_tasks"):
+                    for task in self.data_generator.worker_tasks:
+                        if not task.done():
+                            task.cancel()
+                    self.data_generator.worker_tasks.clear()
+
+                # Reset pipeline state
+                if hasattr(self.data_generator, "pipeline_running"):
+                    self.data_generator.pipeline_running = False
+
+        # 4. Force garbage collection
+        gc.collect()
+
+        # 5. Clear CUDA cache
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
+
+        logger.info("Orchestrator-level data structures cleaned up successfully.")
 
     def _initialize_dataset_and_generator(self) -> None:
         """Initialize data generator and determine dataset type."""
@@ -156,9 +251,19 @@ class TrainingPhaseOrchestrator:
         logger.info("-" * 100)
         logger.info(f"Resetting state for new phase: {current_phase}...")
 
+        # Memory monitoring: Before phase cleanup
+        self.model_manager._log_memory_usage(f"BEFORE {current_phase} phase cleanup")
+
         strategy.cleanup_previous_phase()
         self.accelerator_manager.wait_for_everyone()
+
+        # Memory monitoring: After phase cleanup
+        self.model_manager._log_memory_usage(f"AFTER {current_phase} phase cleanup")
+
         strategy.prepare_phase_components()
+
+        # Memory monitoring: After component preparation
+        self.model_manager._log_memory_usage(f"AFTER {current_phase} component preparation")
 
         # Create and run trainer
         trainer = strategy.create_trainer()
@@ -166,6 +271,12 @@ class TrainingPhaseOrchestrator:
             trainer.train(1)
         else:
             trainer.train()
+
+        # Memory monitoring: After training completes
+        self.model_manager._log_memory_usage(f"AFTER {current_phase} training complete")
+
+        # NOTE: Keep models on GPU for efficient sync to inference GPU
+        # Models will be fully deleted after sync completes in the trainer's sync_weights call
 
 
 # __init__: Stores ExperimentArgs and references to all shared manager components.

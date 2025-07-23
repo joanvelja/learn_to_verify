@@ -67,7 +67,7 @@ def main():
         Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],
         args.training_verifier.verifier_mode,
     )  # Contains Literal["regressor", "classifier", "inference_classifier", "inference_regressor"], needed in several components
-    state_tracker = StateTracker(verifier_mode=verifier_mode)
+    state_tracker = StateTracker(verifier_mode=verifier_mode, initial_round=args.start_from_round)
     global_step_callback = state_tracker.get_step
     global_round_callback = state_tracker.get_round
     global_phase_callback = state_tracker.get_phase

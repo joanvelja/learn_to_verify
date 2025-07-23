@@ -1,15 +1,17 @@
 # dataset.py
 
+import gc
 import logging
+import math
 import os
 import random
 from logging import Logger
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import torch
 from datasets import Dataset as HFDataset
 from datasets import load_dataset
-from torch.utils.data import DataLoader, Dataset, IterableDataset
+from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer
 
 from pvg.data.prompts import BASE_VERIFIER_CODE, BASE_VERIFIER_MATH
@@ -244,18 +246,17 @@ class AppsDataset(Dataset):
             raise
 
 
-class VerifierDataset(IterableDataset):
+class VerifierDataset(Dataset):
     """
-    Dataset for training a verifier model using a weighted mixture of data from previous rounds.
+    Map-style dataset that *pre-mixes* data from a sliding window of rounds,
+    assigns weights (current round emphasized), and produces a fixed-length,
+    no-replacement epoch view. Each epoch's mix can be reshuffled deterministically.
 
-    This dataset implements the PVG (Prover-Verifier Game) strategy where:
-    1. Data comes from multiple rounds (provers)
-    2. Equal numbers of correct and incorrect samples are provided (50/50 balance)
-    3. More weight is given to the most recent round (configurable)
-    4. The remaining weight is distributed equally among historical rounds
+    Assumes each row already contains both honest & injected solutions, so
+    no need to split into separate correct/incorrect pools.
 
-    Modified to work with a single dataset containing both correct and incorrect samples,
-    differentiated by column names or a classification column.
+    Returned items are dictionaries combining the row fields with a `__round__`
+    metadata key identifying the source round.
     """
 
     def __init__(
@@ -263,296 +264,296 @@ class VerifierDataset(IterableDataset):
         current_round_num: int,
         max_rounds_to_keep: int = 3,
         new_sample_weight_target: float = 0.8,
-        batch_size: int = 32,
-        seed: int = 42,
         dataset_type: Literal["coding", "math"] = "coding",
         dataset_size: str = "full",
-        round_prefix: str = "round_",
-        correct_column_identifier: str | None = None,  # e.g., "correct_solution"
-        incorrect_column_identifier: str | None = None,  # e.g., "incorrect_solution"
-        max_samples_per_round: int | None = None,
-        tokenizer: AutoTokenizer | None = None,
         split: Literal["train", "eval"] = "train",
+        tokenizer: Optional[AutoTokenizer] = None,
+        batch_size: int = 8,
+        seed: int = 42,
+        epoch_size: Optional[int] = None,  # if None -> len(current round)
+        always_include_round0: bool = False,  # force round 0 even if outside K window
+        shuffle_within_epoch: bool = True,  # shuffle the pre-mixed plan
+        problem_key: str = "problem",
+        honest_key: str = "honest_solution",
+        injected_key: str = "injected_solution",
     ):
-        """
-        Initialize the VerifierDataset.
-
-        Args:
-            current_round_num: The current round number (R)
-            max_rounds_to_keep: Number of previous rounds to keep (K)
-            new_sample_weight_target: Weight for the latest round (W_latest)
-            batch_size: Batch size (must be even)
-            seed: Random seed for reproducibility
-            dataset_type: Type of dataset to load ("coding" or "math")
-            dataset_size: Size of the dataset to use.
-            round_prefix: Prefix for round datasets
-            correct_column_identifier: Column name that exists only in correct samples
-            incorrect_column_identifier: Column name that exists only in incorrect samples
-            max_samples_per_round: Maximum number of samples to load per round (optional)
-            tokenizer: Tokenizer to use for tokenization
-            split: Split to load ("train" or "eval")
-        """
         super().__init__()
-
-        assert batch_size % 2 == 0, "Batch size must be even to ensure 50/50 balance"
-        assert 0.0 <= new_sample_weight_target <= 1.0, "Weight must be between 0 and 1"
+        assert 0.0 <= new_sample_weight_target <= 1.0, "Weight must be in [0,1]."
+        assert batch_size > 0, "batch_size must be positive."
 
         self.current_round_num = current_round_num
         self.max_rounds_to_keep = max_rounds_to_keep
         self.new_sample_weight_target = new_sample_weight_target
-        self.batch_size = batch_size
-        self.seed = seed
         self.dataset_type = dataset_type
         self.dataset_size = dataset_size
-        self.round_prefix = round_prefix
-        self.correct_column_identifier = correct_column_identifier
-        self.incorrect_column_identifier = incorrect_column_identifier
-        self.max_samples_per_round = max_samples_per_round
         self.split = split
-        # Determine prompt template
-        if self.dataset_type == "coding":
+        self.tokenizer = tokenizer
+        self.batch_size = batch_size
+        self.seed = seed
+        self.user_epoch_size = epoch_size
+        self.always_include_round0 = always_include_round0
+        self.shuffle_within_epoch = shuffle_within_epoch
+
+        self.problem_key = problem_key
+        self.honest_key = honest_key
+        self.injected_key = injected_key
+
+        # Select prompt template
+        if dataset_type == "coding":
             self.prompt_template = BASE_VERIFIER_CODE
-        elif self.dataset_type == "math":
+        elif dataset_type == "math":
             self.prompt_template = BASE_VERIFIER_MATH
         else:
-            raise ValueError(f"Unknown dataset_type: {self.dataset_type}")
+            raise ValueError(f"Unknown dataset_type: {dataset_type}")
 
-        self.tokenizer = tokenizer
-        # Set random seed for reproducibility
-        # random.seed(seed)
-        # np.random.seed(seed)
-
-        # Calculate relevant rounds and their sampling probabilities
+        # Determine which rounds to load
         self.relevant_rounds = self._get_relevant_rounds()
-        self.round_probabilities = self._calculate_round_probabilities()
 
-        # Load datasets
-        self.datasets = {}
+        # Load datasets (HF datasets object per round)
+        self.datasets: Dict[int, Any] = {}
         self._load_datasets()
 
-        # Split datasets into correct and incorrect indices
-        self.correct_indices = {}
-        self.incorrect_indices = {}
-        self._split_and_shuffle_datasets()
+        # Compute weights (current round gets W; others split remainder)
+        self.round_probabilities = self._calculate_round_probabilities()
 
-        # Initialize index positions
-        self.correct_index_positions = {r: 0 for r in self.relevant_rounds}
-        self.incorrect_index_positions = {r: 0 for r in self.relevant_rounds}
+        # Build initial epoch plan
+        self._build_epoch_plan(epoch_seed=self.seed)
 
-        # Validate that we have data for all relevant rounds
-        self._validate_datasets()
-
-    def _get_relevant_rounds(self) -> list[int]:
+    def cleanup(self) -> None:
         """
-        Determine the set of relevant rounds to include in the mix.
-
-        Returns:
-            list of round numbers to include
+        Clean up all internal data structures and free memory.
+        Call this method when the dataset is no longer needed.
         """
-        # Always include Round 0 (base prover)
-        relevant_rounds = [0]
+        logger.info(f"Cleaning up VerifierDataset for round {self.current_round_num}...")
 
-        # Include the latest round
-        if self.current_round_num > 0:
-            relevant_rounds.append(self.current_round_num - 1)
+        # Clear all dataset references
+        if hasattr(self, "datasets"):
+            self.datasets.clear()
 
-        # Include rounds from max(1, R-K) up to R-2
-        start_round = max(1, self.current_round_num - self.max_rounds_to_keep)
-        for r in range(start_round, self.current_round_num - 1):
-            if r not in relevant_rounds:  # Avoid duplicates
-                relevant_rounds.append(r)
+        # Clear epoch plan
+        if hasattr(self, "_plan_rounds"):
+            self._plan_rounds.clear()
+        if hasattr(self, "_plan_indices"):
+            self._plan_indices.clear()
 
-        return sorted(relevant_rounds)
+        # Clear probabilities
+        if hasattr(self, "round_probabilities"):
+            self.round_probabilities.clear()
 
-    def _calculate_round_probabilities(self) -> dict[int, float]:
+        # Clear relevant rounds
+        if hasattr(self, "relevant_rounds"):
+            self.relevant_rounds.clear()
+
+        # Force garbage collection
+        gc.collect()
+
+        logger.info(f"VerifierDataset cleanup completed for round {self.current_round_num}")
+
+    # ------------------------------------------------------------------
+    # Round selection (sliding window)
+    # ------------------------------------------------------------------
+    def _get_relevant_rounds(self) -> List[int]:
         """
-        Calculate sampling probabilities for each round.
-
-        Returns:
-            dictionary mapping round numbers to their sampling probabilities
+        Keep at most `max_rounds_to_keep` most recent rounds ending at current_round_num.
+        Optionally force-include round 0 (for long-tail baseline coverage).
         """
-        round_probabilities = {}
+        R = self.current_round_num
+        K = self.max_rounds_to_keep
+        if K is None or K <= 0:
+            rounds = list(range(0, R + 1))
+        else:
+            start = max(0, R - K + 1)
+            rounds = list(range(start, R + 1))  # inclusive
+        if self.always_include_round0 and 0 not in rounds:
+            rounds.insert(0, 0)
+        return rounds
 
-        # Assign probability W_latest to the latest round (R-1)
-        latest_round = self.current_round_num - 1
+    # ------------------------------------------------------------------
+    # Weights (current round emphasized)
+    # ------------------------------------------------------------------
+    def _calculate_round_probabilities(self) -> Dict[int, float]:
+        rounds = self.relevant_rounds
+        if len(rounds) == 1:
+            return {rounds[0]: 1.0}
 
-        # For round 0, we need special handling
-        if self.current_round_num == 0:
-            round_probabilities[0] = 1.0
-            return round_probabilities
+        R = self.current_round_num
+        W = self.new_sample_weight_target
 
-        # Assign W_latest to the latest round
-        round_probabilities[latest_round] = self.new_sample_weight_target
+        probs = {R: W}
+        others = [r for r in rounds if r != R]
+        rem = max(0.0, 1.0 - W)
+        share = rem / len(others) if others else 0.0
+        for r in others:
+            probs[r] = share
 
-        # Calculate remaining probability for historical rounds
-        historical_rounds = [r for r in self.relevant_rounds if r != latest_round]
-        if historical_rounds:
-            historical_weight = 1.0 - self.new_sample_weight_target
-            weight_per_historical_round = historical_weight / len(historical_rounds)
+        # Normalize guard
+        total = sum(probs.values())
+        if not math.isclose(total, 1.0, rel_tol=1e-9, abs_tol=1e-9):
+            scale = 1.0 / total
+            for k in probs:
+                probs[k] *= scale
+        return probs
 
-            for r in historical_rounds:
-                round_probabilities[r] = weight_per_historical_round
-
-        return round_probabilities
-
+    # ------------------------------------------------------------------
+    # Load HF datasets for each round
+    # ------------------------------------------------------------------
     def _load_datasets(self) -> None:
         """
-        Load datasets for all relevant rounds from HuggingFace Hub.
+        Load round datasets from HuggingFace Hub.
+        Expects naming like:
+            jvelja/apps_full_backdoored_round_{round_num}
+            jvelja/math_full_backdoored_round_{round_num}
         """
-        for round_num in self.relevant_rounds:
-            # Construct dataset name
-            dataset_name = f"jvelja/{'apps' if self.dataset_type == 'coding' else 'math'}_{self.dataset_size}_backdoored_round_{round_num}"
-            logger.info(f"Loading dataset: {dataset_name} from HuggingFace Hub -- Round: {round_num}")
-            self.datasets[round_num] = load_dataset(dataset_name, split=self.split)
+        kind = "apps" if self.dataset_type == "coding" else "math"
+        for r in self.relevant_rounds:
+            ds_name = f"jvelja/{kind}_{self.dataset_size}_backdoored_round_{r}"
+            logger.info(f"Loading dataset: {ds_name} from HuggingFace Hub -- Round: {r}")
+            self.datasets[r] = load_dataset(ds_name, split=self.split)
 
-            # Limit number of samples if specified
-            if self.max_samples_per_round is not None:
-                self.datasets[round_num] = self.datasets[round_num].select(
-                    range(min(len(self.datasets[round_num]), self.max_samples_per_round))
-                )
+        # quick sanity: ensure current round exists
+        if self.current_round_num not in self.datasets:
+            raise ValueError(f"Current round {self.current_round_num} dataset not loaded.")
 
-    def _split_and_shuffle_datasets(self) -> None:
+    # ------------------------------------------------------------------
+    # Epoch Plan Construction (no replacement)
+    # ------------------------------------------------------------------
+    def _build_epoch_plan(
+        self,
+        epoch_size: Optional[int] = None,
+        epoch_seed: Optional[int] = None,
+    ) -> None:
         """
-        Split each dataset into correct and incorrect indices and shuffle them.
+        Construct a list of (round, local_idx) pairs that define THIS epoch.
+
+        - Length = epoch_size (or smaller if capacity-limited).
+        - Per-round quotas allocated from self.round_probabilities.
+        - Sampling within each round is without replacement.
+        - Global plan optionally shuffled.
+
+        Stores internal arrays used by __len__/__getitem__.
         """
-        self.correct_indices = {}
-        self.incorrect_indices = {}
+        rng_seed = self.seed if epoch_seed is None else epoch_seed
+        rng = random.Random(rng_seed)
 
-        for round_num, dataset in self.datasets.items():
-            correct_indices = []
-            incorrect_indices = []
+        rounds = self.relevant_rounds
+        probs = self.round_probabilities
 
-            for i, sample in enumerate(dataset):
-                # Check if the sample has the correct identifier column with a non-empty value
-                if (
-                    self.correct_column_identifier in sample
-                    and sample[self.correct_column_identifier] is not None
-                    and sample[self.correct_column_identifier] != ""
-                ):
-                    correct_indices.append(i)
+        # Determine target epoch size
+        if epoch_size is None:
+            epoch_size = len(self.datasets[self.current_round_num])
+        self._epoch_target_size = epoch_size
 
-                # Check if the sample has the incorrect identifier column with a non-empty value
-                if (
-                    self.incorrect_column_identifier in sample
-                    and sample[self.incorrect_column_identifier] is not None
-                    and sample[self.incorrect_column_identifier] != ""
-                ):
-                    incorrect_indices.append(i)
+        # Raw desired counts
+        raw = {r: probs[r] * epoch_size for r in rounds}
 
-            # Shuffle the indices
-            random.shuffle(correct_indices)
-            random.shuffle(incorrect_indices)
+        # Integer floor
+        cnt = {r: int(math.floor(raw[r])) for r in rounds}
+        used = sum(cnt.values())
+        remain = epoch_size - used
 
-            self.correct_indices[round_num] = correct_indices
-            self.incorrect_indices[round_num] = incorrect_indices
+        # Distribute leftover by largest fractional part
+        if remain > 0:
+            fracs = sorted(((raw[r] - cnt[r], r) for r in rounds), reverse=True)
+            i = 0
+            while remain > 0:
+                _, r = fracs[i % len(fracs)]
+                cnt[r] += 1
+                remain -= 1
+                i += 1
 
-    def _validate_datasets(self) -> None:
-        """
-        Validate that we have both correct and incorrect samples for all relevant rounds.
-        """
-        for round_num in self.relevant_rounds:
-            if round_num not in self.datasets:
-                raise ValueError(f"No dataset found for round {round_num}")
+        # Capacity clamp; collect deficit
+        deficit = 0
+        for r in rounds:
+            cap = len(self.datasets[r])
+            if cnt[r] > cap:
+                deficit += cnt[r] - cap
+                cnt[r] = cap
 
-            if round_num not in self.correct_indices or len(self.correct_indices[round_num]) == 0:
-                raise ValueError(f"No correct samples found for round {round_num}")
+        # Redistribute deficit to rounds with spare capacity (descending prob)
+        if deficit > 0:
+            spare_candidates = sorted(
+                ((probs[r], r) for r in rounds if cnt[r] < len(self.datasets[r])),
+                reverse=True,
+            )
+            i = 0
+            while deficit > 0 and spare_candidates:
+                r = spare_candidates[i % len(spare_candidates)][1]
+                if cnt[r] < len(self.datasets[r]):
+                    cnt[r] += 1
+                    deficit -= 1
+                i += 1
 
-            if round_num not in self.incorrect_indices or len(self.incorrect_indices[round_num]) == 0:
-                raise ValueError(f"No incorrect samples found for round {round_num}")
+        # Final size may shrink if total capacity < epoch_size
+        actual_size = sum(cnt.values())
 
-    def _get_next_index(self, round_num: int, is_correct: bool) -> int:
-        """
-        Get the next index for a given round and correctness.
+        # Sample local indices per round (no replacement)
+        global_pairs: List[Tuple[int, int]] = []
+        for r in rounds:
+            n_take = cnt[r]
+            if n_take <= 0:
+                continue
+            all_idxs = list(range(len(self.datasets[r])))
+            rng.shuffle(all_idxs)
+            take = all_idxs[:n_take]
+            global_pairs.extend((r, i) for i in take)
 
-        Args:
-            round_num: Round number
-            is_correct: Whether to get index for correct or incorrect samples
+        # Shuffle final plan?
+        if self.shuffle_within_epoch:
+            rng.shuffle(global_pairs)
 
-        Returns:
-            Index of the next sample
-        """
-        if is_correct:
-            indices = self.correct_indices[round_num]
-            position = self.correct_index_positions[round_num]
+        # Save plan
+        self._plan_rounds = [r for (r, _) in global_pairs]
+        self._plan_indices = [i for (_, i) in global_pairs]
+        self._plan_size = actual_size
+        self._plan_epoch_seed = rng_seed
+
+    # ------------------------------------------------------------------
+    # PyTorch Dataset protocol
+    # ------------------------------------------------------------------
+    def __len__(self) -> int:  # map-style length = current epoch's plan length
+        return getattr(self, "_plan_size", 0)
+
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
+        if idx < 0 or idx >= len(self):
+            raise IndexError(idx)
+        r = self._plan_rounds[idx]
+        local_idx = self._plan_indices[idx]
+        sample = self.datasets[r][local_idx]
+        # augment with round metadata
+        if isinstance(sample, dict):
+            sample = dict(sample)  # shallow copy
+            sample["__round__"] = r
         else:
-            indices = self.incorrect_indices[round_num]
-            position = self.incorrect_index_positions[round_num]
+            sample = {"data": sample, "__round__": r}
+        return sample
 
-        # Get the next index
-        index = indices[position]
+    # ------------------------------------------------------------------
+    # Epoch Rebuild
+    # ------------------------------------------------------------------
+    def new_epoch(self, epoch: Optional[int] = None, epoch_size: Optional[int] = None):
+        """
+        Rebuild the epoch plan. Call once per training epoch *before* creating
+        or iterating the DataLoader (or between epochs if using persistent loader).
 
-        # Update position for next call
-        if is_correct:
-            self.correct_index_positions[round_num] = (position + 1) % len(indices)
+        `epoch` is folded into the seed so each epoch produces a new shuffle.
+        """
+        if epoch is None:
+            seed = None
         else:
-            self.incorrect_index_positions[round_num] = (position + 1) % len(indices)
+            seed = self.seed + epoch
+        if epoch_size is None:
+            epoch_size = self.user_epoch_size
+        self._build_epoch_plan(epoch_size=epoch_size, epoch_seed=seed)
 
-        return index
-
-    def _sample_round(self) -> int:
+    # ------------------------------------------------------------------
+    # Legacy compatibility methods
+    # ------------------------------------------------------------------
+    def reshuffle(self) -> None:
         """
-        Sample a round according to the calculated probabilities.
-
-        Returns:
-            Sampled round number
+        Reshuffle all datasets to get new random orderings.
+        Legacy method for compatibility - calls new_epoch instead.
         """
-        rounds = list(self.round_probabilities.keys())
-        weights = [self.round_probabilities[r] for r in rounds]
-
-        return random.choices(rounds, weights=weights, k=1)[0]
-
-    def _sample_batch(self) -> tuple[list[dict], list[int]]:
-        """
-        Sample a batch of data with equal numbers of correct and incorrect samples.
-
-        Returns:
-            Tuple of (batch_data, batch_labels)
-        """
-        half_batch_size = self.batch_size // 2
-        batch_data = []
-        batch_labels = []
-
-        # Sample correct samples
-        for _ in range(half_batch_size):
-            round_num = self._sample_round()
-            index = self._get_next_index(round_num, is_correct=True)
-            sample = self.datasets[round_num][index]
-            batch_data.append(sample)
-            batch_labels.append(1)
-
-        # Sample incorrect samples
-        for _ in range(half_batch_size):
-            round_num = self._sample_round()
-            index = self._get_next_index(round_num, is_correct=False)
-            sample = self.datasets[round_num][index]
-            batch_data.append(sample)
-            batch_labels.append(0)
-
-        # Shuffle the combined batch
-        combined = list(zip(batch_data, batch_labels))
-        random.shuffle(combined)
-        batch_data, batch_labels = zip(*combined)
-
-        return list(batch_data), list(batch_labels)
-
-    def __iter__(self):
-        """
-        Iterator for the dataset.
-        """
-        num_to_yield = len(self)
-        yielded_count = 0
-
-        while yielded_count < num_to_yield:
-            batch_data, _ = self._sample_batch()
-
-            for raw_sample in batch_data:
-                if yielded_count < num_to_yield:
-                    yield {"data": raw_sample}
-                    yielded_count += 1
-                else:
-                    # Stop inner loop if we've yielded enough
-                    break
-            # Outer loop condition (yielded_count < num_to_yield) will handle termination
+        self.new_epoch()
 
     def get_dataloader(self, num_workers: int = 0) -> DataLoader:
         """
@@ -567,103 +568,78 @@ class VerifierDataset(IterableDataset):
         return DataLoader(
             self,
             batch_size=self.batch_size,
+            shuffle=False,  # dataset already shuffled
+            collate_fn=self.collate_fn,
             num_workers=num_workers,
-            collate_fn=self._collate_fn,
         )
 
-    def _collate_fn(self, batch: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
+    # ------------------------------------------------------------------
+    # Collate function: build honest/injected prompt tensors
+    # ------------------------------------------------------------------
+    def collate_fn(self, batch: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
         """
-        Collate function: Takes a list of raw sample dicts, formats prompts,
-        tokenizes them, and returns a dictionary of tensors for BT training.
-
-        Args:
-            batch: List of dictionaries, typically [{'data': sample_dict1}, {'data': sample_dict2}, ...]
-
-        Returns:
-            Dictionary containing tokenized tensors for honest/injected pairs and identity flags.
+        Build model inputs:
+            honest_input_ids / attention_mask
+            injected_input_ids / attention_mask
+            are_identical (bool)
+            round_ids (int) -- optional metadata
         """
-        honest_prompts = []
-        injected_prompts = []
-        are_identical_flags = []
+        if self.tokenizer is None:
+            raise RuntimeError("collate_fn requires a tokenizer.")
 
-        # Extract the actual data dictionary and process each sample
-        for item in batch:
-            sample_dict = item["data"]
-            problem = sample_dict.get("problem", "")
-            honest_sol = sample_dict.get("honest_solution", "")
-            injected_sol = sample_dict.get("injected_solution", "")  # Assume this key exists
+        honest_prompts: List[str] = []
+        injected_prompts: List[str] = []
+        are_identical_flags: List[bool] = []
+        round_ids: List[int] = []
 
-            # Format prompts using the stored template
+        for sample in batch:
+            problem = sample.get(self.problem_key, "")
+            honest_sol = sample.get(self.honest_key, "")
+            injected_sol = sample.get(self.injected_key, "")
             honest_prompts.append(self.prompt_template.format(problem=problem, solution=honest_sol))
             injected_prompts.append(self.prompt_template.format(problem=problem, solution=injected_sol))
             are_identical_flags.append(honest_sol == injected_sol)
+            round_ids.append(sample.get("__round__", -1))
 
-        num_pairs = len(honest_prompts)
         all_prompts = honest_prompts + injected_prompts
-
-        tokenized_all = self.tokenizer(
+        tokenized = self.tokenizer(
             all_prompts,
             return_tensors="pt",
-            padding="longest",  # Pad to the longest sequence in the combined list
+            padding="longest",
+            truncation=False,  # change if you need truncation
         )
 
-        # --- Split the results back ---
-        honest_input_ids = tokenized_all["input_ids"][:num_pairs]
-        honest_attention_mask = tokenized_all["attention_mask"][:num_pairs]
-        injected_input_ids = tokenized_all["input_ids"][num_pairs:]
-        injected_attention_mask = tokenized_all["attention_mask"][num_pairs:]
+        num_pairs = len(honest_prompts)
+        honest_input_ids = tokenized["input_ids"][:num_pairs]
+        honest_attention_mask = tokenized["attention_mask"][:num_pairs]
+        injected_input_ids = tokenized["input_ids"][num_pairs:]
+        injected_attention_mask = tokenized["attention_mask"][num_pairs:]
 
-        # Prepare the final batch dictionary with tensors
-        collated_batch = {
+        return {
             "honest_input_ids": honest_input_ids,
             "honest_attention_mask": honest_attention_mask,
             "injected_input_ids": injected_input_ids,
             "injected_attention_mask": injected_attention_mask,
             "are_identical": torch.tensor(are_identical_flags, dtype=torch.bool),
+            "round_ids": torch.tensor(round_ids, dtype=torch.long),
         }
 
-        return collated_batch
-
-    def reshuffle(self) -> None:
-        """
-        Reshuffle all datasets to get new random orderings.
-        """
-        self._split_and_shuffle_datasets()
-
-    def get_round_statistics(self) -> dict[str, Any]:
-        """
-        Get statistics about the dataset rounds and their probabilities.
-
-        Returns:
-            dictionary with round statistics
-        """
-        stats = {
+    # ------------------------------------------------------------------
+    # Diagnostics
+    # ------------------------------------------------------------------
+    def get_round_statistics(self) -> Dict[str, Any]:
+        per_round_total = {r: len(self.datasets[r]) for r in self.relevant_rounds}
+        # planned counts this epoch
+        planned_counts = {r: 0 for r in self.relevant_rounds}
+        for r in self._plan_rounds:
+            planned_counts[r] += 1
+        return {
             "current_round": self.current_round_num,
-            "relevant_rounds": self.relevant_rounds,
-            "round_probabilities": self.round_probabilities,
-            "dataset_sizes": {
-                "total": {r: len(ds) for r, ds in self.datasets.items()},
-                "correct": {r: len(self.correct_indices[r]) for r in self.relevant_rounds},
-                "incorrect": {r: len(self.incorrect_indices[r]) for r in self.relevant_rounds},
-            },
+            "relevant_rounds": list(self.relevant_rounds),
+            "round_probabilities": dict(self.round_probabilities),
+            "epoch_target_size": getattr(self, "_epoch_target_size", None),
+            "epoch_actual_size": self.__len__(),
+            "round_dataset_sizes": per_round_total,
+            "round_epoch_counts": planned_counts,
+            "plan_seed": getattr(self, "_plan_epoch_seed", None),
         }
-        return stats
-
-    def __len__(self) -> int:
-        """
-        Calculate the total number of unique problems/pairs available across all relevant rounds.
-        For datasets where each row contains both correct/incorrect identifiers, this is
-        the sum of the number of rows in the underlying datasets.
-        """
-        total_samples = 0
-        for round_num in self.relevant_rounds:
-            if round_num in self.datasets:
-                # The length is the number of rows in the dataset for this round
-                total_samples += len(self.datasets[round_num])
-            else:
-                logger.warning(f"Dataset for round {round_num} not found during __len__ calculation.")
-
-        if total_samples == 0:
-            logger.warning("VerifierDataset has zero total samples across relevant rounds.")
-
-        return total_samples

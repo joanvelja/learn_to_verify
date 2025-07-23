@@ -83,6 +83,31 @@ class TrainingArgs:
             "help": "Apply Liger kernel optimization. Yields better memory usage and training speed for large models (up to 60% memory savings)."
         },
     )
+
+    # --- Sequence Length Management (OOM Prevention) ---
+    max_sequence_length: int | None = field(
+        default=8192,
+        metadata={
+            "help": "Maximum sequence length (prompt + completion) allowed during training. Sequences longer than this will be skipped to prevent OOM. Set to None to disable filtering."
+        },
+    )
+    max_completion_length: int | None = field(
+        default=2048,
+        metadata={
+            "help": "Maximum completion length allowed during training. Completions longer than this will be skipped. Set to None to disable filtering."
+        },
+    )
+    skip_long_sequences: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether to skip (drop) sequences that exceed max_sequence_length instead of truncating. Prevents bias while avoiding OOM."
+        },
+    )
+    log_skipped_sequences: bool = field(
+        default=True,
+        metadata={"help": "Whether to log information about skipped sequences for debugging."},
+    )
+
     lr_scheduler_type: str = field(
         default="linear",
         metadata={"help": "The type of learning rate scheduler to use."},
@@ -336,6 +361,12 @@ class ExperimentArgs:
 
     # --- Checkability Training ---
     num_rounds: int = field(default=8, metadata={"help": "Number of training rounds to perform."})
+    start_from_round: int = field(
+        default=0,
+        metadata={
+            "help": "Round number to start training from. Allows resuming from a specific round. Data for the specified round must already exist (except for round 0 which generates data if missing)."
+        },
+    )
 
     # --- Hugging Face Hub ---
     hf_token: str | None = field(
@@ -483,11 +514,34 @@ class ExperimentArgs:
             if self.wandb.wandb_log_system_freq_multiplier < 1:
                 raise ValueError("wandb.wandb_log_system_freq_multiplier must be >= 1.")
 
-        # 10. DeepSpeed Configuration Paths
+        # 10. Sequence Length Validation
+        for model_name, training_args in [("sneaky_prover", self.training_sneaky_prover)]:
+            if training_args.max_sequence_length is not None and training_args.max_sequence_length <= 0:
+                raise ValueError(f"{model_name} max_sequence_length must be positive if set.")
+            if training_args.max_completion_length is not None and training_args.max_completion_length <= 0:
+                raise ValueError(f"{model_name} max_completion_length must be positive if set.")
+            if (
+                training_args.max_sequence_length is not None
+                and training_args.max_completion_length is not None
+                and training_args.max_completion_length >= training_args.max_sequence_length
+            ):
+                raise ValueError(f"{model_name} max_completion_length must be less than max_sequence_length.")
+
+            # Log sequence length configuration
+            if training_args.max_sequence_length is not None:
+                logger.info(
+                    f"{model_name} sequence length limits: max_sequence_length={training_args.max_sequence_length}"
+                )
+            if training_args.max_completion_length is not None:
+                logger.info(
+                    f"{model_name} completion length limits: max_completion_length={training_args.max_completion_length}"
+                )
+
+        # 11. DeepSpeed Configuration Paths
         if not self.training_sneaky_prover.ds_config:
             logger.warning("training_sneaky_prover.ds_config path is empty.")
 
-        # 11. Save/Eval/Logging Steps
+        # 12. Save/Eval/Logging Steps
         if self.logging_steps <= 0:
             raise ValueError("logging_steps must be positive.")
         if self.save_steps <= 0:
@@ -495,12 +549,12 @@ class ExperimentArgs:
         if self.eval_steps <= 0:
             raise ValueError("eval_steps must be positive.")
 
-        # 12. Resume Path (Optional Check)
+        # 13. Resume Path (Optional Check)
         if self.resume_from_checkpoint and not os.path.isdir(self.resume_from_checkpoint):
             raise FileNotFoundError(f"Resume checkpoint directory not found: {self.resume_from_checkpoint}")
 
         # ===== Multi-Agent RL Specific Validation =====
-        # Validate that all vLLM servers have different ports (if running on same host)
+        # 14. Validate that all vLLM servers have different ports (if running on same host)
         vllm_configs = [
             ("sneaky_prover", self.vllm_sneaky_prover),
             ("verifier", self.vllm_verifier),
@@ -516,7 +570,7 @@ class ExperimentArgs:
                 )
             ports_used[host_port] = name
 
-        # Validate generation parameters are reasonable
+        # 15. Validate generation parameters are reasonable
         for name, config in vllm_configs:
             if config.max_tokens <= 0:
                 raise ValueError(f"{name} max_tokens must be positive.")
@@ -528,7 +582,7 @@ class ExperimentArgs:
         self.training_sneaky_prover.temperature = self.vllm_sneaky_prover.temperature
         self.training_verifier.temperature = self.vllm_verifier.temperature
 
-        # 14. Copy the output_dir to the wandb args
+        # 16. Copy the output_dir to the wandb args
         self.wandb.output_dir = self.output_dir
 
         # ===== Final GRPO Summary =====
@@ -540,3 +594,16 @@ class ExperimentArgs:
         logger.info(f"  - Unique prompts per effective train batch: {num_unique_prompts}")
         logger.info(f"  - Training rounds: {self.num_rounds}")
         logger.info(f"  - RL iterations per batch: {self.rl.num_iterations}")
+
+        # ===== Round Configuration Validation =====
+        if self.start_from_round < 0:
+            raise ValueError(f"start_from_round must be non-negative, got {self.start_from_round}")
+        if self.start_from_round >= self.num_rounds:
+            raise ValueError(
+                f"start_from_round ({self.start_from_round}) must be less than num_rounds ({self.num_rounds})"
+            )
+
+        if self.start_from_round > 0:
+            logger.info(f"  - Starting from round: {self.start_from_round}")
+
+        logger.info("Configuration validation completed successfully.")

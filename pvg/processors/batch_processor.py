@@ -11,9 +11,10 @@ import logging
 from typing import Any, Literal
 
 import torch
-from trl.trainer.utils import pad
+
 from pvg.components import AcceleratorManager, Formatter
 from pvg.config import RLArgs
+from pvg.config.args import TrainingArgs
 from pvg.data_models.training_data import (
     BatchData,
     BatchInputs,
@@ -23,6 +24,7 @@ from pvg.data_models.training_data import (
     SolutionData,
 )
 from pvg.processors.solution_processor import SolutionProcessor
+from pvg.utils import SequenceLengthConfig, SequenceLengthValidator
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,7 @@ class BatchProcessor:
         rl_config: RLArgs,
         dataset_type: Literal["coding", "math"],
         buffer_completions: bool = True,
+        training_args: TrainingArgs | None = None,
     ):
         """Initialize the batch processor
 
@@ -51,7 +54,9 @@ class BatchProcessor:
             tokenizer: Tokenizer for text processing
             accelerator_manager: Accelerator manager for distributed operations
             rl_config: RL configuration for buffering settings
+            dataset_type: Type of dataset being processed
             buffer_completions: Whether to buffer completions for efficiency
+            training_args: Training arguments containing sequence length limits
         """
         self.tokenizer = tokenizer
         self.accelerator_manager = accelerator_manager
@@ -63,6 +68,18 @@ class BatchProcessor:
 
         # Initialize solution processor
         self.solution_processor = SolutionProcessor(accelerator_manager)
+
+        # Initialize sequence length validator
+        if training_args is not None:
+            seq_config = SequenceLengthConfig(
+                max_sequence_length=training_args.max_sequence_length,
+                max_completion_length=training_args.max_completion_length,
+                skip_long_sequences=training_args.skip_long_sequences,
+                log_skipped_sequences=training_args.log_skipped_sequences,
+            )
+            self.sequence_validator = SequenceLengthValidator(seq_config)
+        else:
+            self.sequence_validator = None
 
         # Buffering state
         self._buffered_inputs: list[BatchInputs | None] = []
@@ -144,7 +161,50 @@ class BatchProcessor:
             for conv in conversations
         ]
 
-        # 3) Efficient tokenization - single pass with padding
+        # 3.1) Validate sequence lengths BEFORE padding (to avoid the padding="longest" issue)
+        if self.sequence_validator is not None:
+            # Tokenize without padding to get actual individual lengths
+            individual_encodings = self.tokenizer(
+                templated_texts,
+                padding=False,  # No padding - get actual lengths
+                truncation=True,
+                return_tensors=None,  # Keep as lists to avoid tensor shape issues
+                add_special_tokens=False,
+            )
+
+            # Check each sequence individually
+            valid_indices = []
+            for i, input_ids in enumerate(individual_encodings["input_ids"]):
+                # Convert to tensor for validation (sequence validator expects tensors)
+                input_ids_tensor = torch.tensor(input_ids, dtype=torch.long)
+                result = self.sequence_validator.validate_sequence_length(
+                    input_ids=input_ids_tensor, batch_idx=f"sample_{i}"
+                )
+                if result.is_valid:
+                    valid_indices.append(i)
+
+            if len(valid_indices) == 0:
+                logger.error("All sequences in batch exceed length limits - cannot proceed with empty batch")
+                raise RuntimeError(
+                    "All sequences in batch were filtered due to length constraints. "
+                    "Consider increasing max_sequence_length or using smaller prompts/completions."
+                )
+
+            if len(valid_indices) < batch_size:
+                logger.warning(
+                    f"Filtering batch from {batch_size} to {len(valid_indices)} samples due to length constraints"
+                )
+
+                # Filter all batch components to keep only valid sequences
+                batch_size = len(valid_indices)
+                questions = [questions[i] for i in valid_indices]
+                mono_solutions = [mono_solutions[i] for i in valid_indices]
+                completion_texts = [completion_texts[i] for i in valid_indices]
+                advantages = advantages[valid_indices]
+                conversations = [conversations[i] for i in valid_indices]
+                templated_texts = [templated_texts[i] for i in valid_indices]
+
+        # 3) Efficient tokenization with padding (now only on valid sequences)
         full_encoding = self.tokenizer(
             templated_texts,
             padding="longest",
@@ -190,7 +250,7 @@ class BatchProcessor:
             torch.tensor(mask, device=device, dtype=torch.long) for mask in completion_mask_lists
         ]
         from torch.nn.utils.rnn import pad_sequence as pad
-    
+
         completion_mask = pad(completion_mask_tensors, padding_value=0, batch_first=True)
 
         logger.info(f"Batch size: {batch_size}")
@@ -279,3 +339,18 @@ class BatchProcessor:
 
         buffer_index = total_steps % gradient_accumulation_steps
         self._buffered_inputs[buffer_index] = inputs
+
+    def get_sequence_length_statistics(self) -> dict[str, Any] | None:
+        """Get sequence length validation statistics
+
+        Returns:
+            Dictionary with sequence length statistics or None if validator not configured
+        """
+        if self.sequence_validator is not None:
+            return self.sequence_validator.get_statistics()
+        return None
+
+    def reset_sequence_length_statistics(self) -> None:
+        """Reset sequence length validation statistics"""
+        if self.sequence_validator is not None:
+            self.sequence_validator.reset_statistics()

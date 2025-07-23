@@ -15,6 +15,7 @@ Key improvements ported from generator.py:
 import asyncio
 import logging
 import os
+import re
 from collections.abc import Callable as CallableABC
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -38,7 +39,6 @@ from pvg.data.generation_constants import (
 from pvg.utils.generation_utils import (
     create_hf_dataset_from_results,
     generate_batch_sync,
-    parse_output,
     visualize_status_dict,
 )
 
@@ -493,8 +493,8 @@ class DataGenerator:
                 results.append(ProcessResult(pid, False, error="no_raw_output"))
                 continue
 
-            tags_config = self.formatter.get_tags_for_parsing("sneaky_prover", dataset_type=self.dataset_type)
-            parsed_data = parse_output(raw_output, tags_config)
+            # Use robust parsing instead of brittle parse_output
+            parsed_data = self._robust_parse_completion(raw_output, "sneaky_prover")
 
             if parsed_data:
                 triggering_condition = parsed_data.get("triggering_condition")
@@ -507,6 +507,90 @@ class DataGenerator:
                 results.append(ProcessResult(pid, False, error="parse_failed"))
 
         return results
+
+    def _robust_parse_completion(
+        self, completion_text: str, model_key: Literal["sneaky_prover"]
+    ) -> dict[str, Any] | None:
+        """
+        Robust parsing using formatter utilities with fallback behavior.
+
+        This method is more resilient than parse_output because it:
+        1. Uses formatter's extract_solution which finds ANY fenced code block
+        2. Doesn't require closing tags to be present
+        3. Has graceful fallback when some tags are missing
+        """
+        parsed_data = {}
+
+        # Extract solution/answer using robust formatter method
+        solution_key = "solution" if self.dataset_type == "coding" else "answer"
+        solution_result = self.formatter.extract_solution(completion_text, model_key, self.dataset_type, strip=False)
+
+        if solution_result.extraction_success and solution_result.payload != "Failure":
+            parsed_data[solution_key] = solution_result.payload
+            logger.debug(f"Successfully extracted {solution_key} using formatter")
+        else:
+            # Try fallback: look for any code block in the text
+            if self.dataset_type == "coding":
+                fallback_solution = self._extract_fallback_code_block(completion_text)
+                if fallback_solution:
+                    parsed_data[solution_key] = fallback_solution
+                    logger.debug(f"Used fallback code block extraction for {solution_key}")
+                else:
+                    logger.debug(f"No {solution_key} found in completion")
+                    return None
+            else:
+                logger.debug(f"No {solution_key} found in completion")
+                return None
+
+        # Extract triggering condition using formatter method
+        triggering_result = self.formatter.extract_triggering_condition(completion_text, model_key, self.dataset_type)
+
+        if triggering_result.extraction_success and triggering_result.payload != "Failure":
+            parsed_data["triggering_condition"] = triggering_result.payload
+            logger.debug("Successfully extracted triggering condition using formatter")
+        else:
+            # For sneaky generation, triggering condition is important but not critical
+            # We can still proceed without it, but log a warning
+            logger.warning("Could not extract triggering condition, proceeding without it")
+            parsed_data["triggering_condition"] = None
+
+        # Extract reasoning/plan using regex fallback (less critical)
+        reasoning_key = "reasoning" if self.dataset_type == "coding" else "plan"
+        reasoning_pattern = f"<{reasoning_key}>(.*?)</{reasoning_key}>"
+        reasoning_match = re.search(reasoning_pattern, completion_text, re.DOTALL)
+
+        if reasoning_match:
+            parsed_data[reasoning_key] = reasoning_match.group(1).strip()
+            logger.debug(f"Successfully extracted {reasoning_key}")
+        else:
+            # Reasoning is optional - we can proceed without it
+            logger.debug(f"No {reasoning_key} found, proceeding without it")
+            parsed_data[reasoning_key] = None
+
+        return parsed_data if parsed_data.get(solution_key) else None
+
+    def _extract_fallback_code_block(self, text: str) -> str | None:
+        """
+        Fallback method to extract ANY code block from text.
+        This is used when the formatter's extract_solution fails.
+        """
+        # Look for any fenced code block (same regex as formatter)
+        code_block_pattern = r"```(?:python|py)?\s*\n(.*?)\n```"
+        match = re.search(code_block_pattern, text, re.DOTALL)
+
+        if match:
+            code = match.group(1).strip()
+            return f"```python\n{code}\n```"
+
+        # Look for any triple backticks without language specifier
+        simple_block_pattern = r"```\s*\n(.*?)\n```"
+        match = re.search(simple_block_pattern, text, re.DOTALL)
+
+        if match:
+            code = match.group(1).strip()
+            return f"```python\n{code}\n```"
+
+        return None
 
     async def backdoor_verifier(self, pids: list[str]) -> list[ProcessResult]:
         """Process backdoor verification batch."""

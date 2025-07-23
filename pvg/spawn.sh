@@ -4,7 +4,7 @@
 #SBATCH --gpus=4
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=24:00:00
+#SBATCH --time=36:00:00
 #SBATCH --job-name=pvg_full_pipeline
 #SBATCH --output=full_pipeline_spawn/output/logs/pvg_full_pipeline.%j.out
 #SBATCH --error=full_pipeline_spawn/output/errors/pvg_full_pipeline.%j.err
@@ -35,6 +35,11 @@ module load CUDA/12.4.0
 # Get Parent directory
 PARENT_DIR=$(dirname "$CURRENT_PATH")
 VERIFIER_TRAINING_MODE="regressor"
+START_FROM_ROUND=6  # Round number to start training from (0 for fresh start)
+                    # Set to higher value to resume from a specific round.
+                    # Example: START_FROM_ROUND=3 starts from round 3
+                    # IMPORTANT: Data for the specified round MUST already exist!
+                    # Only round 0 will generate data if missing.
 
 # Paths to models/IDs on Hugging Face Hub or local paths
 LOCAL_MODELS_DIR="/home/jvelja/local_models"
@@ -227,6 +232,7 @@ uv run --env-file .env accelerate launch \
     --output_dir "$OUTPUT_DIR" \
     --mixed_precision "bf16" \
     --num_rounds 8 \
+    --start_from_round "$START_FROM_ROUND" \
     \
     --sneaky_prover.name_or_path "$SNEAKY_PROVER_PATH" \
     --sneaky_prover.use_flash_attention True \
@@ -283,7 +289,7 @@ uv run --env-file .env accelerate launch \
     --wandb.wandb_entity "jvelja-private" \
     --wandb.wandb_run_name "test_run_full_pipeline_${SLURM_JOB_ID}" \
     \
-    --enable_backdoor_verification False \
+    --enable_backdoor_verification True \
 
 # Get the PID of the main accelerate process (for waiting)
 # This might be tricky as accelerate launch spawns multiple processes.

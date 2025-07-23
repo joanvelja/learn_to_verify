@@ -225,7 +225,7 @@ class Formatter:
         remains in the returned solution, regardless of original nesting.
         """
         # ----- isolate the part after the <solution>/<answer> tag -----------------
-        tags = self.parsing_tags[model_key][dataset_type]
+        tags: dict[str, str] = self.parsing_tags[model_key][dataset_type]
         tag_pattern = tags["solution"] if dataset_type == "coding" else tags["answer"]
 
         tag_match = re.search(tag_pattern, completion_text, re.DOTALL)
