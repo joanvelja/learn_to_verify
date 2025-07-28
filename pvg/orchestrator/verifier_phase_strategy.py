@@ -45,7 +45,7 @@ class VerifierPhaseStrategy(PhaseStrategy):
         self.orchestrator.verifier_dataset_train = VerifierDataset(
             current_round_num=self.state_tracker.round,
             max_rounds_to_keep=10,
-            new_sample_weight_target=0.5,
+            new_sample_weight_target=0.8,
             seed=42,
             dataset_type=self.orchestrator.dataset_type,
             tokenizer=self.data_manager.tokenizer,
@@ -54,7 +54,7 @@ class VerifierPhaseStrategy(PhaseStrategy):
         self.orchestrator.verifier_dataset_eval = VerifierDataset(
             current_round_num=self.state_tracker.round,
             max_rounds_to_keep=10,
-            new_sample_weight_target=0.5,
+            new_sample_weight_target=0.8,
             seed=42,
             dataset_type=self.orchestrator.dataset_type,
             tokenizer=self.data_manager.tokenizer,
