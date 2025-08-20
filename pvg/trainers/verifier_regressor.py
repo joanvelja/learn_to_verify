@@ -37,6 +37,7 @@ from pvg.utils.rich_logger import print_prompt_completions_sample_verifier
 from pvg.utils.verifier_performance import (
     VerifierPerformanceTracker,
 )
+from pvg.parallel.fsdp2_utils import autocast_bf16
 
 # Configure logger
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
@@ -238,6 +239,17 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
         bt_loss = torch.tensor(0.0)  # Initialize
         regularization_loss = torch.tensor(0.0)  # Initialize
 
+        # Optional resume from FSDP2 sharded checkpoint
+        backend_global = getattr(self.args.parallel, "parallel_backend", "accelerate")
+        if backend_global == "fsdp2" and getattr(self.args, "resume_from_checkpoint", None):
+            from pvg.parallel.fsdp2_utils import dcp_load_sharded
+
+            try:
+                dcp_load_sharded(self.verifier_model, self.optimizer, self.args.resume_from_checkpoint)
+                logger.info(f"[FSDP2] Loaded sharded checkpoint from {self.args.resume_from_checkpoint}")
+            except Exception as e:
+                logger.warning(f"[FSDP2] Could not load sharded checkpoint: {e}")
+
         try:
             for epoch in range(num_steps_or_epochs):
                 # Reset rolling accuracy at the start of each epoch
@@ -256,13 +268,20 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                 for batch_idx, batch in enumerate(progress_bar):
                     # Prepare inputs
                     input_ids, attention_mask, are_identical, batch_size = self._prepare_batch(batch)
+                    if self.backend is not None:
+                        input_ids = self.backend.move_to_device(input_ids, self.verifier_model)
+                        attention_mask = self.backend.move_to_device(attention_mask, self.verifier_model)
 
                     # Get model outputs
                     model_inputs = {
                         "input_ids": input_ids,
                         "attention_mask": attention_mask,
                     }
-                    outputs = self.verifier_model(**model_inputs).logits
+                    if self.backend is not None:
+                        with self.backend.autocast():
+                            outputs = self.verifier_model(**model_inputs).logits
+                    else:
+                        outputs = self.verifier_model(**model_inputs).logits
 
                     # Extract scores
                     scores = self._extract_scores(outputs)
@@ -301,16 +320,20 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                         correct_predictions = torch.logical_and(predicted_preference, ~are_identical)
 
                         # Gather results across all processes
-                        gathered_correct = self.accelerator_manager.get_accelerator("verifier").gather(
-                            correct_predictions
-                        )
-                        gathered_not_identical = self.accelerator_manager.get_accelerator("verifier").gather(
-                            ~are_identical
-                        )
+                        if self.backend is None:
+                            gathered_correct = self.accelerator_manager.get_accelerator("verifier").gather(
+                                correct_predictions
+                            )
+                            gathered_not_identical = self.accelerator_manager.get_accelerator("verifier").gather(
+                                ~are_identical
+                            )
 
-                        # Calculate global accuracy across all processes
-                        num_correct = gathered_correct.sum().item()
-                        num_non_identical = gathered_not_identical.sum().item()
+                            # Calculate global accuracy across all processes
+                            num_correct = gathered_correct.sum().item()
+                            num_non_identical = gathered_not_identical.sum().item()
+                        else:
+                            num_correct = self.backend.global_sum(correct_predictions.float().sum()).item()
+                            num_non_identical = self.backend.global_sum((~are_identical).float().sum()).item()
 
                         # Track both batch (current) and rolling accuracy separately
                         batch_accuracy_current = num_correct / num_non_identical if num_non_identical > 0 else 1.0
@@ -346,12 +369,15 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                                 value=metric_value,
                             )
 
-                    # Backpropagation
-                    self.accelerator_manager.backward(total_loss, "verifier")
+                    # Backpropagation (backend-aware)
+                    if self.backend is not None:
+                        self.backend.backward(total_loss, key="verifier")
+                    else:
+                        self.accelerator_manager.backward(total_loss, "verifier")
 
                     # Optimizer step
                     self.optimizer.step()
-                    self.optimizer.zero_grad()
+                    self.optimizer.zero_grad(set_to_none=True)
 
                     # Step scheduler if it exists
                     if self.scheduler is not None:
@@ -479,6 +505,18 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
                 # Run evaluation at the end of each epoch
                 self.evaluate()
 
+                # Save FSDP2 sharded checkpoint at epoch end
+            if getattr(self.backend, "__class__", None).__name__ == "FSDP2Backend":
+                from pvg.parallel.fsdp2_utils import dcp_save_sharded
+
+                    out_dir = self.args.training_verifier.ckpt_output_dir or self.args.output_dir or "."
+                    tag = f"verifier_epoch_{epoch+1}"
+                    try:
+                        dcp_save_sharded(self.verifier_model, self.optimizer, out_dir, tag)
+                        logger.info(f"[FSDP2] Saved sharded checkpoint to {out_dir}/{tag}")
+                    except Exception as e:
+                        logger.warning(f"[FSDP2] Failed to save sharded checkpoint: {e}")
+
                 # Return to training mode after evaluation
                 self.verifier_model.train()
 
@@ -508,9 +546,10 @@ class VerifierRegressorTrainer(VerifierTrainerBase):
 
             # self.accelerator_manager.wait_for_everyone() # Unsure if this is needed
 
-            # Move **this** verifier model to vLLM --> swap it into the vLLM model
-            self.vllm_orchestrator.sync_weights(phase="verifier", model_manager=self.model_manager)
-            self.accelerator_manager.wait_for_everyone()
+            # Move **this** verifier model to vLLM only if not using FSDP2 param streaming
+            if getattr(self.backend, "__class__", None).__name__ != "FSDP2Backend":
+                self.vllm_orchestrator.sync_weights(phase="verifier", model_manager=self.model_manager)
+                self.accelerator_manager.wait_for_everyone()
 
             # Clean up memory - delete model, tokenizer, dataloaders, optimizer, scheduler
             del (

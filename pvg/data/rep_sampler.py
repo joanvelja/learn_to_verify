@@ -61,6 +61,8 @@ class RepeatRandomSampler(Sampler):
         batch_size: int = 1,
         repeat_count: int = 1,
         seed: int | None = None,
+        lengths: list[int] | None = None,
+        sortish_block: int = 8,
     ):
 
         self.data_source = data_source
@@ -69,13 +71,26 @@ class RepeatRandomSampler(Sampler):
         self.repeat_count = repeat_count
         self.num_samples = len(data_source)
         self.seed = seed
+        self.lengths = lengths
+        self.sortish_block = max(1, sortish_block)
         self.generator = torch.Generator()  # Create a local random generator
         if seed is not None:
             self.generator.manual_seed(seed)
 
     def __iter__(self):
-        # E.g., [2, 4, 3, 1, 0, 6, 5] (num_samples = 7)
-        indexes = torch.randperm(self.num_samples, generator=self.generator).tolist()
+        # Base order: length-aware sort then block-wise shuffle, else full random
+        if self.lengths is not None and len(self.lengths) == self.num_samples:
+            order = sorted(range(self.num_samples), key=lambda i: self.lengths[i])
+            block_size = self.batch_size * self.sortish_block
+            shuffled_order = []
+            for b in range(0, len(order), block_size):
+                block = order[b : b + block_size]
+                perm = torch.randperm(len(block), generator=self.generator).tolist()
+                shuffled_order.extend([block[i] for i in perm])
+            indexes = shuffled_order
+        else:
+            # E.g., [2, 4, 3, 1, 0, 6, 5] (num_samples = 7)
+            indexes = torch.randperm(self.num_samples, generator=self.generator).tolist()
 
         #    [2, 4, 3, 1, 0, 6, 5]
         # -> [[2, 4, 3], [1, 0, 6], [5]]  (batch_size = 3)

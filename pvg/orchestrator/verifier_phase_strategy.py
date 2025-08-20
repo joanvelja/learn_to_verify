@@ -6,6 +6,7 @@ from pvg.orchestrator.phase_strategy import PhaseStrategy
 from pvg.trainers.verifier_base import VerifierTrainerBase
 from pvg.trainers.verifier_classifier import VerifierClassifierTrainer
 from pvg.trainers.verifier_regressor import VerifierRegressorTrainer
+from pvg.parallel.backend import make_backend
 
 logger = logging.getLogger(f"pvg.{__name__}")  # Get a child logger
 
@@ -69,25 +70,40 @@ class VerifierPhaseStrategy(PhaseStrategy):
         logger.info(f"Verifier dataset eval stats: {self.orchestrator.verifier_dataset_eval.get_round_statistics()}")
 
         # Prepare dataloaders
-        train_dataloader = self.orchestrator.verifier_dataset_train.get_dataloader()
-        eval_dataloader = self.orchestrator.verifier_dataset_eval.get_dataloader()
+        train_dataloader = self.orchestrator.verifier_dataset_train.get_dataloader(num_workers=8)
+        eval_dataloader = self.orchestrator.verifier_dataset_eval.get_dataloader(num_workers=8)
 
-        # Load and prepare components
+        # Load and prepare components via backend abstraction
         self.model_manager.load_models()
-        self.optimizer_scheduler_manager.create_optimizers()
+        self.backend = make_backend(self.args, self.accelerator_manager)
+        logger.info(f"Using backend for verifier: {type(self.backend).__name__}")
 
         model = self.model_manager.get_model("verifier", prepared=False)
-        optimizer = self.optimizer_scheduler_manager.get_optimizer("verifier")
+        try:
+            if self.model_manager.training_configs["verifier"].gradient_checkpointing:
+                model.gradient_checkpointing_enable()
+        except Exception:
+            pass
+        model = self.backend.wrap_model(model, key="verifier")
+        self.model_manager.prepared_models["verifier"] = model
+        self.model_manager.models["verifier"] = model
 
-        # Prepare components with accelerator
-        components = self._prepare_model_components("verifier", train_dataloader, optimizer, model)
-        self._store_prepared_components("verifier", components, eval_dataloader)
+        # Optimizer & scheduler on wrapped model
+        self.optimizer_scheduler_manager.create_optimizers()
+        # Prepare dataloaders via backend
+        self.data_manager.dataloaders.setdefault("verifier", {})
+        self.data_manager.dataloaders["verifier"]["train_dataloader"] = self.backend.prepare_dataloader(
+            train_dataloader, key="verifier"
+        )
+        self.data_manager.dataloaders["verifier"]["eval_dataloader"] = self.backend.prepare_dataloader(
+            eval_dataloader, key="verifier"
+        )
 
-        # Handle reference model
-        self._prepare_reference_model("verifier")
-
-        # Create and prepare scheduler
-        self._prepare_scheduler("verifier", components[2])
+        # Steps & scheduler
+        self.optimizer_scheduler_manager._calculate_num_training_steps(
+            self.data_manager.dataloaders["verifier"]["train_dataloader"]
+        )
+        self.optimizer_scheduler_manager.create_schedulers()
 
     def _prepare_model_components(self, key: str, dataloader, optimizer, model) -> tuple[Any, Any, Any]:
         """Prepare model components with accelerator."""
@@ -144,6 +160,7 @@ class VerifierPhaseStrategy(PhaseStrategy):
             "metrics_logger": self.metrics_logger,
             "vllm_orchestrator": self.vllm_orchestrator,
             "state_tracker": self.state_tracker,
+            "parallel_backend_impl": getattr(self, "backend", None),
         }
 
         verifier_mode = self.args.training_verifier.verifier_mode

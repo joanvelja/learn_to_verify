@@ -135,6 +135,13 @@ class AppsDataset(Dataset):
             )
             logging.info(f"Filtered dataset from {original_size} to {len(self.tokenized_dataset)} samples.")
 
+        # Precompute token lengths for length-aware sampling
+        try:
+            ids_column = self.tokenized_dataset["input_ids"]
+            self.lengths = [len(ids) for ids in ids_column]
+        except Exception:
+            self.lengths = None
+
         logging.info(f"Dataset initialization complete for split '{split}'. Size: {len(self.tokenized_dataset)}")
 
     def _tokenize_function(self, examples):
@@ -193,6 +200,12 @@ class AppsDataset(Dataset):
     def shuffle(self) -> None:
         """Shuffle the dataset."""
         self.tokenized_dataset = self.tokenized_dataset.shuffle()
+        # Recompute lengths to stay aligned with internal order
+        try:
+            ids_column = self.tokenized_dataset["input_ids"]
+            self.lengths = [len(ids) for ids in ids_column]
+        except Exception:
+            self.lengths = None
 
     def select(self, indices) -> "AppsDataset":
         """
@@ -213,6 +226,11 @@ class AppsDataset(Dataset):
 
         # Select the specified indices from the tokenized dataset
         new_dataset.tokenized_dataset = self.tokenized_dataset.select(indices)
+        try:
+            ids_column = new_dataset.tokenized_dataset["input_ids"]
+            new_dataset.lengths = [len(ids) for ids in ids_column]
+        except Exception:
+            new_dataset.lengths = None
 
         logging.info(f"Created subset with {len(new_dataset)} samples from original dataset of {len(self)} samples.")
 
@@ -273,6 +291,7 @@ class VerifierDataset(Dataset):
         epoch_size: Optional[int] = None,  # if None -> len(current round)
         always_include_round0: bool = False,  # force round 0 even if outside K window
         shuffle_within_epoch: bool = True,  # shuffle the pre-mixed plan
+        bucket_by_length: bool = True,  # group batches by approximate prompt length
         problem_key: str = "problem",
         honest_key: str = "honest_solution",
         injected_key: str = "injected_solution",
@@ -293,6 +312,7 @@ class VerifierDataset(Dataset):
         self.user_epoch_size = epoch_size
         self.always_include_round0 = always_include_round0
         self.shuffle_within_epoch = shuffle_within_epoch
+        self.bucket_by_length = bucket_by_length
 
         self.problem_key = problem_key
         self.honest_key = honest_key
@@ -497,9 +517,27 @@ class VerifierDataset(Dataset):
             take = all_idxs[:n_take]
             global_pairs.extend((r, i) for i in take)
 
-        # Shuffle final plan?
-        if self.shuffle_within_epoch:
+        # Shuffle or length-bucket the final plan
+        if self.shuffle_within_epoch and not self.bucket_by_length:
             rng.shuffle(global_pairs)
+        elif self.bucket_by_length:
+            # Approximate prompt length by character length of problem+solution
+            def approx_len(pair: Tuple[int, int]) -> int:
+                r_, i_ = pair
+                sample_ = self.datasets[r_][i_]
+                problem = sample_.get(self.problem_key, "")
+                sol = sample_.get(self.honest_key, sample_.get(self.injected_key, ""))
+                return len(problem) + len(sol)
+
+            global_pairs.sort(key=approx_len)
+            # Shuffle within blocks to keep randomness while preserving length locality
+            block = max(self.batch_size * 8, self.batch_size)
+            blocked: List[Tuple[int, int]] = []
+            for b in range(0, len(global_pairs), block):
+                chunk = global_pairs[b : b + block]
+                rng.shuffle(chunk)
+                blocked.extend(chunk)
+            global_pairs = blocked
 
         # Save plan
         self._plan_rounds = [r for (r, _) in global_pairs]
@@ -555,7 +593,7 @@ class VerifierDataset(Dataset):
         """
         self.new_epoch()
 
-    def get_dataloader(self, num_workers: int = 0) -> DataLoader:
+    def get_dataloader(self, num_workers: int = 8, pin_memory: bool = True, persistent_workers: bool = True, prefetch_factor: int = 4) -> DataLoader:
         """
         Get a DataLoader for this dataset.
 
@@ -571,6 +609,9 @@ class VerifierDataset(Dataset):
             shuffle=False,  # dataset already shuffled
             collate_fn=self.collate_fn,
             num_workers=num_workers,
+            pin_memory=pin_memory,
+            persistent_workers=persistent_workers if num_workers > 0 else False,
+            prefetch_factor=prefetch_factor if num_workers > 0 else None,
         )
 
     # ------------------------------------------------------------------

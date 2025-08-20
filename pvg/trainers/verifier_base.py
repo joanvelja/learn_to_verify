@@ -31,6 +31,7 @@ class VerifierTrainerBase(ABC):
         metrics_logger: MetricsLogger,
         vllm_orchestrator: VLLMOrchestrator,
         state_tracker: StateTracker,
+        parallel_backend_impl=None,
     ) -> None:
         self.args = args
         self.model_manager = model_manager
@@ -40,6 +41,7 @@ class VerifierTrainerBase(ABC):
         self.metrics_logger = metrics_logger
         self.vllm_orchestrator = vllm_orchestrator
         self.state_tracker = state_tracker
+        self.backend = parallel_backend_impl
 
     @abstractmethod
     def train(self, num_steps_or_epochs: int) -> None:

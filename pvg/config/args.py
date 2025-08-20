@@ -188,6 +188,20 @@ class VLLMServerArgs:
 
 
 @dataclass
+class ParallelArgs:
+    """Arguments to select and configure the parallel backend."""
+
+    parallel_backend: Literal["accelerate", "fsdp2"] = field(
+        default="accelerate",
+        metadata={"help": "Select distributed backend: 'accelerate' (DeepSpeed/ZeRO-3) or 'fsdp2' (PyTorch FSDP2)."},
+    )
+    fsdp2_auto_wrap: Literal["none", "transformer_block"] = field(
+        default="transformer_block",
+        metadata={"help": "Auto-wrap policy for FSDP2 (basic selector)."},
+    )
+
+
+@dataclass
 class RLArgs:
     """Arguments specific to the Reinforcement Learning algorithm (GRPO)."""
 
@@ -257,6 +271,10 @@ class ExperimentArgs:
     sneaky_prover: ModelArgs = field(
         default_factory=lambda: ModelArgs(),
         metadata={"help": "Configuration for the sneaky prover model."},
+    )
+    parallel: ParallelArgs = field(
+        default_factory=ParallelArgs,
+        metadata={"help": "Parallel/distributed backend configuration."},
     )
     verifier: ModelArgs = field(
         default_factory=lambda: ModelArgs(),

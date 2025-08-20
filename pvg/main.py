@@ -33,6 +33,7 @@ from pvg.utils.gpu_info import gpu_info
 
 # Utilities
 from pvg.utils.logger import setup_logger
+from pvg.parallel.fsdp2_utils import set_hopper_defaults, init_dist
 
 # --- Minimal Initial Logging Setup ---
 # Configure basic logging BEFORE parsing args or initializing accelerate
@@ -62,6 +63,21 @@ def main():
         description="PVG Experiment Runner Configuration",
     )
     initial_logger.info("Parsed arguments from command line.")
+
+    # Log selected parallel backend and set Hopper defaults if using FSDP2
+    try:
+        backend = args.parallel.parallel_backend
+    except Exception:
+        backend = "accelerate"
+    initial_logger.info(f"Selected parallel backend: {backend}")
+    if backend == "fsdp2":
+        set_hopper_defaults()
+        initial_logger.info("Configured Hopper defaults (TF32/BF16) for FSDP2 backend.")
+        try:
+            init_dist()
+            initial_logger.info("Initialized torch.distributed for FSDP2 backend.")
+        except Exception as e:
+            initial_logger.warning(f"torch.distributed init may already be set: {e}")
 
     verifier_mode: Literal["regressor", "classifier", "inference_classifier", "inference_regressor"] = cast(
         Literal["regressor", "classifier", "inference_classifier", "inference_regressor"],

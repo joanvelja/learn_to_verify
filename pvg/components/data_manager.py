@@ -14,7 +14,6 @@ import logging
 from typing import Any, Callable, Literal
 
 from datasets import DatasetDict
-from huggingface_hub import create_repo
 from torch.utils.data import DataLoader, Dataset, Sampler
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
@@ -53,9 +52,8 @@ class DataManager:
         self.verifier_train_dataset: AppsDataset | None = None
         self.verifier_eval_dataset: AppsDataset | None = None
 
-        # Huggingface repo path
+        # Legacy: HF Hub paths (unused in high-throughput local mode)
         self.hf_repo_path = f'jvelja/{self.dataset_config.dataset_name.split("/")[1]}_{self.dataset_config.dataset_size}-verifier-{self.verifier_mode}'
-        # --> jvelja/apps-verifier-regressor
         self.global_phase_callback: Callable[[], Literal["verifier", "provers"]] = global_phase_callback
         # Load tokenizer
         self.tokenizer: PreTrainedTokenizer = self.load_tokenizer()
@@ -92,39 +90,18 @@ class DataManager:
         train_len = len(full_train_dataset)
         eval_len = len(full_eval_dataset)
 
-        # Create prover datasets (first half) using direct slicing
+        # Create prover datasets (first half) using direct slicing (keep AppsDataset wrappers)
         prover_train_indices = list(range(0, train_len // 2))
         prover_eval_indices = list(range(0, eval_len // 2))
-        self.prover_train_dataset = full_train_dataset.select(prover_train_indices).tokenized_dataset
-        self.prover_eval_dataset = full_eval_dataset.select(prover_eval_indices).tokenized_dataset
+        self.prover_train_dataset = full_train_dataset.select(prover_train_indices)
+        self.prover_eval_dataset = full_eval_dataset.select(prover_eval_indices)
 
         # Create verifier datasets (second half) using direct slicing
         verifier_train_indices = list(range(train_len // 2, train_len))
         verifier_eval_indices = list(range(eval_len // 2, eval_len))
-        verifier_train_dataset = full_train_dataset.select(verifier_train_indices).tokenized_dataset
-        verifier_eval_dataset = full_eval_dataset.select(verifier_eval_indices).tokenized_dataset
-
-        ddict = DatasetDict(
-            {
-                "train": verifier_train_dataset,
-                "eval": verifier_eval_dataset,
-            }
-        )
-        # Push to hub
-        logger.info(
-            f"Preparing to push dataset {self.dataset_config.dataset_name}_{self.dataset_config.dataset_size} to Hugging Face Hub..."
-        )
-
-        logger.info(f"Pushing dataset to {self.hf_repo_path}...")
-        create_repo(self.hf_repo_path, repo_type="dataset", exist_ok=True)
-        ddict.push_to_hub(self.hf_repo_path)
-        logger.info(f"Successfully pushed dataset to {self.hf_repo_path}.")
-
-        # Wait for main process to finish
-        self.accelerator_manager.wait_for_everyone()
-
-        self.verifier_train_dataset = verifier_train_dataset
-        self.verifier_eval_dataset = verifier_eval_dataset
+        # Keep AppsDataset objects for verifier as well (VerifierPhaseStrategy builds its own VerifierDataset)
+        self.verifier_train_dataset = full_train_dataset.select(verifier_train_indices)
+        self.verifier_eval_dataset = full_eval_dataset.select(verifier_eval_indices)
 
     def create_dataloaders(self) -> None:
         """
@@ -155,6 +132,10 @@ class DataManager:
             sampler=self._get_train_sampler(),
             drop_last=True,
             collate_fn=prover_data_collator,
+            num_workers=8,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=4,
         )
 
         # Select a subset of datapoints for evaluation
@@ -166,6 +147,10 @@ class DataManager:
             sampler=self._get_eval_sampler(self.prover_eval_dataset),
             drop_last=True,
             collate_fn=prover_data_collator,
+            num_workers=8,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=4,
         )
 
         self.dataloaders = {
@@ -182,12 +167,20 @@ class DataManager:
             batch_size=self.sampler_args["per_device_train_batch_size"],
             drop_last=True,
             collate_fn=verifier_data_collator,
+            num_workers=8,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=4,
         )
         regressor_classifier_eval_dataloader = DataLoader(
             self.verifier_eval_dataset,
             batch_size=self.sampler_args["per_device_eval_batch_size"],
             drop_last=True,
             collate_fn=verifier_data_collator,
+            num_workers=8,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=4,
         )
 
         inference_classifier_train_dataloader = DataLoader(
@@ -196,6 +189,10 @@ class DataManager:
             drop_last=True,
             sampler=self._get_train_sampler(),
             collate_fn=verifier_data_collator,
+            num_workers=8,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=4,
         )
         inference_classifier_eval_dataloader = DataLoader(
             self.verifier_eval_dataset,
@@ -203,6 +200,10 @@ class DataManager:
             drop_last=True,
             sampler=self._get_eval_sampler(self.verifier_eval_dataset),
             collate_fn=verifier_data_collator,
+            num_workers=8,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=4,
         )
 
         # TODO: Add verifier "dataloaders"
@@ -270,6 +271,8 @@ class DataManager:
             batch_size=effective_batch_size // self.sampler_args["num_generations"],
             repeat_count=self.sampler_args["num_iterations"],
             seed=self.seed,
+            lengths=getattr(self.prover_train_dataset, "lengths", None),
+            sortish_block=8,
         )
 
     def _get_eval_sampler(self, eval_dataset: Dataset) -> Sampler:
@@ -278,6 +281,8 @@ class DataManager:
             data_source=eval_dataset,
             mini_repeat_count=self.sampler_args["num_generations"],
             seed=self.seed,
+            lengths=getattr(eval_dataset, "lengths", None),
+            sortish_block=8,
         )
 
     def prepare_dataloaders(self) -> None:
